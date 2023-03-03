@@ -802,6 +802,85 @@ export class CartApi extends BaseApi {
     }
   };
 
+  getPayment: (paymentId: string) => Promise<any> = async (paymentId) => {
+    return await this.getApiForProject()
+      .payments()
+      .withId({
+        ID: paymentId,
+      })
+      .get()
+      .execute();
+  };
+
+  updateOrderPayment: (paymentId: string, paymentDraft: Payment) => Promise<any> = async (
+    paymentId: string,
+    paymentDraft: Payment,
+  ) => {
+    const locale = await this.getCommercetoolsLocal();
+
+    const paymentUpdateActions: PaymentUpdateAction[] = [];
+
+    /*if (paymentDraft.) {
+      paymentUpdateActions.push({
+        action: 'setMethodInfoName',
+        name: {
+          'en': 'adyen'
+        }
+      });
+    }*/
+
+    if (paymentDraft.paymentMethod) {
+      paymentUpdateActions.push({
+        action: 'setMethodInfoMethod',
+        method: paymentDraft.paymentMethod,
+      });
+    }
+
+    if (paymentDraft.amountPlanned) {
+      paymentUpdateActions.push({
+        action: 'changeAmountPlanned',
+        amount: {
+          centAmount: paymentDraft.amountPlanned.centAmount,
+          currencyCode: paymentDraft.amountPlanned.currencyCode,
+        },
+      });
+    }
+
+    /*
+    paymentUpdateActions.push({
+      action: 'setInterfaceId',
+      interfaceId: 'interface1547',
+    });
+    */
+
+    if (paymentDraft.paymentStatus) {
+      paymentUpdateActions.push({
+        action: 'setStatusInterfaceCode',
+        interfaceCode: paymentDraft.paymentStatus,
+      });
+    }
+
+    return await this.getApiForProject()
+      .payments()
+      .withId({
+        ID: paymentId,
+      })
+      .post({
+        body: {
+          version: paymentDraft.version,
+          actions: paymentUpdateActions,
+        },
+      })
+      .execute()
+      .then((response) => {
+        return CartMapper.commercetoolsPaymentToPayment(response.body, locale);
+        //return response;
+      })
+      .catch((error) => {
+        throw error;
+      });
+  };
+
   redeemDiscountCode: (cart: Cart, code: string) => Promise<ActionResult<Cart>> = async (cart: Cart, code: string) => {
     try {
       const locale = await this.getCommercetoolsLocal();
