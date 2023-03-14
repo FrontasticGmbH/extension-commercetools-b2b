@@ -1,11 +1,11 @@
-import { BaseApi } from './BaseApi';
+import { BaseApi } from 'cofe-ct-ecommerce/apis/BaseApi';
 import { calculateNextDeliveryDate, getSubscriptionGroups } from '../utils/Cart';
-import { Product } from '@Types/product/Product';
-import { ProductApi } from '../apis/ProductApi';
-import { ProductQuery } from '@Types/query/ProductQuery';
-import { Order } from '@Types/cart/Order';
+import { Product } from '@commercetools/frontend-domain-types/product/Product';
+import { ProductApi } from './ProductApi';
+import { ProductQuery } from 'cofe-ct-b2b-ecommerce/types/query/ProductQuery';
+import { Order } from 'cofe-ct-b2b-ecommerce/types/cart/Order';
 import { Cart } from '@Types/cart/Cart';
-import { CartApi } from '../apis/CartApi';
+import { CartApi } from './CartApi';
 import { SubscriptionMapper } from '../mappers/SubscriptionMapper';
 
 export class SubscriptionApi extends BaseApi {
@@ -41,7 +41,6 @@ export class SubscriptionApi extends BaseApi {
   };
 
   handleSubscriptionsOnOrder = async (cart: Cart, order: Order, distributionChannelId: string): Promise<void> => {
-    console.debug(cart, order, distributionChannelId);
     const config = this.frontasticContext?.project?.configuration?.subscriptions;
     if (
       config?.customLineItemKeyOfBundle &&
@@ -71,11 +70,15 @@ export class SubscriptionApi extends BaseApi {
           const subscriptionProduct: Product = await productApi.getProduct(productQuery);
 
           //create cart
-          let nextCart: Cart = await cartApi.replicateCart(order.cartId);
-          nextCart = await cartApi.setCartExpirationDays(nextCart, interval + 1);
-          nextCart = await cartApi.removeAllLineItems(nextCart);
-          nextCart = await cartApi.addItemsToCart(nextCart, subscriptionGroups[sku].lineItems, distributionChannelId);
-          nextCart = await cartApi.setCustomType(nextCart, config.customTypeKeyOnCart, {
+          let nextCart: Cart = (await cartApi.replicateCart(order.cartId)) as Cart;
+          nextCart = (await cartApi.setCartExpirationDays(nextCart, interval + 1)) as Cart;
+          nextCart = (await cartApi.removeAllLineItems(nextCart)) as Cart;
+          nextCart = (await cartApi.addItemsToCart(
+            nextCart,
+            subscriptionGroups[sku].lineItems,
+            distributionChannelId,
+          )) as Cart;
+          nextCart = (await cartApi.setCustomType(nextCart, config.customTypeKeyOnCart, {
             [config.orderCustomFieldNameOnCart]: {
               typeId: 'order',
               id: order.cartId,
@@ -88,7 +91,7 @@ export class SubscriptionApi extends BaseApi {
             [config.nextAccuranceCustomFieldNameOnCart]: nextDeliveryDate,
             [config.isSubscriptionCustomFieldNameOnCart]: true,
             [config.isActiveCustomFieldNameOnCart]: true,
-          });
+          })) as Cart;
         }
       }
     }

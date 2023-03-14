@@ -1,10 +1,10 @@
-import { Product } from '@Types/product/Product';
+import { Product } from '@commercetools/frontend-domain-types/product/Product';
 import { Context, Request } from '@frontastic/extension-types';
-import { ProductQuery } from '@Types/query/ProductQuery';
+import { ProductQuery } from 'cofe-ct-b2b-ecommerce/types/query/ProductQuery';
 import { ProductApi } from '../apis/ProductApi';
 import { LineItem } from '@Types/cart/LineItem';
-import { getPath, getLocale } from './Request';
-import { LineItem as WishlistItem } from '@Types/wishlist/LineItem';
+import { getLocale, getPath } from 'cofe-ct-ecommerce/utils/Request';
+import { LineItem as WishlistItem } from '@commercetools/frontend-domain-types/wishlist/LineItem';
 
 export class ProductRouter {
   private static isProduct(product: Product | LineItem | WishlistItem): product is Product {

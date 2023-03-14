@@ -1,25 +1,30 @@
 import * as AccountActions from './AccountController';
-import * as ProductActions from './ProductController';
-import * as CartActions from './CartController';
-import * as WishlistActions from './WishlistController';
-import * as ProjectActions from './ProjectController';
-import * as StoreActions from './StoreController';
+import {
+  extender,
+  AccountAction,
+  CartAction,
+  BusinessAction,
+  ProductAction,
+  WishlistAction,
+  StoreAction,
+  QuoteAction,
+} from 'cofe-ct-b2b-ecommerce';
+import * as ProjectActions from 'cofe-ct-ecommerce/actionControllers/ProjectController';
 import * as BusinessUnitActions from './BusinessUnitController';
-import * as CustomerActions from './CustomerController';
-import * as QuoteActions from './QuoteController';
+import * as StoreActions from './StoreController';
+import * as CartActions from './CartController';
 import * as DashboardActions from './DashboardController';
 import * as SubscriptionActions from './SubscriptionController';
 
 export const actions = {
-  account: AccountActions,
-  cart: CartActions,
-  customer: CustomerActions,
-  product: ProductActions,
-  wishlist: WishlistActions,
-  project: ProjectActions,
-  store: StoreActions,
-  quote: QuoteActions,
-  'business-unit': BusinessUnitActions,
+  account: extender(AccountAction, AccountActions),
+  cart: extender(CartAction, CartActions),
+  store: extender(StoreAction, StoreActions),
+  'business-unit': extender(BusinessAction, BusinessUnitActions),
+  product: ProductAction,
+  wishlist: WishlistAction,
+  quote: QuoteAction,
   dashboard: DashboardActions,
+  project: ProjectActions,
   subscription: SubscriptionActions,
 };

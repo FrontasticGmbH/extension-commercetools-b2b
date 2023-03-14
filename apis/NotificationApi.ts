@@ -1,4 +1,4 @@
-import { BaseApi } from './BaseApi';
+import { BaseApi } from 'cofe-ct-ecommerce/apis/BaseApi';
 import axios from 'axios';
 
 export class NotificationApi extends BaseApi {

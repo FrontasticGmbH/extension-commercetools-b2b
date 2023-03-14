@@ -1,11 +1,11 @@
-import { ChannelResourceIdentifier } from '@Types/channel/channel';
 import { ActionContext, Request, Response } from '@frontastic/extension-types';
-import { Store } from '@Types/store/store';
-import { StoreApi } from '../apis/StoreApi';
-import { CartApi } from '../apis/CartApi';
-import { getLocale } from '../utils/Request';
+import { Store } from 'cofe-ct-b2b-ecommerce/types/store/store';
+import { ChannelResourceIdentifier } from 'cofe-ct-b2b-ecommerce/types/channel/channel';
 import { BusinessUnitApi } from '../apis/BusinessUnitApi';
 import { StoreDraft } from '@commercetools/platform-sdk';
+import { getLocale } from 'cofe-ct-ecommerce/utils/Request';
+import { CartApi } from '../apis/CartApi';
+import { StoreApi } from '../apis/StoreApi';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
 
@@ -49,21 +49,6 @@ export const create: ActionHook = async (request: Request, actionContext: Action
   }
 };
 
-export const query: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const storeApi = new StoreApi(actionContext.frontasticContext, getLocale(request));
-  const where = request.query['where'];
-
-  const stores = await storeApi.query(where);
-
-  const response: Response = {
-    statusCode: 200,
-    body: JSON.stringify(stores),
-    sessionData: request.sessionData,
-  };
-
-  return response;
-};
-
 export const setMe: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const storeApi = new StoreApi(actionContext.frontasticContext, getLocale(request));
   const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request));
@@ -81,6 +66,13 @@ export const setMe: ActionHook = async (request: Request, actionContext: ActionC
   const organization = {
     ...request.sessionData?.organization,
     distributionChannel,
+  };
+  organization.store = {
+    id: store.id,
+    key: store.key,
+    name: store.name,
+    custom: store.custom,
+    isPreBuyStore: store.isPreBuyStore,
   };
 
   organization.store = {

@@ -5,16 +5,15 @@ import {
   ExtensionRegistry,
   Request,
 } from '@frontastic/extension-types';
-import { getLocale, getPath } from './utils/Request';
+import { getLocale, getPath } from 'cofe-ct-ecommerce/utils/Request';
+import { BusinessUnitApi } from './apis/BusinessUnitApi';
 import { ProductRouter } from './utils/ProductRouter';
-import { Product } from '@Types/product/Product';
+import { Product } from '@commercetools/frontend-domain-types/product/Product';
 import { SearchRouter } from './utils/SearchRouter';
-import { Result } from '@Types/product/Result';
+import { Result } from '@commercetools/frontend-domain-types/product/Result';
 import { CategoryRouter } from './utils/CategoryRouter';
 import dataSources from './dataSources';
 import { actions } from './actionControllers';
-import { BusinessUnitApi } from './apis/BusinessUnitApi';
-import { SubscriptionApi } from './apis/SubscriptionApi';
 
 export default {
   'dynamic-page-handler': async (

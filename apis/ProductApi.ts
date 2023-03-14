@@ -1,27 +1,15 @@
-import { Result } from '@Types/product/Result';
-import { ProductMapper } from '../mappers/ProductMapper';
-import { ProductQuery } from '@Types/query/ProductQuery';
-import { Product } from '@Types/product/Product';
-import { BaseApi } from './BaseApi';
-import { FilterField, FilterFieldTypes } from '@Types/product/FilterField';
-import { FilterTypes } from '@Types/query/Filter';
-import { TermFilter } from '@Types/query/TermFilter';
-import { RangeFilter } from '@Types/query/RangeFilter';
-import { CategoryQuery } from '@Types/query/CategoryQuery';
-import { Category } from '@Types/product/Category';
-import { FacetDefinition } from '@Types/product/FacetDefinition';
-import { Attribute, AttributeGroup } from '@commercetools/platform-sdk';
-
-export class ProductApi extends BaseApi {
-  protected getOffsetFromCursor = (cursor: string) => {
-    if (cursor === undefined) {
-      return undefined;
-    }
-
-    const offsetMach = cursor.match(/(?<=offset:).+/);
-    return offsetMach !== null ? +Object.values(offsetMach)[0] : undefined;
-  };
-
+import { Result } from '@commercetools/frontend-domain-types/product/Result';
+import { ProductQuery } from 'cofe-ct-b2b-ecommerce/types/query/ProductQuery';
+import { FilterField, FilterFieldTypes } from '@commercetools/frontend-domain-types/product/FilterField';
+import { FilterTypes } from '@commercetools/frontend-domain-types/query/Filter';
+import { TermFilter } from '@commercetools/frontend-domain-types/query/TermFilter';
+import { RangeFilter } from '@commercetools/frontend-domain-types/query/RangeFilter';
+import { FacetDefinition } from '@commercetools/frontend-domain-types/product/FacetDefinition';
+import { ProductApi as B2BProductApi } from 'cofe-ct-b2b-ecommerce/apis/ProductApi';
+import { ProductMapper as B2BProductMapper } from 'cofe-ct-b2b-ecommerce/mappers/ProductMapper';
+import { Category } from 'cofe-ct-b2b-ecommerce/types/product/Category';
+import { CategoryQuery } from '@Types/category/CategoryQuery';
+export class ProductApi extends B2BProductApi {
   query: (productQuery: ProductQuery, additionalQueryArgs?: object, additionalFacets?: object[]) => Promise<Result> =
     async (productQuery: ProductQuery, additionalQueryArgs?: object, additionalFacets: object[] = []) => {
       try {
@@ -35,7 +23,7 @@ export class ProductApi extends BaseApi {
         const sortAttributes: string[] = [];
 
         const facetDefinitions: FacetDefinition[] = [
-          ...ProductMapper.commercetoolsProductTypesToFacetDefinitions(await this.getProductTypes(), locale),
+          ...B2BProductMapper.commercetoolsProductTypesToFacetDefinitions(await this.getProductTypes(), locale),
           ...additionalFacets,
           // Include Scoped Price facet
           {
@@ -49,7 +37,7 @@ export class ProductApi extends BaseApi {
           },
         ];
 
-        const queryArgFacets = ProductMapper.facetDefinitionsToCommercetoolsQueryArgFacets(facetDefinitions, locale);
+        const queryArgFacets = B2BProductMapper.facetDefinitionsToCommercetoolsQueryArgFacets(facetDefinitions, locale);
 
         if (productQuery.productIds !== undefined && productQuery.productIds.length !== 0) {
           filterQuery.push(`id:"${productQuery.productIds.join('","')}"`);
@@ -95,7 +83,7 @@ export class ProductApi extends BaseApi {
 
         if (productQuery.facets !== undefined) {
           filterFacets.push(
-            ...ProductMapper.facetDefinitionsToFilterFacets(productQuery.facets, facetDefinitions, locale),
+            ...B2BProductMapper.facetDefinitionsToFilterFacets(productQuery.facets, facetDefinitions, locale),
           );
         }
 
@@ -132,16 +120,16 @@ export class ProductApi extends BaseApi {
           .execute()
           .then((response) => {
             const items = response.body.results.map((product) =>
-              ProductMapper.commercetoolsProductProjectionToProduct(product, locale),
+              B2BProductMapper.commercetoolsProductProjectionToProduct(product, locale),
             );
 
             const result: Result = {
               total: response.body.total,
               items: items,
               count: response.body.count,
-              facets: ProductMapper.commercetoolsFacetResultsToFacets(response.body.facets, productQuery, locale),
-              previousCursor: ProductMapper.calculatePreviousCursor(response.body.offset, response.body.count),
-              nextCursor: ProductMapper.calculateNextCursor(
+              facets: B2BProductMapper.commercetoolsFacetResultsToFacets(response.body.facets, productQuery, locale),
+              previousCursor: B2BProductMapper.calculatePreviousCursor(response.body.offset, response.body.count),
+              nextCursor: B2BProductMapper.calculateNextCursor(
                 response.body.offset,
                 response.body.count,
                 response.body.total,
@@ -160,27 +148,13 @@ export class ProductApi extends BaseApi {
       }
     };
 
-  getProduct: (productQuery: ProductQuery, additionalQueryArgs?: object) => Promise<Product> = async (
-    productQuery: ProductQuery,
-    additionalQueryArgs?: object,
-  ) => {
-    try {
-      const result = await this.query(productQuery, additionalQueryArgs);
-
-      return result.items.shift() as Product;
-    } catch (error) {
-      //TODO: better error, get status code etc...
-      throw new Error(`getProduct failed. ${error}`);
-    }
-  };
-
   getSearchableAttributes: (rootCategoryId?: string) => Promise<FilterField[]> = async (rootCategoryId?) => {
     try {
       const locale = await this.getCommercetoolsLocal();
 
       const response = await this.getApiForProject().productTypes().get().execute();
 
-      const filterFields = ProductMapper.commercetoolsProductTypesToFilterFields(response.body.results, locale);
+      const filterFields = B2BProductMapper.commercetoolsProductTypesToFilterFields(response.body.results, locale);
 
       filterFields.push({
         field: 'categoryId',
@@ -203,46 +177,15 @@ export class ProductApi extends BaseApi {
     }
   };
 
-  getAttributeGroup: (key: string) => Promise<string[]> = async (key: string) => {
-    try {
-      const { body } = await this.getApiForProject().attributeGroups().withKey({ key }).get().execute();
-
-      return ProductMapper.commercetoolsAttributeGroupToString(body);
-    } catch (error) {
-      //TODO: better error, get status code etc...
-      throw new Error(`get attributeGroup failed. ${error}`);
-    }
-  };
-
-  getNavigationCategories: (rootCategoryId: string) => Promise<Category[]> = async (rootCategoryId) => {
-    const { items }: { items: any[] } = await this.queryCategories({ rootCategoryId, limit: 500 });
+  getNavigationCategories: (rootCategoryId?: string) => Promise<Category[]> = async (rootCategoryId) => {
+    const res = await this.queryCategories({ rootCategoryId, limit: 500 });
+    const items: any[] = res.items;
 
     let categories: Category[] = [];
     if (rootCategoryId) {
       categories = items.filter((item: Category) => item.parentId == rootCategoryId);
     } else {
       categories = items.filter((item: Category) => !item.ancestors?.length);
-    }
-
-    const subCategories: Category[] = items
-      .filter((item: Category) => !!item.ancestors?.length)
-      .sort((a, b) => b.depth - a.depth);
-
-    while (subCategories.length) {
-      const [currentSubCategory] = subCategories.splice(0, 1);
-      const lastAncestor = currentSubCategory.ancestors[currentSubCategory.ancestors.length - 1];
-      const subCategoryIdx = subCategories.findIndex((item) => item.categoryId === lastAncestor.id);
-      if (subCategoryIdx !== -1) {
-        subCategories[subCategoryIdx].children = [
-          ...(subCategories[subCategoryIdx].children || []),
-          currentSubCategory,
-        ];
-      } else {
-        const categoryIdx = categories.findIndex((item) => item.categoryId === lastAncestor.id);
-        if (categoryIdx !== -1) {
-          categories[categoryIdx].children = [...(categories[categoryIdx].children || []), currentSubCategory];
-        }
-      }
     }
     return categories as Category[];
   };
@@ -280,23 +223,46 @@ export class ProductApi extends BaseApi {
         .get(methodArgs)
         .execute()
         .then((response) => {
-          const items = response.body.results.map((category) =>
-            ProductMapper.commercetoolsCategoryToCategory(category, locale),
+          const categories = response.body.results;
+
+          const nodes = {};
+
+          for (let i = 0; i < categories.length; i++) {
+            (categories[i] as any).subCategories = [];
+            nodes[categories[i].id] = categories[i];
+          }
+
+          for (let i = 0; i < categories.length; i++) {
+            if (categories[i].parent && nodes[categories[i].parent.id]?.subCategories) {
+              nodes[categories[i].parent.id].subCategories.push(categories[i]);
+            }
+          }
+          const nodesQueue = [categories];
+
+          while (nodesQueue.length > 0) {
+            const currentCategories = nodesQueue.pop();
+            currentCategories.sort((a, b) => +a.orderHint - +b.orderHint);
+            currentCategories.forEach(
+              (category) => !!nodes[category.id]?.subCategories && nodesQueue.push(nodes[category.id].subCategories),
+            );
+          }
+
+          const items = categories.map((category) =>
+            B2BProductMapper.commercetoolsCategoryToCategory(category, locale),
           );
 
           const result: Result = {
             total: response.body.total,
             items: items,
             count: response.body.count,
-            previousCursor: ProductMapper.calculatePreviousCursor(response.body.offset, response.body.count),
-            nextCursor: ProductMapper.calculateNextCursor(
+            previousCursor: B2BProductMapper.calculatePreviousCursor(response.body.offset, response.body.count),
+            nextCursor: B2BProductMapper.calculateNextCursor(
               response.body.offset,
               response.body.count,
               response.body.total,
             ),
             query: categoryQuery,
           };
-
           return result;
         })
         .catch((error) => {

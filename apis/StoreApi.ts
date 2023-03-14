@@ -1,41 +1,8 @@
-import { BaseApi } from './BaseApi';
-import { Store } from '@Types/store/store';
-import { StoreDraft } from '@commercetools/platform-sdk';
-import { mapCommercetoolsStoreToStore } from '../mappers/StoreMappers';
+import { Store } from 'cofe-ct-b2b-ecommerce/types/store/store';
+import { StoreApi as B2BStoreApi } from 'cofe-ct-b2b-ecommerce/apis/StoreApi';
+import { StoreMappers } from '../mappers/StoreMappers';
 
-const convertStoreToBody = (store: StoreDraft, locale: string): StoreDraft => {
-  return {
-    ...store,
-    // @ts-ignore
-    name: {
-      [locale]: store.name,
-    },
-  };
-};
-
-export class StoreApi extends BaseApi {
-  create: (store: StoreDraft) => Promise<any> = async (store: StoreDraft) => {
-    const locale = await this.getCommercetoolsLocal();
-    const body = convertStoreToBody(store, locale.language);
-
-    try {
-      return this.getApiForProject()
-        .stores()
-        .post({
-          body,
-        })
-        .execute()
-        .then((response) => {
-          return response.body;
-        })
-        .catch((error) => {
-          throw error;
-        });
-    } catch (error) {
-      throw error;
-    }
-  };
-
+export class StoreApi extends B2BStoreApi {
   get: (key: string) => Promise<any> = async (key: string): Promise<Store> => {
     const locale = await this.getCommercetoolsLocal();
     const config = this.frontasticContext?.project?.configuration?.preBuy;
@@ -47,34 +14,7 @@ export class StoreApi extends BaseApi {
         .get()
         .execute()
         .then((response) => {
-          return mapCommercetoolsStoreToStore(response.body, locale.language, config);
-        });
-    } catch (e) {
-      console.log(e);
-
-      throw '';
-    }
-  };
-
-  query: (where?: string) => Promise<any> = async (where: string): Promise<Store[]> => {
-    const locale = await this.getCommercetoolsLocal();
-    const config = this.frontasticContext?.project?.configuration?.preBuy;
-
-    const queryArgs = where
-      ? {
-          where,
-        }
-      : {};
-
-    try {
-      return this.getApiForProject()
-        .stores()
-        .get({
-          queryArgs,
-        })
-        .execute()
-        .then((response) => {
-          return response.body.results.map((store) => mapCommercetoolsStoreToStore(store, locale.language, config));
+          return StoreMappers.mapCommercetoolsStoreToStore(response.body, locale.language, config);
         });
     } catch (e) {
       console.log(e);

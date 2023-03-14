@@ -1,22 +1,22 @@
 import { CustomFields } from '@commercetools/platform-sdk';
-import { Locale } from '../Locale';
+import { Locale } from 'cofe-ct-ecommerce/interfaces/Locale';
 import { CartMapper } from './CartMapper';
-import { ProductMapper } from './ProductMapper';
-import { Cart as CommercetoolsCart, Product as CommercetoolsProduct } from '@commercetools/platform-sdk';
-import { Cart, Subscription } from '@Types/cart/Cart';
-import { Product } from '@Types/product/Product';
+import { ProductMapper as B2BProductMapper } from 'cofe-ct-b2b-ecommerce/mappers/ProductMapper';
+import { Cart as CommercetoolsCart } from '@commercetools/platform-sdk';
+import { Cart } from '@Types/cart/Cart';
+import { Subscription } from '@Types/cart/Cart';
 export class SubscriptionMapper {
-  static commercetoolsCartToCart: (
+  static commercetoolsCartToCart(
     commercetoolsCart: CommercetoolsCart,
     locale: Locale,
     config?: Record<string, string>,
-  ) => Cart = (commercetoolsCart: CommercetoolsCart, locale: Locale, config?: Record<string, string>) => {
+  ): Cart {
     return {
       cartId: commercetoolsCart.id,
       cartVersion: commercetoolsCart.version.toString(),
       lineItems: CartMapper.commercetoolsLineItemsToLineItems(commercetoolsCart.lineItems, locale),
       email: commercetoolsCart?.customerEmail,
-      sum: ProductMapper.commercetoolsMoneyToMoney(commercetoolsCart.totalPrice),
+      sum: B2BProductMapper.commercetoolsMoneyToMoney(commercetoolsCart.totalPrice),
       shippingAddress: CartMapper.commercetoolsAddressToAddress(commercetoolsCart.shippingAddress),
       billingAddress: CartMapper.commercetoolsAddressToAddress(commercetoolsCart.billingAddress),
       shippingInfo: CartMapper.commercetoolsShippingInfoToShippingInfo(commercetoolsCart.shippingInfo, locale),
@@ -28,25 +28,25 @@ export class SubscriptionMapper {
       origin: commercetoolsCart.origin,
       subscription: SubscriptionMapper.commercetoolsCustomToSubscriptions(commercetoolsCart.custom, locale, config),
     };
-  };
+  }
 
-  private static commercetoolsCustomToSubscriptions = (
+  private static commercetoolsCustomToSubscriptions(
     commercetoolsCustom: CustomFields,
     locale: Locale,
     config?: Record<string, string>,
-  ): Subscription => {
+  ): Subscription {
     if (!config) {
       return {};
     }
     return {
       order: commercetoolsCustom?.fields?.[config.orderCustomFieldNameOnCart]?.obj,
       sku: commercetoolsCustom?.fields?.[config.skuCustomFieldNameOnCart],
-      product: ProductMapper.commercetoolsProductProjectionToProduct(
+      product: B2BProductMapper.commercetoolsProductProjectionToProduct(
         commercetoolsCustom?.fields?.[config.productCustomFieldNameOnCart]?.obj?.masterData?.current,
         locale,
       ),
       nextDeliveryDate: commercetoolsCustom?.fields?.[config.nextAccuranceCustomFieldNameOnCart],
       isActive: commercetoolsCustom?.fields?.[config.isActiveCustomFieldNameOnCart],
     };
-  };
+  }
 }
