@@ -1,5 +1,5 @@
 import { Store as CommercetoolsStore } from '@commercetools/platform-sdk';
-import { Store } from 'cofe-ct-b2b-ecommerce/types/store/store';
+import { Store } from '@Types/store/Store';
 import { StoreMappers as B2BStoreMappers } from 'cofe-ct-b2b-ecommerce/mappers/StoreMappers';
 
 // @ts-ignore
@@ -7,12 +7,27 @@ export class StoreMappers extends B2BStoreMappers {
   static mapCommercetoolsStoreToStore(
     store: CommercetoolsStore,
     locale: string,
-    config: Record<string, string>,
+    preBuyConfig: Record<string, string>,
+    storeConfig: Record<string, string>,
   ): Store {
     return {
-      ...store,
       name: store.name?.[locale],
-      isPreBuyStore: !!config ? store.custom?.fields?.[config.storeCustomField] : false,
+      id: store.id,
+      key: store.key,
+      distributionChannels: store.distributionChannels,
+      supplyChannels: store.supplyChannels,
+      isPreBuyStore: !!preBuyConfig ? store.custom?.fields?.[preBuyConfig.storeCustomField] : false,
+      storeRootCategoryId: !!preBuyConfig ? store.custom?.fields?.[storeConfig.rootCategoryCustomField]?.id : '',
+    };
+  }
+
+  static mapStoreToSmallerStore(store: Store): Store {
+    return {
+      name: store.name,
+      id: store.id,
+      key: store.key,
+      isPreBuyStore: store.isPreBuyStore,
+      storeRootCategoryId: store.storeRootCategoryId,
     };
   }
 }

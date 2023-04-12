@@ -13,6 +13,7 @@ export class SubscriptionMapper {
   ): Cart {
     return {
       cartId: commercetoolsCart.id,
+      customerId: commercetoolsCart.customerId,
       cartVersion: commercetoolsCart.version.toString(),
       lineItems: CartMapper.commercetoolsLineItemsToLineItems(commercetoolsCart.lineItems, locale),
       email: commercetoolsCart?.customerEmail,

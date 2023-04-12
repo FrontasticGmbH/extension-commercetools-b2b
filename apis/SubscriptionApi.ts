@@ -44,6 +44,7 @@ export class SubscriptionApi extends BaseApi {
     const config = this.frontasticContext?.project?.configuration?.subscriptions;
     if (
       config?.customLineItemKeyOfBundle &&
+      config?.customLineItemKeyOfSubscription &&
       config.subscriptionProductAttributeName &&
       config.customTypeKeyOnCart &&
       config.orderCustomFieldNameOnCart &&

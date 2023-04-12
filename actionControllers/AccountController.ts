@@ -1,3 +1,4 @@
+export * from 'cofe-ct-b2b-ecommerce/actionControllers/AccountController';
 import { Request, Response } from '@frontastic/extension-types';
 import { ActionContext } from '@frontastic/extension-types';
 import { AccountApi as B2BAccountApi } from 'cofe-ct-b2b-ecommerce/apis/AccountApi';
@@ -7,7 +8,8 @@ import { Address } from '@commercetools/frontend-domain-types/account/Address';
 import { CartFetcher } from '../utils/CartFetcher';
 import { NotificationApi } from '../apis/NotificationApi';
 import { BusinessUnitApi } from '../apis/BusinessUnitApi';
-import { BusinessUnit } from 'cofe-ct-b2b-ecommerce/types/business-unit/BusinessUnit';
+import { Organization } from '@Types/organization/organization';
+import { BusinessUnitMappers } from 'cofe-ct-b2b-ecommerce/mappers/BusinessUnitMappers';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
 
@@ -47,7 +49,7 @@ async function loginAccount(
 
   try {
     const accountRes = await accountApi.login(account, cart, reverify);
-    const organization = await businessUnitApi.getOrganization(accountRes.accountId, businessUnitKey);
+    const organization: Organization = await businessUnitApi.getOrganization(accountRes.accountId, businessUnitKey);
     const token = await notificationApi.getToken(account.email, account.password);
 
     return { account: accountRes, organization, token };
@@ -58,7 +60,6 @@ async function loginAccount(
 
 export const login: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const accountLoginBody: AccountLoginBody = JSON.parse(request.body);
-  const config = actionContext.frontasticContext?.project?.configuration?.storeContext;
 
   const loginInfo = {
     email: accountLoginBody.email,
@@ -83,10 +84,10 @@ export const login: ActionHook = async (request: Request, actionContext: ActionC
         account,
         organization: {
           ...organization,
+          businessUnit: BusinessUnitMappers.trimBusinessUnit(organization.businessUnit, account.accountId),
           superUserBusinessUnitKey: accountLoginBody.businessUnitKey,
         },
-        // @ts-ignore
-        rootCategoryId: organization.store?.custom?.fields?.[config?.rootCategoryCustomField]?.id,
+        rootCategoryId: organization.store?.storeRootCategoryId,
         notificationToken: token,
       },
     };

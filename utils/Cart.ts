@@ -17,9 +17,11 @@ export const getSubscriptionGroups = (
   cart: Cart,
   config: Record<string, string>,
 ): Record<string, { lineItems: LineItem[]; variant: Variant }> => {
-  if (cart && config?.customLineItemKeyOfBundle) {
+  if (cart && config?.customLineItemKeyOfBundle && config?.customLineItemKeyOfSubscription) {
     const subscriptionItems: LineItem[] = cart.lineItems?.filter(
-      (lineItem) => !!lineItem.custom?.fields?.[config.customLineItemKeyOfBundle],
+      (lineItem) =>
+        !!lineItem.custom?.fields?.[config.customLineItemKeyOfBundle] &&
+        lineItem.custom?.fields?.[config.customLineItemKeyOfSubscription],
     );
     const uniqueSubscriptionSkusMap = subscriptionItems
       ?.map((lineItem) => lineItem.variant)

@@ -63,28 +63,19 @@ export default {
     if (ProductRouter.identifyPreviewFrom(request)) {
       return ProductRouter.loadPreviewFor(request, context.frontasticContext).then((product: Product) => {
         if (product) {
-          return ProductRouter.getSubscriptionBundles(request, context.frontasticContext, product).then(
-            (subscriptionProducts) => {
-              if (subscriptionProducts?.length) {
-                return {
-                  dynamicPageType: 'frontastic/product-detail-page',
-                  dataSourcePayload: {
-                    product: product,
-                    subscriptions: subscriptionProducts,
-                  },
-                  pageMatchingPayload: {
-                    product: product,
-                    subscriptions: subscriptionProducts,
-                  },
-                };
-              }
+          return ProductRouter.getBundles(request, context.frontasticContext, product).then(
+            ({ subscriptions, configurableComponents }) => {
               return {
                 dynamicPageType: 'frontastic/product-detail-page',
                 dataSourcePayload: {
                   product: product,
+                  subscriptions,
+                  configurableComponents,
                 },
                 pageMatchingPayload: {
                   product: product,
+                  subscriptions,
+                  configurableComponents,
                 },
               };
             },
@@ -100,28 +91,19 @@ export default {
     if (ProductRouter.identifyFrom(request)) {
       return ProductRouter.loadFor(request, context.frontasticContext).then((product: Product) => {
         if (product) {
-          return ProductRouter.getSubscriptionBundles(request, context.frontasticContext, product).then(
-            (subscriptionProducts) => {
-              if (subscriptionProducts?.length) {
-                return {
-                  dynamicPageType: 'frontastic/product-detail-page',
-                  dataSourcePayload: {
-                    product: product,
-                    subscriptions: subscriptionProducts,
-                  },
-                  pageMatchingPayload: {
-                    product: product,
-                    subscriptions: subscriptionProducts,
-                  },
-                };
-              }
+          return ProductRouter.getBundles(request, context.frontasticContext, product).then(
+            ({ configurableComponents, subscriptions }) => {
               return {
                 dynamicPageType: 'frontastic/product-detail-page',
                 dataSourcePayload: {
                   product: product,
+                  subscriptions,
+                  configurableComponents,
                 },
                 pageMatchingPayload: {
                   product: product,
+                  subscriptions,
+                  configurableComponents,
                 },
               };
             },
@@ -217,7 +199,7 @@ export default {
     const homePageMatch = getPath(request)?.match(/^\//);
     if (homePageMatch) {
       let organization = request.sessionData?.organization;
-      if (!organization?.businessUnit && request.sessionData?.account?.accountId) {
+      if (!organization.businessUnit && request.sessionData?.account?.accountId) {
         const businessUnitApi = new BusinessUnitApi(context.frontasticContext, getLocale(request));
         organization = await businessUnitApi.getOrganization(request.sessionData.account.accountId);
       }

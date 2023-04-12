@@ -2,7 +2,7 @@ import {
   Cart as CommercetoolsCart,
   Order as CommercetoolsOrder,
   LineItem as CommercetoolsLineItem,
-  State,
+  StateReference,
 } from '@commercetools/platform-sdk';
 import { CartMapper as BaseCartMapper } from 'cofe-ct-ecommerce/mappers/CartMapper';
 import { CartMapper as B2BCartMapper } from 'cofe-ct-b2b-ecommerce/mappers/CartMapper';
@@ -10,7 +10,7 @@ import { Locale } from 'cofe-ct-ecommerce/interfaces/Locale';
 import { ProductMapper as B2BProductMapper } from 'cofe-ct-b2b-ecommerce/mappers/ProductMapper';
 import { ProductRouter } from '../utils/ProductRouter';
 import { LineItem } from '@Types/cart/LineItem';
-import { Cart } from 'cofe-ct-b2b-ecommerce/types/cart/Cart';
+import { Cart } from '@Types/cart/Cart';
 import { Order } from '@Types/cart/Order';
 
 export class CartMapper extends B2BCartMapper {
@@ -21,6 +21,7 @@ export class CartMapper extends B2BCartMapper {
   ): Cart {
     return {
       cartId: commercetoolsCart.id,
+      customerId: commercetoolsCart.customerId,
       cartVersion: commercetoolsCart.version.toString(),
       lineItems: this.commercetoolsLineItemsToLineItems(commercetoolsCart.lineItems, locale),
       email: commercetoolsCart?.customerEmail,
@@ -35,6 +36,8 @@ export class CartMapper extends B2BCartMapper {
       itemShippingAddresses: commercetoolsCart.itemShippingAddresses,
       origin: commercetoolsCart.origin,
       isPreBuyCart: !!config ? commercetoolsCart.custom?.fields?.[config.orderCustomField] : false,
+      businessUnit: commercetoolsCart.businessUnit?.key,
+      store: commercetoolsCart.store?.key,
     };
   }
 
@@ -47,6 +50,7 @@ export class CartMapper extends B2BCartMapper {
     commercetoolsLineItems?.forEach((commercetoolsLineItem) => {
       const item: LineItem = {
         lineItemId: commercetoolsLineItem.id,
+        productId: commercetoolsLineItem.productId,
         name: commercetoolsLineItem?.name[locale.language] || '',
         type: 'variant',
         count: commercetoolsLineItem.quantity,
@@ -86,6 +90,7 @@ export class CartMapper extends B2BCartMapper {
   ): Order {
     return {
       cartId: commercetoolsOrder.id,
+      customerId: commercetoolsOrder.customerId,
       origin: commercetoolsOrder.origin,
       orderState: commercetoolsOrder.orderState,
       orderId: commercetoolsOrder.orderNumber,
@@ -100,17 +105,22 @@ export class CartMapper extends B2BCartMapper {
       shippingInfo: this.commercetoolsShippingInfoToShippingInfo(commercetoolsOrder.shippingInfo, locale),
       returnInfo: this.commercetoolsReturnInfoToReturnInfo(commercetoolsOrder.returnInfo),
       isPreBuyCart: !!config ? commercetoolsOrder.custom?.fields?.[config.orderCustomField] : false,
-      state: this.commercetoolsOrderStateToState(commercetoolsOrder.state?.obj, locale),
+      state: this.commercetoolsOrderStateToState(commercetoolsOrder.state, locale),
     };
   }
 
-  static commercetoolsOrderStateToState(commercetoolsState: State, locale: Locale): any {
-    return commercetoolsState
-      ? {
-          key: commercetoolsState.key,
-          name: commercetoolsState.name[locale.language],
-        }
-      : null;
+  static commercetoolsOrderStateToState(commercetoolsStateRef: StateReference, locale: Locale): any {
+    if (commercetoolsStateRef) {
+      return commercetoolsStateRef.obj
+        ? {
+            key: commercetoolsStateRef.obj?.key,
+            name: commercetoolsStateRef.obj?.name[locale.language],
+          }
+        : {
+            id: commercetoolsStateRef.id,
+          };
+    }
+    return null;
   }
 }
 // Override the BaseMapper with new Mapper functions

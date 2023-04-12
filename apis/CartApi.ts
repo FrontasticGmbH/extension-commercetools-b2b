@@ -15,33 +15,40 @@ import { OrderFromCartDraft } from '@commercetools/platform-sdk/dist/declaration
 import { CartApi as B2BCartApi } from 'cofe-ct-b2b-ecommerce/apis/CartApi';
 import { isReadyForCheckout } from 'cofe-ct-ecommerce/utils/Cart';
 import { Locale } from 'cofe-ct-ecommerce/interfaces/Locale';
-import { Organization } from 'cofe-ct-b2b-ecommerce/types/organization/organization';
+import { Organization } from '@Types/organization/organization';
 import { CartMapper } from '../mappers/CartMapper';
+
+type Writeable<T> = { -readonly [P in keyof T]: T[P] };
+
 export class CartApi extends B2BCartApi {
-  getForUser: (account: Account, organization?: Organization) => Promise<Cart> = async (
-    account: Account,
-    organization: Organization,
+  getAllCarts: (account?: Account, organization?: Organization) => Promise<CommercetoolsCart[]> = async (
+    account: Account = this.account,
+    organization: Organization = this.organization,
   ) => {
     try {
-      const locale = await this.getCommercetoolsLocal();
       const subscriptionConfig = this.frontasticContext?.project?.configuration?.subscriptions;
+      const preBuyConfig = this.frontasticContext?.project?.configuration?.preBuy;
+
       const where = [
-        `customerId="${account.accountId}"`,
+        `store(key="${organization.store?.key}")`,
         `cartState="Active"`,
-        `businessUnit(key="${organization.businessUnit.key}")`,
-        `store(key="${organization.store.key}")`,
         `custom(fields(${subscriptionConfig.isSubscriptionCustomFieldNameOnCart} is not defined))`,
       ];
 
-      if (organization.superUserBusinessUnitKey) {
-        where.push('origin="Merchant"');
+      if (organization.store?.isPreBuyStore) {
+        where.push(`custom(fields(${preBuyConfig.orderCustomField} = true))`);
+        where.push(`inventoryMode="None"`);
       }
 
-      const response = await this.getApiForProject()
+      if (!organization.superUserBusinessUnitKey) {
+        where.push(`customerId="${account.accountId}"`);
+      }
+
+      const response = await this.associateEndpoints
         .carts()
         .get({
           queryArgs: {
-            limit: 1,
+            limit: 15,
             expand: [
               'lineItems[*].discountedPrice.includedDiscounts[*].discount',
               'discountCodes[*].discountCode',
@@ -54,43 +61,40 @@ export class CartApi extends B2BCartApi {
         .execute();
 
       if (response.body.count >= 1) {
-        return (await this.buildCartWithAvailableShippingMethods(response.body.results[0], locale)) as Cart;
+        return response.body.results;
       }
-
-      return this.createCart(account.accountId, organization);
+      return [];
     } catch (error) {
       //TODO: better error, get status code etc...
       throw new Error(`getForUser failed. ${error}`);
     }
   };
 
-  createCart: (customerId: string, organization?: Organization) => Promise<Cart> = async (
-    customerId: string,
-    organization: Organization,
+  createCart: (customerId?: string, organization?: Organization) => Promise<Cart> = async (
+    customerId: string = this.account?.accountId,
+    organization: Organization = this.organization,
   ) => {
     try {
       const locale = await this.getCommercetoolsLocal();
       const config = this.frontasticContext?.project?.configuration?.preBuy;
 
-      const cartDraft: CartDraft = {
+      const cartDraft: Writeable<CartDraft> = {
         currency: locale.currency,
         country: locale.country,
         locale: locale.language,
-        customerId,
-        businessUnit: {
-          key: organization.businessUnit.key,
-          typeId: 'business-unit',
-        },
         store: {
-          key: organization.store.key,
+          key: organization.store?.key,
           typeId: 'store',
         },
         inventoryMode: 'ReserveOnOrder',
-        origin: organization.superUserBusinessUnitKey ? 'Merchant' : 'Customer',
       };
+      if (!organization.superUserBusinessUnitKey) {
+        cartDraft.customerId = customerId;
+      } else {
+        cartDraft.origin = 'Merchant';
+      }
 
-      if (organization.store.isPreBuyStore) {
-        // @ts-ignore
+      if (organization.store?.isPreBuyStore) {
         cartDraft.custom = {
           type: {
             typeId: 'type',
@@ -100,11 +104,10 @@ export class CartApi extends B2BCartApi {
             [config.orderCustomField]: true,
           },
         };
-        // @ts-ignore
         cartDraft.inventoryMode = 'None';
       }
 
-      const commercetoolsCart = await this.getApiForProject()
+      const commercetoolsCart = await this.associateEndpoints
         .carts()
         .post({
           queryArgs: {
@@ -229,7 +232,7 @@ export class CartApi extends B2BCartApi {
       }
       const config = this.frontasticContext?.project?.configuration?.preBuy;
 
-      const response = await this.getApiForProject()
+      const response = await this.associateEndpoints
         .orders()
         .post({
           queryArgs: {
@@ -256,7 +259,7 @@ export class CartApi extends B2BCartApi {
       const locale = await this.getCommercetoolsLocal();
       const config = this.frontasticContext?.project?.configuration?.preBuy;
 
-      const response = await this.getApiForProject()
+      const response = await this.associateEndpoints
         .orders()
         .get({
           queryArgs: {
@@ -284,7 +287,7 @@ export class CartApi extends B2BCartApi {
       const locale = await this.getCommercetoolsLocal();
       const config = this.frontasticContext?.project?.configuration?.preBuy;
 
-      const response = await this.getApiForProject()
+      const response = await this.associateEndpoints
         .orders()
         .withOrderNumber({ orderNumber })
         .get({
@@ -315,7 +318,7 @@ export class CartApi extends B2BCartApi {
       const config = this.frontasticContext?.project?.configuration?.preBuy;
 
       const response = await this.getOrder(orderNumber).then((order) => {
-        return this.getApiForProject()
+        return this.associateEndpoints
           .orders()
           .withOrderNumber({ orderNumber })
           .post({
@@ -350,7 +353,7 @@ export class CartApi extends B2BCartApi {
       const config = this.frontasticContext?.project?.configuration?.preBuy;
 
       const response = await this.getOrder(orderNumber).then((order) => {
-        return this.getApiForProject()
+        return this.associateEndpoints
           .orders()
           .withOrderNumber({ orderNumber })
           .post({
@@ -377,17 +380,24 @@ export class CartApi extends B2BCartApi {
     }
   };
 
-  getBusinessUnitOrders: (keys: string) => Promise<Order[]> = async (keys: string) => {
+  getBusinessUnitOrders: (key: string) => Promise<Order[]> = async (key: string) => {
     try {
       const locale = await this.getCommercetoolsLocal();
       const config = this.frontasticContext?.project?.configuration?.preBuy;
 
-      const response = await this.getApiForProject()
+      const endpoint = this.account
+        ? this.getApiForProject()
+            .asAssociate()
+            .withAssociateIdValue({ associateId: this.account.accountId })
+            .inBusinessUnitKeyWithBusinessUnitKeyValue({ businessUnitKey: key })
+        : this.getApiForProject();
+
+      const response = await endpoint
         .orders()
         .get({
           queryArgs: {
             expand: ['state'],
-            where: `businessUnit(key in (${keys}))`,
+            where: `businessUnit(key="${key}")`,
             sort: 'createdAt desc',
           },
         })
@@ -432,5 +442,18 @@ export class CartApi extends B2BCartApi {
     }
 
     return CartMapper.commercetoolsCartToCart(commercetoolsCart, locale, config) as Cart;
+  };
+
+  assertCartOrganization: (cart: Cart, organization: Organization) => boolean = (
+    cart: Cart,
+    organization: Organization,
+  ) => {
+    return (
+      !!cart.businessUnit &&
+      !!cart.store &&
+      cart.businessUnit === organization.businessUnit?.key &&
+      cart.store === organization.store?.key &&
+      cart.isPreBuyCart === organization.store?.isPreBuyStore
+    );
   };
 }

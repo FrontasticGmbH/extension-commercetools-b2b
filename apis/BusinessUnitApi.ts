@@ -2,26 +2,19 @@ import { BusinessUnitApi as B2BBusinessUnitApi } from 'cofe-ct-b2b-ecommerce/api
 import { BusinessUnit } from 'cofe-ct-b2b-ecommerce/types/business-unit/BusinessUnit';
 import { StoreApi } from './StoreApi';
 import { Cart } from 'cofe-ct-b2b-ecommerce/types/cart/Cart';
-import { Organization } from 'cofe-ct-b2b-ecommerce/types/organization/organization';
+import { Organization } from '@Types/organization/organization';
 import { Workflow } from '@Types/workflow/Workflow';
 import jsonata from 'jsonata';
+import { StoreMappers } from '../mappers/StoreMappers';
 
 export class BusinessUnitApi extends B2BBusinessUnitApi {
-  getOrganizationByBusinessUnit = async (businessUnit: BusinessUnit): Promise<Record<string, object>> => {
-    const organization: Record<string, object> = {};
+  getOrganizationByBusinessUnit = async (businessUnit: BusinessUnit): Promise<Organization> => {
+    const organization: Organization = {} as Organization;
     organization.businessUnit = businessUnit;
     if (businessUnit.stores?.[0]) {
       const storeApi = new StoreApi(this.frontasticContext, this.locale);
-      // @ts-ignore
       const store = await storeApi.get(businessUnit.stores?.[0].key);
-      // @ts-ignore
-      organization.store = {
-        id: store.id,
-        key: store.key,
-        name: store.name,
-        custom: store.custom,
-        isPreBuyStore: store.isPreBuyStore,
-      };
+      organization.store = StoreMappers.mapStoreToSmallerStore(store);
       if (store?.distributionChannels?.length) {
         organization.distributionChannel = store.distributionChannels[0];
       }

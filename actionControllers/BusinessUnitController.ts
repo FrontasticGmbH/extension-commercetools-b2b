@@ -1,10 +1,12 @@
+export * from 'cofe-ct-b2b-ecommerce/actionControllers/BusinessUnitController';
 import { ActionContext, Request, Response } from '@frontastic/extension-types';
 import { AccountRegisterBody } from './AccountController';
-import { Store } from 'cofe-ct-b2b-ecommerce/types/store/store';
+import { Store } from '@Types/store/Store';
 import { getLocale } from 'cofe-ct-ecommerce/utils/Request';
 import { StoreApi } from '../apis/StoreApi';
 import { BusinessUnitApi } from '../apis/BusinessUnitApi';
 import { CartApi } from '../apis/CartApi';
+import { BusinessUnitMappers } from 'cofe-ct-b2b-ecommerce/mappers/BusinessUnitMappers';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
 
@@ -17,29 +19,10 @@ export interface BusinessUnitRequestBody {
   };
 }
 
-export const getMe: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  let organization = request.sessionData?.organization;
-  let businessUnit = organization?.businessUnit;
-
-  if (request.sessionData?.account?.accountId && !businessUnit) {
-    const businessUnitApi = new BusinessUnitApi(actionContext.frontasticContext, getLocale(request));
-    businessUnit = await businessUnitApi.getMe(request.sessionData?.account?.accountId);
-    if (businessUnit) {
-      organization = await businessUnitApi.getOrganizationByBusinessUnit(businessUnit);
-    }
-  }
-
-  return {
-    statusCode: 200,
-    body: JSON.stringify(businessUnit),
-  };
-};
-
 export const setMe: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const businessUnitApi = new BusinessUnitApi(actionContext.frontasticContext, getLocale(request));
   const storeApi = new StoreApi(actionContext.frontasticContext, getLocale(request));
   const data = JSON.parse(request.body);
-  const config = actionContext.frontasticContext?.project?.configuration?.storeContext;
 
   const businessUnit = await businessUnitApi.get(data.key, request.sessionData?.account?.accountId);
   const store = businessUnit.stores?.[0]?.key ? await storeApi.get(businessUnit.stores[0].key) : undefined;
@@ -49,8 +32,14 @@ export const setMe: ActionHook = async (request: Request, actionContext: ActionC
     body: JSON.stringify(businessUnit),
     sessionData: {
       ...request.sessionData,
-      organization,
-      rootCategoryId: store?.custom?.fields?.[config?.rootCategoryCustomField]?.id,
+      organization: {
+        ...organization,
+        businessUnit: BusinessUnitMappers.trimBusinessUnit(
+          organization.businessUnit,
+          request.sessionData?.account?.accountId,
+        ),
+      },
+      rootCategoryId: (store as Store)?.storeRootCategoryId,
     },
   };
 
@@ -58,14 +47,19 @@ export const setMe: ActionHook = async (request: Request, actionContext: ActionC
 };
 
 export const getBusinessUnitOrders: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request));
+  const cartApi = new CartApi(
+    actionContext.frontasticContext,
+    getLocale(request),
+    request.sessionData?.organization,
+    request.sessionData?.account,
+  );
 
-  const keys = request?.query?.['keys'];
-  if (!keys) {
-    throw new Error('No keys');
+  const key = request?.query?.['key'];
+  if (!key) {
+    throw new Error('No key');
   }
 
-  const orders = await cartApi.getBusinessUnitOrders(keys);
+  const orders = await cartApi.getBusinessUnitOrders(key);
 
   const response: Response = {
     statusCode: 200,

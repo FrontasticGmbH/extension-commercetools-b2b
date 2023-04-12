@@ -1,11 +1,12 @@
-import { Store } from 'cofe-ct-b2b-ecommerce/types/store/store';
+import { Store } from '@Types/store/Store';
 import { StoreApi as B2BStoreApi } from 'cofe-ct-b2b-ecommerce/apis/StoreApi';
 import { StoreMappers } from '../mappers/StoreMappers';
 
 export class StoreApi extends B2BStoreApi {
-  get: (key: string) => Promise<any> = async (key: string): Promise<Store> => {
+  get: (key: string) => Promise<Store> = async (key: string): Promise<Store> => {
     const locale = await this.getCommercetoolsLocal();
-    const config = this.frontasticContext?.project?.configuration?.preBuy;
+    const preBuyConfig = this.frontasticContext?.project?.configuration?.preBuy;
+    const sotreConfig = this.frontasticContext?.project?.configuration?.storeContext;
 
     try {
       return this.getApiForProject()
@@ -14,7 +15,7 @@ export class StoreApi extends B2BStoreApi {
         .get()
         .execute()
         .then((response) => {
-          return StoreMappers.mapCommercetoolsStoreToStore(response.body, locale.language, config);
+          return StoreMappers.mapCommercetoolsStoreToStore(response.body, locale.language, preBuyConfig, sotreConfig);
         });
     } catch (e) {
       console.log(e);

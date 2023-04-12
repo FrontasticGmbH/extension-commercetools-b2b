@@ -8,7 +8,7 @@ import { FacetDefinition } from '@commercetools/frontend-domain-types/product/Fa
 import { ProductApi as B2BProductApi } from 'cofe-ct-b2b-ecommerce/apis/ProductApi';
 import { ProductMapper as B2BProductMapper } from 'cofe-ct-b2b-ecommerce/mappers/ProductMapper';
 import { Category } from 'cofe-ct-b2b-ecommerce/types/product/Category';
-import { CategoryQuery } from '@Types/query/CategoryQuery';
+import { CategoryQuery } from '@Types/category/CategoryQuery';
 export class ProductApi extends B2BProductApi {
   query: (productQuery: ProductQuery, additionalQueryArgs?: object, additionalFacets?: object[]) => Promise<Result> =
     async (productQuery: ProductQuery, additionalQueryArgs?: object, additionalFacets: object[] = []) => {

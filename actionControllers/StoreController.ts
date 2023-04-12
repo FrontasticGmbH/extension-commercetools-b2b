@@ -1,11 +1,13 @@
+export * from 'cofe-ct-b2b-ecommerce/actionControllers/StoreController';
 import { ActionContext, Request, Response } from '@frontastic/extension-types';
-import { Store } from 'cofe-ct-b2b-ecommerce/types/store/store';
+import { Store } from '@Types/store/Store';
 import { ChannelResourceIdentifier } from 'cofe-ct-b2b-ecommerce/types/channel/channel';
 import { BusinessUnitApi } from '../apis/BusinessUnitApi';
 import { StoreDraft } from '@commercetools/platform-sdk';
 import { getLocale } from 'cofe-ct-ecommerce/utils/Request';
 import { CartApi } from '../apis/CartApi';
 import { StoreApi } from '../apis/StoreApi';
+import { StoreMappers } from '../mappers/StoreMappers';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
 
@@ -51,7 +53,13 @@ export const create: ActionHook = async (request: Request, actionContext: Action
 
 export const setMe: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const storeApi = new StoreApi(actionContext.frontasticContext, getLocale(request));
-  const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request));
+  const cartApi = new CartApi(
+    actionContext.frontasticContext,
+    getLocale(request),
+    request.sessionData?.organization,
+    request.sessionData?.account,
+  );
+  let cartId = request.sessionData?.cartId;
 
   const data = JSON.parse(request.body);
 
@@ -67,26 +75,14 @@ export const setMe: ActionHook = async (request: Request, actionContext: ActionC
     ...request.sessionData?.organization,
     distributionChannel,
   };
-  organization.store = {
-    id: store.id,
-    key: store.key,
-    name: store.name,
-    custom: store.custom,
-    isPreBuyStore: store.isPreBuyStore,
-  };
+  organization.store = StoreMappers.mapStoreToSmallerStore(store);
 
-  organization.store = {
-    id: store.id,
-    key: store.key,
-    name: store.name,
-    custom: store.custom,
-    isPreBuyStore: store.isPreBuyStore,
-  };
-
-  const cart = await cartApi.getForUser(request.sessionData?.account, organization);
-  const config = actionContext.frontasticContext?.project?.configuration?.storeContext;
-
-  const cartId = cart.cartId;
+  try {
+    const cart = await cartApi.getForUser(request.sessionData?.account, organization);
+    cartId = cart.cartId;
+  } catch {
+    console.error('Cannot get cart');
+  }
 
   const response: Response = {
     statusCode: 200,
@@ -95,7 +91,7 @@ export const setMe: ActionHook = async (request: Request, actionContext: ActionC
       ...request.sessionData,
       cartId,
       organization,
-      rootCategoryId: store?.custom?.fields?.[config?.rootCategoryCustomField]?.id,
+      rootCategoryId: (store as Store)?.storeRootCategoryId,
     },
   };
 
