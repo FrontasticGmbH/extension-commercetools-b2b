@@ -7,7 +7,7 @@ import { StoreDraft } from '@commercetools/platform-sdk';
 import { getLocale } from 'cofe-ct-ecommerce/utils/Request';
 import { CartApi } from '../apis/CartApi';
 import { StoreApi } from '../apis/StoreApi';
-import { StoreMapper } from '../../../../../saas/project-libraries/b2b/extensions/commerce-commercetools/mappers/StoreMapper';
+import { StoreMapper } from '../mappers/StoreMapper';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
 

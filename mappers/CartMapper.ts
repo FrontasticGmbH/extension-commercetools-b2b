@@ -7,7 +7,7 @@ import {
 import { CartMapper as BaseCartMapper } from 'cofe-ct-ecommerce/mappers/CartMapper';
 import { B2BCartMapper } from './B2BCartMapper';
 import { Locale } from 'cofe-ct-ecommerce/interfaces/Locale';
-import { ProductMapper as B2BProductMapper } from 'cofe-ct-b2b-ecommerce/mappers/ProductMapper';
+import { ProductMapper } from './ProductMapper';
 import { ProductRouter } from '../utils/ProductRouter';
 import { LineItem } from '@Types/cart/LineItem';
 import { Cart } from '@Types/cart/Cart';
@@ -25,7 +25,7 @@ export class CartMapper extends B2BCartMapper {
       cartVersion: commercetoolsCart.version.toString(),
       lineItems: this.commercetoolsLineItemsToLineItems(commercetoolsCart.lineItems, locale),
       email: commercetoolsCart?.customerEmail,
-      sum: B2BProductMapper.commercetoolsMoneyToMoney(commercetoolsCart.totalPrice),
+      sum: ProductMapper.commercetoolsMoneyToMoney(commercetoolsCart.totalPrice),
       shippingAddress: this.commercetoolsAddressToAddress(commercetoolsCart.shippingAddress),
       billingAddress: this.commercetoolsAddressToAddress(commercetoolsCart.billingAddress),
       shippingInfo: this.commercetoolsShippingInfoToShippingInfo(commercetoolsCart.shippingInfo, locale),
@@ -54,8 +54,8 @@ export class CartMapper extends B2BCartMapper {
         name: commercetoolsLineItem?.name[locale.language] || '',
         type: 'variant',
         count: commercetoolsLineItem.quantity,
-        price: B2BProductMapper.commercetoolsMoneyToMoney(commercetoolsLineItem.price?.value),
-        discountedPrice: B2BProductMapper.commercetoolsMoneyToMoney(commercetoolsLineItem.price?.discounted?.value),
+        price: ProductMapper.commercetoolsMoneyToMoney(commercetoolsLineItem.price?.value),
+        discountedPrice: ProductMapper.commercetoolsMoneyToMoney(commercetoolsLineItem.price?.discounted?.value),
         discountTexts: this.commercetoolsDiscountedPricesPerQuantityToDiscountTexts(
           commercetoolsLineItem.discountedPricePerQuantity,
           locale,
@@ -64,10 +64,10 @@ export class CartMapper extends B2BCartMapper {
           commercetoolsLineItem.discountedPricePerQuantity,
           locale,
         ),
-        totalPrice: B2BProductMapper.commercetoolsMoneyToMoney(commercetoolsLineItem.totalPrice),
+        totalPrice: ProductMapper.commercetoolsMoneyToMoney(commercetoolsLineItem.totalPrice),
         custom: commercetoolsLineItem.custom,
         parentId: commercetoolsLineItem.custom?.fields?.parentId,
-        variant: B2BProductMapper.commercetoolsProductVariantToVariant(
+        variant: ProductMapper.commercetoolsProductVariantToVariant(
           commercetoolsLineItem.variant,
           locale,
           commercetoolsLineItem.price,
@@ -99,7 +99,7 @@ export class CartMapper extends B2BCartMapper {
       email: commercetoolsOrder?.customerEmail,
       shippingAddress: this.commercetoolsAddressToAddress(commercetoolsOrder.shippingAddress),
       billingAddress: this.commercetoolsAddressToAddress(commercetoolsOrder.billingAddress),
-      sum: B2BProductMapper.commercetoolsMoneyToMoney(commercetoolsOrder.totalPrice),
+      sum: ProductMapper.commercetoolsMoneyToMoney(commercetoolsOrder.totalPrice),
       businessUnit: commercetoolsOrder.businessUnit?.key,
       createdAt: commercetoolsOrder.createdAt,
       shippingInfo: this.commercetoolsShippingInfoToShippingInfo(commercetoolsOrder.shippingInfo, locale),
