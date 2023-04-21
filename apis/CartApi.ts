@@ -13,8 +13,8 @@ import {
 } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/cart';
 import { OrderFromCartDraft } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/order';
 import { B2BCartApi } from './B2BCartApi';
-import { isReadyForCheckout } from 'cofe-ct-ecommerce/utils/Cart';
-import { Locale } from 'cofe-ct-ecommerce/interfaces/Locale';
+import { isReadyForCheckout } from '../utils/Cart';
+import { Locale } from '../interfaces/Locale';
 import { Organization } from '@Types/organization/organization';
 import { CartMapper } from '../mappers/CartMapper';
 

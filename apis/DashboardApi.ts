@@ -1,4 +1,4 @@
-import { BaseApi } from 'cofe-ct-ecommerce/apis/BaseApi';
+import { BaseApi } from './BaseApi';
 import { DashboardCustomObjectDraft, DashboardCustomObject } from '@Types/dashboard/Dashboard';
 
 export class DashboardApi extends BaseApi {

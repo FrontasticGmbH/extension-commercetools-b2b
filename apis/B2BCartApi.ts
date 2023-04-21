@@ -8,9 +8,9 @@ import {
 } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/cart';
 import { OrderFromCartDraft } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/order';
 import { Organization } from '@Types/organization/organization';
-import { Locale } from 'cofe-ct-ecommerce/interfaces/Locale';
+import { Locale } from '../interfaces/Locale';
 import { BaseCartApi } from './BaseCartApi';
-import { isReadyForCheckout } from 'cofe-ct-ecommerce/utils/Cart';
+import { isReadyForCheckout } from '../utils/Cart';
 import { CartMapper } from '../mappers/CartMapper';
 import { Account } from '@Types/account/Account';
 import { Cart } from '@Types/cart/Cart';
