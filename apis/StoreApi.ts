@@ -1,5 +1,5 @@
 import { Store } from '@Types/store/Store';
-import { StoreApi as B2BStoreApi } from 'cofe-ct-b2b-ecommerce/apis/StoreApi';
+import { B2BStoreApi } from './B2BStoreApi';
 import { StoreMapper } from '../mappers/StoreMapper';
 
 export class StoreApi extends B2BStoreApi {
