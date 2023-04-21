@@ -2,7 +2,7 @@ import { ActionContext, Request } from '@frontastic/extension-types';
 import { Cart } from '@Types/cart/Cart';
 import { B2BCartFetcher } from './B2BCartFetcher';
 import { CartApi } from '../apis/CartApi';
-import { getLocale } from 'cofe-ct-ecommerce/utils/Request';
+import { getLocale } from './Request';
 
 export class CartFetcher extends B2BCartFetcher {
   static async fetchCart(request: Request, actionContext: ActionContext): Promise<Cart> {

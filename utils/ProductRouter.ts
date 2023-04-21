@@ -3,7 +3,7 @@ import { Context, Request } from '@frontastic/extension-types';
 import { ProductQuery } from '@Types/query/ProductQuery';
 import { ProductApi } from '../apis/ProductApi';
 import { LineItem } from '@Types/cart/LineItem';
-import { getLocale, getPath } from 'cofe-ct-ecommerce/utils/Request';
+import { getLocale, getPath } from './Request';
 import { LineItem as WishlistItem } from '@Types/wishlist/LineItem';
 import { Variant } from '@Types/product/Variant';
 

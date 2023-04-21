@@ -9,7 +9,7 @@ import {
 import { OrderFromCartDraft } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/order';
 import { Organization } from '@Types/organization/organization';
 import { Locale } from 'cofe-ct-ecommerce/interfaces/Locale';
-import { CartApi as BaseCartApi } from 'cofe-ct-ecommerce/apis/CartApi';
+import { BaseCartApi } from './BaseCartApi';
 import { isReadyForCheckout } from 'cofe-ct-ecommerce/utils/Cart';
 import { CartMapper } from '../mappers/CartMapper';
 import { Account } from '@Types/account/Account';
