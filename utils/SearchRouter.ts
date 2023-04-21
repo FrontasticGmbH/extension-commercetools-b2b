@@ -1,6 +1,6 @@
 import { Context, Request } from '@frontastic/extension-types';
 import { ProductQueryFactory } from './ProductQueryFactory';
-import { Result } from '@commercetools/frontend-domain-types/product/Result';
+import { Result } from '@Types/product/Result';
 import { ProductApi } from '../apis/ProductApi';
 import { getLocale, getPath } from 'cofe-ct-ecommerce/utils/Request';
 

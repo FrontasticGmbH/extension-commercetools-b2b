@@ -8,9 +8,9 @@ import {
 import { getLocale, getPath } from 'cofe-ct-ecommerce/utils/Request';
 import { BusinessUnitApi } from './apis/BusinessUnitApi';
 import { ProductRouter } from './utils/ProductRouter';
-import { Product } from '@commercetools/frontend-domain-types/product/Product';
+import { Product } from '@Types/product/Product';
 import { SearchRouter } from './utils/SearchRouter';
-import { Result } from '@commercetools/frontend-domain-types/product/Result';
+import { Result } from '@Types/product/Result';
 import { CategoryRouter } from './utils/CategoryRouter';
 import dataSources from './dataSources';
 import { actions } from './actionControllers';

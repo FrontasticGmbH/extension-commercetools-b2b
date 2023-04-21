@@ -1,10 +1,10 @@
-import { Result } from '@commercetools/frontend-domain-types/product/Result';
+import { Result } from '@Types/product/Result';
 import { ProductQuery } from '@Types/query/ProductQuery';
-import { FilterField, FilterFieldTypes } from '@commercetools/frontend-domain-types/product/FilterField';
-import { FilterTypes } from '@commercetools/frontend-domain-types/query/Filter';
-import { TermFilter } from '@commercetools/frontend-domain-types/query/TermFilter';
-import { RangeFilter } from '@commercetools/frontend-domain-types/query/RangeFilter';
-import { FacetDefinition } from '@commercetools/frontend-domain-types/product/FacetDefinition';
+import { FilterField, FilterFieldTypes } from '@Types/product/FilterField';
+import { FilterTypes } from '@Types/query/Filter';
+import { TermFilter } from '@Types/query/TermFilter';
+import { RangeFilter } from '@Types/query/RangeFilter';
+import { FacetDefinition } from '@Types/product/FacetDefinition';
 import { ProductApi as B2BProductApi } from 'cofe-ct-b2b-ecommerce/apis/ProductApi';
 import { ProductMapper } from '../mappers/ProductMapper';
 import { Category } from '@Types/product/Category';

@@ -5,8 +5,8 @@ import {
   ReturnInfo as CommercetoolsReturnInfo,
 } from '@commercetools/platform-sdk';
 import { Order, ReturnInfo } from '@Types/cart/Order';
-import { Locale } from 'cofe-ct-ecommerce/interfaces/Locale';
-import { CartMapper as BaseCartMapper } from 'cofe-ct-ecommerce/mappers/CartMapper';
+import { Locale } from '../interfaces/Locale';
+import { BaseCartMapper } from './BaseCartMapper';
 import { ProductRouter } from '../utils/ProductRouter';
 import { ProductMapper } from './ProductMapper';
 import { Cart } from '@Types/cart/Cart';

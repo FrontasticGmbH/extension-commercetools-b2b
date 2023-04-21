@@ -1,6 +1,6 @@
 import { BaseApi } from 'cofe-ct-ecommerce/apis/BaseApi';
 import { calculateNextDeliveryDate, getSubscriptionGroups } from '../utils/Cart';
-import { Product } from '@commercetools/frontend-domain-types/product/Product';
+import { Product } from '@Types/product/Product';
 import { ProductApi } from './ProductApi';
 import { ProductQuery } from '@Types/query/ProductQuery';
 import { Order } from '@Types/cart/Order';

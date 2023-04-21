@@ -4,7 +4,7 @@ import { ActionContext } from '@frontastic/extension-types';
 import { LineItem } from '@Types/cart/LineItem';
 import { getLocale } from 'cofe-ct-ecommerce/utils/Request';
 import { Cart } from '@Types/cart/Cart';
-import { Address } from '@commercetools/frontend-domain-types/account/Address';
+import { Address } from '@Types/account/Address';
 import { CartFetcher } from '../utils/CartFetcher';
 import { CartApi } from '../apis/CartApi';
 import { SubscriptionApi } from '../apis/SubscriptionApi';

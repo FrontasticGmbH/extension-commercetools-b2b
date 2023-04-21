@@ -1,4 +1,4 @@
-import { Category } from '@commercetools/frontend-domain-types/product/Category';
+import { Category } from '@Types/product/Category';
 import { Variant } from '@Types/product/Variant';
 import {
   Category as CommercetoolsCategory,
@@ -6,8 +6,8 @@ import {
   ProductVariant as CommercetoolsProductVariant,
   ProductVariantAvailability,
 } from '@commercetools/platform-sdk';
-import { Locale } from 'cofe-ct-ecommerce/interfaces/Locale';
-import { ProductMapper as BaseProductMapper } from 'cofe-ct-ecommerce/mappers/ProductMapper';
+import { Locale } from '../interfaces/Locale';
+import { BaseProductMapper } from './BaseProductMapper';
 
 export class ProductMapper extends BaseProductMapper {
   static commercetoolsProductVariantToVariant(

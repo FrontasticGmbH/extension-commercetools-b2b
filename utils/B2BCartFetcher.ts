@@ -1,10 +1,10 @@
 import { ActionContext, Request } from '@frontastic/extension-types';
 import { Cart } from '@Types/cart/Cart';
-import { B2BCartFetcher } from './B2BCartFetcher';
+import { CartFetcher as BaseCartFetcher } from 'cofe-ct-ecommerce/utils/CartFetcher';
 import { CartApi } from '../apis/CartApi';
 import { getLocale } from 'cofe-ct-ecommerce/utils/Request';
 
-export class CartFetcher extends B2BCartFetcher {
+export class B2BCartFetcher extends BaseCartFetcher {
   static async fetchCart(request: Request, actionContext: ActionContext): Promise<Cart> {
     const cartApi = new CartApi(
       actionContext.frontasticContext,
@@ -25,16 +25,17 @@ export class CartFetcher extends B2BCartFetcher {
     }
 
     if (request.sessionData?.account !== undefined) {
-      return await cartApi.getForUser();
+      return (await cartApi.getForUser()) as Cart;
     }
+
     // @ts-ignore
     return {};
   }
 }
 
 // Override the BaseMapper with new Mapper functions
-Object.getOwnPropertyNames(CartFetcher).forEach((key) => {
-  if (typeof CartFetcher[key] === 'function') {
-    B2BCartFetcher[key] = CartFetcher[key];
+Object.getOwnPropertyNames(B2BCartFetcher).forEach((key) => {
+  if (typeof B2BCartFetcher[key] === 'function') {
+    BaseCartFetcher[key] = B2BCartFetcher[key];
   }
 });

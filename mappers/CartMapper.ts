@@ -4,9 +4,9 @@ import {
   LineItem as CommercetoolsLineItem,
   StateReference,
 } from '@commercetools/platform-sdk';
-import { CartMapper as BaseCartMapper } from 'cofe-ct-ecommerce/mappers/CartMapper';
+import { BaseCartMapper } from './BaseCartMapper';
 import { B2BCartMapper } from './B2BCartMapper';
-import { Locale } from 'cofe-ct-ecommerce/interfaces/Locale';
+import { Locale } from '../interfaces/Locale';
 import { ProductMapper } from './ProductMapper';
 import { ProductRouter } from '../utils/ProductRouter';
 import { LineItem } from '@Types/cart/LineItem';

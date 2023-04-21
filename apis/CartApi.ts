@@ -12,7 +12,7 @@ import {
   CartUpdate,
 } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/cart';
 import { OrderFromCartDraft } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/order';
-import { CartApi as B2BCartApi } from 'cofe-ct-b2b-ecommerce/apis/CartApi';
+import { B2BCartApi } from './B2BCartApi';
 import { isReadyForCheckout } from 'cofe-ct-ecommerce/utils/Cart';
 import { Locale } from 'cofe-ct-ecommerce/interfaces/Locale';
 import { Organization } from '@Types/organization/organization';

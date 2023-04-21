@@ -1,5 +1,5 @@
 import { CustomFields } from '@commercetools/platform-sdk';
-import { Locale } from 'cofe-ct-ecommerce/interfaces/Locale';
+import { Locale } from '../interfaces/Locale';
 import { CartMapper } from './CartMapper';
 import { ProductMapper } from './ProductMapper';
 import { Cart as CommercetoolsCart } from '@commercetools/platform-sdk';

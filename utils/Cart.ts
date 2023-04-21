@@ -1,6 +1,6 @@
 import { Cart } from '@Types/cart/Cart';
 import { LineItem } from '@Types/cart/LineItem';
-import { Variant } from '@commercetools/frontend-domain-types/product/Variant';
+import { Variant } from '@Types/product/Variant';
 
 export const calculateNextDeliveryDate = (variant: Variant, interval: number): string => {
   if (interval) {
