@@ -5,7 +5,7 @@ import { Cart } from '@Types/cart/Cart';
 import { Organization } from '@Types/organization/organization';
 import { Workflow } from '@Types/workflow/Workflow';
 import jsonata from 'jsonata';
-import { StoreMappers } from '../mappers/StoreMappers';
+import { StoreMapper } from '../mappers/StoreMapper';
 
 export class BusinessUnitApi extends B2BBusinessUnitApi {
   getOrganizationByBusinessUnit = async (businessUnit: BusinessUnit): Promise<Organization> => {
@@ -14,7 +14,7 @@ export class BusinessUnitApi extends B2BBusinessUnitApi {
     if (businessUnit.stores?.[0]) {
       const storeApi = new StoreApi(this.frontasticContext, this.locale);
       const store = await storeApi.get(businessUnit.stores?.[0].key);
-      organization.store = StoreMappers.mapStoreToSmallerStore(store);
+      organization.store = StoreMapper.mapStoreToSmallerStore(store);
       if (store?.distributionChannels?.length) {
         organization.distributionChannel = store.distributionChannels[0];
       }

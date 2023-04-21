@@ -1,9 +1,9 @@
 import { Store as CommercetoolsStore } from '@commercetools/platform-sdk';
 import { Store } from '@Types/store/Store';
-import { StoreMappers as B2BStoreMappers } from 'cofe-ct-b2b-ecommerce/mappers/StoreMappers';
+import { B2BStoreMapper } from './B2BStoreMapper';
 
 // @ts-ignore
-export class StoreMappers extends B2BStoreMappers {
+export class StoreMapper extends B2BStoreMapper {
   static mapCommercetoolsStoreToStore(
     store: CommercetoolsStore,
     locale: string,
@@ -33,8 +33,8 @@ export class StoreMappers extends B2BStoreMappers {
 }
 
 // Override the BaseMapper with new Mapper functions
-Object.getOwnPropertyNames(StoreMappers).forEach((key) => {
-  if (typeof StoreMappers[key] === 'function') {
-    B2BStoreMappers[key] = StoreMappers[key];
+Object.getOwnPropertyNames(StoreMapper).forEach((key) => {
+  if (typeof StoreMapper[key] === 'function') {
+    B2BStoreMapper[key] = StoreMapper[key];
   }
 });
