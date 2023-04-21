@@ -1,12 +1,11 @@
-export * from './B2BStoreController';
+import { ChannelResourceIdentifier } from '@Types/channel/channel';
 import { ActionContext, Request, Response } from '@frontastic/extension-types';
 import { Store } from '@Types/store/Store';
-import { ChannelResourceIdentifier } from '@Types/channel/channel';
-import { BusinessUnitApi } from '../apis/BusinessUnitApi';
 import { StoreDraft } from '@commercetools/platform-sdk';
 import { getLocale } from '../utils/Request';
-import { CartApi } from '../apis/CartApi';
 import { StoreApi } from '../apis/StoreApi';
+import { CartApi } from '../apis/CartApi';
+import { BusinessUnitApi } from '../apis/BusinessUnitApi';
 import { StoreMapper } from '../mappers/StoreMapper';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
@@ -51,6 +50,21 @@ export const create: ActionHook = async (request: Request, actionContext: Action
   }
 };
 
+export const query: ActionHook = async (request: Request, actionContext: ActionContext) => {
+  const storeApi = new StoreApi(actionContext.frontasticContext, getLocale(request));
+  const where = request.query['where'];
+
+  const stores = await storeApi.query(where);
+
+  const response: Response = {
+    statusCode: 200,
+    body: JSON.stringify(stores),
+    sessionData: request.sessionData,
+  };
+
+  return response;
+};
+
 export const setMe: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const storeApi = new StoreApi(actionContext.frontasticContext, getLocale(request));
   const cartApi = new CartApi(
@@ -75,6 +89,7 @@ export const setMe: ActionHook = async (request: Request, actionContext: ActionC
     ...request.sessionData?.organization,
     distributionChannel,
   };
+
   organization.store = StoreMapper.mapStoreToSmallerStore(store);
 
   try {
@@ -91,7 +106,6 @@ export const setMe: ActionHook = async (request: Request, actionContext: ActionC
       ...request.sessionData,
       cartId,
       organization,
-      rootCategoryId: (store as Store)?.storeRootCategoryId,
     },
   };
 
@@ -124,8 +138,6 @@ async function mapRequestToStore(
   const storeBody: AccountRegisterBody = JSON.parse(request.body);
   const key = storeBody.account.company.toLowerCase().replace(/ /g, '_');
   const parentBusinessUnit = storeBody.parentBusinessUnit;
-  const rootCategoryId = storeBody.account.rootCategoryId;
-  const config = actionContext.frontasticContext?.project?.configuration?.storeContext;
 
   let supplyChannels: ChannelResourceIdentifier[] = [];
   let distributionChannels: ChannelResourceIdentifier[] = [];
@@ -161,22 +173,6 @@ async function mapRequestToStore(
     distributionChannels,
     supplyChannels,
   };
-
-  if (config?.storeCustomType && config?.rootCategoryCustomField && config?.defaultRootCategoryId) {
-    // @ts-ignore
-    store.custom = {
-      type: {
-        key: config.storeCustomType,
-        typeId: 'type',
-      },
-      fields: {
-        [config.rootCategoryCustomField]: {
-          typeId: 'category',
-          id: rootCategoryId ? rootCategoryId : config.defaultRootCategoryId,
-        },
-      },
-    };
-  }
 
   return store;
 }

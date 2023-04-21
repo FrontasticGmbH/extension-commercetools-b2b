@@ -1,4 +1,4 @@
-export * from 'cofe-ct-b2b-ecommerce/actionControllers/BusinessUnitController';
+export * from './B2BBusinessUnitController';
 import { ActionContext, Request, Response } from '@frontastic/extension-types';
 import { AccountRegisterBody } from './AccountController';
 import { Store } from '@Types/store/Store';
