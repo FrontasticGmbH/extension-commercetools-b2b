@@ -1,16 +1,15 @@
+import { BaseProductApi } from './BaseProductApi';
+import { ProductMapper } from '../mappers/ProductMapper';
 import { Result } from '@Types/product/Result';
 import { ProductQuery } from '@Types/query/ProductQuery';
-import { FilterField, FilterFieldTypes } from '@Types/product/FilterField';
+import { Product } from '@Types/product/Product';
 import { FilterTypes } from '@Types/query/Filter';
+import { FacetDefinition } from '@Types/product/FacetDefinition';
 import { TermFilter } from '@Types/query/TermFilter';
 import { RangeFilter } from '@Types/query/RangeFilter';
-import { FacetDefinition } from '@Types/product/FacetDefinition';
-import { B2BProductApi } from './B2BProductApi';
-import { ProductMapper } from '../mappers/ProductMapper';
 import { Category } from '@Types/product/Category';
-import { CategoryQuery } from '@Types/query/CategoryQuery';
 
-export class ProductApi extends B2BProductApi {
+export class B2BProductApi extends BaseProductApi {
   query: (productQuery: ProductQuery, additionalQueryArgs?: object, additionalFacets?: object[]) => Promise<Result> =
     async (productQuery: ProductQuery, additionalQueryArgs?: object, additionalFacets: object[] = []) => {
       try {
@@ -50,10 +49,6 @@ export class ProductApi extends B2BProductApi {
 
         if (productQuery.category !== undefined && productQuery.category !== '') {
           filterQuery.push(`categories.id:subtree("${productQuery.category}")`);
-        }
-
-        if (productQuery.rootCategoryId) {
-          filterQuery.push(`categories.id:subtree("${productQuery.rootCategoryId}")`);
         }
 
         if (productQuery.filters !== undefined) {
@@ -126,7 +121,7 @@ export class ProductApi extends B2BProductApi {
 
             const result: Result = {
               total: response.body.total,
-              items: items,
+              items,
               count: response.body.count,
               facets: ProductMapper.commercetoolsFacetResultsToFacets(response.body.facets, productQuery, locale),
               previousCursor: ProductMapper.calculatePreviousCursor(response.body.offset, response.body.count),
@@ -149,129 +144,38 @@ export class ProductApi extends B2BProductApi {
       }
     };
 
-  getSearchableAttributes: (rootCategoryId?: string) => Promise<FilterField[]> = async (rootCategoryId?) => {
+  getProduct: (productQuery: ProductQuery, additionalQueryArgs?: object) => Promise<Product> = async (
+    productQuery: ProductQuery,
+    additionalQueryArgs?: object,
+  ) => {
     try {
-      const locale = await this.getCommercetoolsLocal();
+      const result = await this.query(productQuery, additionalQueryArgs);
 
-      const response = await this.getApiForProject().productTypes().get().execute();
-
-      const filterFields = ProductMapper.commercetoolsProductTypesToFilterFields(response.body.results, locale);
-
-      filterFields.push({
-        field: 'categoryId',
-        type: FilterFieldTypes.ENUM,
-        label: 'Category ID',
-        values: await this.queryCategories({ rootCategoryId, limit: 250 }).then((result) => {
-          return (result.items as Category[]).map((item) => {
-            return {
-              value: item.categoryId,
-              name: item.name,
-            };
-          });
-        }),
-      });
-
-      return filterFields;
+      return result.items.shift() as Product;
     } catch (error) {
       //TODO: better error, get status code etc...
-      throw new Error(`getSearchableAttributes failed. ${error}`);
+      throw new Error(`getProduct failed. ${error}`);
     }
   };
 
-  getNavigationCategories: (rootCategoryId?: string) => Promise<Category[]> = async (rootCategoryId) => {
-    const res = await this.queryCategories({ rootCategoryId, limit: 500 });
-    const items: any[] = res.items;
+  getAttributeGroup: (key: string) => Promise<string[]> = async (key: string) => {
+    try {
+      const { body } = await this.getApiForProject().attributeGroups().withKey({ key }).get().execute();
+
+      return ProductMapper.commercetoolsAttributeGroupToString(body);
+    } catch (error) {
+      //TODO: better error, get status code etc...
+      throw new Error(`get attributeGroup failed. ${error}`);
+    }
+  };
+
+  getNavigationCategories: () => Promise<Category[]> = async () => {
+    const { items }: { items: any[] } = await this.queryCategories({ limit: 500 });
 
     let categories: Category[] = [];
-    if (rootCategoryId) {
-      categories = items.filter((item: Category) => item.parentId == rootCategoryId);
-    } else {
-      categories = items.filter((item: Category) => !item.ancestors?.length);
-    }
+
+    categories = items.filter((item: Category) => !item.ancestors?.length);
+
     return categories as Category[];
-  };
-
-  queryCategories: (categoryQuery: CategoryQuery) => Promise<Result> = async (categoryQuery: CategoryQuery) => {
-    try {
-      const locale = await this.getCommercetoolsLocal();
-
-      // TODO: get default from constant
-      const limit = +categoryQuery.limit || 24;
-      const where: string[] = [];
-
-      if (categoryQuery.slug) {
-        where.push(`slug(${locale.language}="${categoryQuery.slug}")`);
-      }
-
-      if (categoryQuery.parentId) {
-        where.push(`parent(id="${categoryQuery.parentId}")`);
-      }
-
-      if (categoryQuery.rootCategoryId) {
-        where.push(`ancestors(id="${categoryQuery.rootCategoryId}")`);
-      }
-      const methodArgs = {
-        queryArgs: {
-          limit: limit,
-          offset: this.getOffsetFromCursor(categoryQuery.cursor),
-          where: where.length > 0 ? where : undefined,
-          sort: 'orderHint',
-        },
-      };
-
-      return await this.getApiForProject()
-        .categories()
-        .get(methodArgs)
-        .execute()
-        .then((response) => {
-          const categories = response.body.results;
-
-          const nodes = {};
-
-          for (let i = 0; i < categories.length; i++) {
-            (categories[i] as any).subCategories = [];
-            nodes[categories[i].id] = categories[i];
-          }
-
-          for (let i = 0; i < categories.length; i++) {
-            if (categories[i].parent && nodes[categories[i].parent.id]?.subCategories) {
-              nodes[categories[i].parent.id].subCategories.push(categories[i]);
-            }
-          }
-          const nodesQueue = [categories];
-
-          while (nodesQueue.length > 0) {
-            const currentCategories = nodesQueue.pop();
-            currentCategories.sort((a, b) => +a.orderHint - +b.orderHint);
-            currentCategories.forEach(
-              (category) => !!nodes[category.id]?.subCategories && nodesQueue.push(nodes[category.id].subCategories),
-            );
-          }
-
-          const items = categories.map((category) =>
-            ProductMapper.commercetoolsCategoryToCategory(category, locale),
-          );
-
-          const result: Result = {
-            total: response.body.total,
-            items: items,
-            count: response.body.count,
-            previousCursor: ProductMapper.calculatePreviousCursor(response.body.offset, response.body.count),
-            nextCursor: ProductMapper.calculateNextCursor(
-              response.body.offset,
-              response.body.count,
-              response.body.total,
-            ),
-            query: categoryQuery,
-          };
-          return result;
-        })
-        .catch((error) => {
-          throw error;
-        });
-    } catch (error) {
-      //TODO: better error, get status code etc...
-      throw new Error(`queryCategories failed. ${error}`);
-    }
   };
 }
