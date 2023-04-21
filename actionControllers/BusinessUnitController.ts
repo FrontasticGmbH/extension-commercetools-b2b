@@ -6,7 +6,7 @@ import { getLocale } from 'cofe-ct-ecommerce/utils/Request';
 import { StoreApi } from '../apis/StoreApi';
 import { BusinessUnitApi } from '../apis/BusinessUnitApi';
 import { CartApi } from '../apis/CartApi';
-import { BusinessUnitMappers } from 'cofe-ct-b2b-ecommerce/mappers/BusinessUnitMappers';
+import { BusinessUnitMapper } from '../mappers/BusinessUnitMapper';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
 
@@ -34,7 +34,7 @@ export const setMe: ActionHook = async (request: Request, actionContext: ActionC
       ...request.sessionData,
       organization: {
         ...organization,
-        businessUnit: BusinessUnitMappers.trimBusinessUnit(
+        businessUnit: BusinessUnitMapper.trimBusinessUnit(
           organization.businessUnit,
           request.sessionData?.account?.accountId,
         ),

@@ -9,7 +9,7 @@ import { CartFetcher } from '../utils/CartFetcher';
 import { NotificationApi } from '../apis/NotificationApi';
 import { BusinessUnitApi } from '../apis/BusinessUnitApi';
 import { Organization } from '@Types/organization/organization';
-import { BusinessUnitMappers } from 'cofe-ct-b2b-ecommerce/mappers/BusinessUnitMappers';
+import { BusinessUnitMapper } from '../mappers/BusinessUnitMapper';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
 
@@ -84,7 +84,7 @@ export const login: ActionHook = async (request: Request, actionContext: ActionC
         account,
         organization: {
           ...organization,
-          businessUnit: BusinessUnitMappers.trimBusinessUnit(organization.businessUnit, account.accountId),
+          businessUnit: BusinessUnitMapper.trimBusinessUnit(organization.businessUnit, account.accountId),
           superUserBusinessUnitKey: accountLoginBody.businessUnitKey,
         },
         rootCategoryId: organization.store?.storeRootCategoryId,
