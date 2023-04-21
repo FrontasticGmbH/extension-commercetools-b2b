@@ -1,6 +1,6 @@
 import * as AccountActions from './AccountController';
 import { ProductAction, WishlistAction, QuoteAction, AssociateAction } from 'cofe-ct-b2b-ecommerce';
-import * as ProjectActions from 'cofe-ct-ecommerce/actionControllers/ProjectController';
+import * as ProjectActions from './ProjectController';
 import * as BusinessUnitActions from './BusinessUnitController';
 import * as StoreActions from './StoreController';
 import * as CartActions from './CartController';

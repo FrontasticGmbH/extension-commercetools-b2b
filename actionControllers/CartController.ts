@@ -1,15 +1,15 @@
-export * from 'cofe-ct-b2b-ecommerce/actionControllers/CartController';
+export * from './B2BCartController';
 import { Context, Request, Response } from '@frontastic/extension-types';
 import { ActionContext } from '@frontastic/extension-types';
 import { LineItem } from '@Types/cart/LineItem';
-import { getLocale } from 'cofe-ct-ecommerce/utils/Request';
+import { getLocale } from '../utils/Request';
 import { Cart } from '@Types/cart/Cart';
 import { Address } from '@Types/account/Address';
 import { CartFetcher } from '../utils/CartFetcher';
 import { CartApi } from '../apis/CartApi';
 import { SubscriptionApi } from '../apis/SubscriptionApi';
 import { BusinessUnitApi } from '../apis/BusinessUnitApi';
-import { EmailApi } from 'cofe-ct-ecommerce/apis/EmailApi';
+import { EmailApiFactory } from '../utils/EmailApiFactory';
 import { ProductApi } from '../apis/ProductApi';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
@@ -236,10 +236,11 @@ export const removeLineItem: ActionHook = async (request: Request, actionContext
 };
 
 export const checkout: ActionHook = async (request: Request, actionContext: ActionContext) => {
+  const locale = getLocale(request);
   const businessUnitApi = new BusinessUnitApi(actionContext.frontasticContext, getLocale(request));
   const cartApi = new CartApi(
     actionContext.frontasticContext,
-    getLocale(request),
+    locale,
     request.sessionData?.organization,
     request.sessionData?.account,
   );
@@ -257,19 +258,9 @@ export const checkout: ActionHook = async (request: Request, actionContext: Acti
 
   try {
     const order = await cartApi.order(cart, { ...body.payload, orderState });
-    if (EmailApi) {
-      const emailApi = EmailApi.getDefaultApi(actionContext.frontasticContext, getLocale(request));
-      // @ts-ignore
-      emailApi.sendEmail({
-        to: order.email,
-        subject: 'Order confirmation',
-        html: `
-        <h1>Thanks for your order!</h1>
-        <p style="margin-top: 10px;color:gray;">Your order #${order.orderId} has been placed.</p>
-        <p style="margin-top: 10px;color:gray;"><a href="${clientHost}/account?id=${order.orderId}#orders" style="text-decoration: none; text-decoration-color: blue;">Track your order</a></p>
-        `,
-      });
-    }
+    const emailApi = EmailApiFactory.getDefaultApi(actionContext.frontasticContext, locale);
+
+    emailApi.sendOrderConfirmationEmail({ ...order, email: order.email || cart.email });
 
     const distributionChannel = request.sessionData.organization?.distributionChannel?.id;
     try {

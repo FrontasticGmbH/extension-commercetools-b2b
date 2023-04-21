@@ -5,7 +5,7 @@ import {
   ExtensionRegistry,
   Request,
 } from '@frontastic/extension-types';
-import { getLocale, getPath } from 'cofe-ct-ecommerce/utils/Request';
+import { getLocale, getPath } from './utils/Request';
 import { BusinessUnitApi } from './apis/BusinessUnitApi';
 import { ProductRouter } from './utils/ProductRouter';
 import { Product } from '@Types/product/Product';

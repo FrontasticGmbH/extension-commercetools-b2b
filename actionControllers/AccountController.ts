@@ -2,7 +2,7 @@ export * from 'cofe-ct-b2b-ecommerce/actionControllers/AccountController';
 import { Request, Response } from '@frontastic/extension-types';
 import { ActionContext } from '@frontastic/extension-types';
 import { AccountApi as B2BAccountApi } from 'cofe-ct-b2b-ecommerce/apis/AccountApi';
-import { getLocale } from 'cofe-ct-ecommerce/utils/Request';
+import { getLocale } from '../utils/Request';
 import { Account } from '@Types/account/Account';
 import { Address } from '@Types/account/Address';
 import { CartFetcher } from '../utils/CartFetcher';

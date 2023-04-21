@@ -1,4 +1,4 @@
-import { BaseApi } from 'cofe-ct-ecommerce/apis/BaseApi';
+import { BaseApi } from './BaseApi';
 import { Store } from '@Types/store/Store';
 import { StoreDraft } from '@commercetools/platform-sdk';
 import { B2BStoreMapper } from '../mappers/B2BStoreMapper';

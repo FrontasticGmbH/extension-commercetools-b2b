@@ -1,4 +1,4 @@
-import { BusinessUnitApi as B2BBusinessUnitApi } from 'cofe-ct-b2b-ecommerce/apis/BusinessUnitApi';
+import { B2BBusinessUnitApi } from './B2BBusinessUnitApi';
 import { BusinessUnit } from '@Types/business-unit/BusinessUnit';
 import { StoreApi } from './StoreApi';
 import { Cart } from '@Types/cart/Cart';

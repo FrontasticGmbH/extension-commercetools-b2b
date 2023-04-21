@@ -2,7 +2,7 @@ export * from 'cofe-ct-b2b-ecommerce/actionControllers/BusinessUnitController';
 import { ActionContext, Request, Response } from '@frontastic/extension-types';
 import { AccountRegisterBody } from './AccountController';
 import { Store } from '@Types/store/Store';
-import { getLocale } from 'cofe-ct-ecommerce/utils/Request';
+import { getLocale } from '../utils/Request';
 import { StoreApi } from '../apis/StoreApi';
 import { BusinessUnitApi } from '../apis/BusinessUnitApi';
 import { CartApi } from '../apis/CartApi';

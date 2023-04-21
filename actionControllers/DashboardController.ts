@@ -1,5 +1,5 @@
 import { ActionContext, Request, Response } from '@frontastic/extension-types';
-import { getLocale } from 'cofe-ct-ecommerce/utils/Request';
+import { getLocale } from '../utils/Request';
 import { DashboardApi } from '../apis/DashboardApi';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
