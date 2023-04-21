@@ -3,7 +3,7 @@ import { Context, Request, Response } from '@frontastic/extension-types';
 import { ActionContext } from '@frontastic/extension-types';
 import { LineItem } from '@Types/cart/LineItem';
 import { getLocale } from 'cofe-ct-ecommerce/utils/Request';
-import { Cart } from 'cofe-ct-b2b-ecommerce/types/cart/Cart';
+import { Cart } from '@Types/cart/Cart';
 import { Address } from '@commercetools/frontend-domain-types/account/Address';
 import { CartFetcher } from '../utils/CartFetcher';
 import { CartApi } from '../apis/CartApi';

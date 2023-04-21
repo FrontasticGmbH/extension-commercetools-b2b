@@ -7,7 +7,7 @@ import { FilterFieldTypes } from '@commercetools/frontend-domain-types/product/F
 import { Facet } from '@commercetools/frontend-domain-types/query/Facet';
 import { TermFacet } from '@commercetools/frontend-domain-types/query/TermFacet';
 import { RangeFacet } from '@commercetools/frontend-domain-types/query/RangeFacet';
-import { ProductQuery } from 'cofe-ct-b2b-ecommerce/types/query/ProductQuery';
+import { ProductQuery } from '@Types/query/ProductQuery';
 
 export class ProductQueryFactory {
   static queryFromParams: (request: Request, config?: DataSourceConfiguration) => ProductQuery = (

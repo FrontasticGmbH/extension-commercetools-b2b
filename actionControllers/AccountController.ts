@@ -3,7 +3,7 @@ import { Request, Response } from '@frontastic/extension-types';
 import { ActionContext } from '@frontastic/extension-types';
 import { AccountApi as B2BAccountApi } from 'cofe-ct-b2b-ecommerce/apis/AccountApi';
 import { getLocale } from 'cofe-ct-ecommerce/utils/Request';
-import { Account } from 'cofe-ct-b2b-ecommerce/types/account/Account';
+import { Account } from '@Types/account/Account';
 import { Address } from '@commercetools/frontend-domain-types/account/Address';
 import { CartFetcher } from '../utils/CartFetcher';
 import { NotificationApi } from '../apis/NotificationApi';

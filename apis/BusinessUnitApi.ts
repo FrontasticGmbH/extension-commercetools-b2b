@@ -1,7 +1,7 @@
 import { BusinessUnitApi as B2BBusinessUnitApi } from 'cofe-ct-b2b-ecommerce/apis/BusinessUnitApi';
-import { BusinessUnit } from 'cofe-ct-b2b-ecommerce/types/business-unit/BusinessUnit';
+import { BusinessUnit } from '@Types/business-unit/BusinessUnit';
 import { StoreApi } from './StoreApi';
-import { Cart } from 'cofe-ct-b2b-ecommerce/types/cart/Cart';
+import { Cart } from '@Types/cart/Cart';
 import { Organization } from '@Types/organization/organization';
 import { Workflow } from '@Types/workflow/Workflow';
 import jsonata from 'jsonata';

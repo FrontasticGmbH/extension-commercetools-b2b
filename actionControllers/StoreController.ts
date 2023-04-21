@@ -1,7 +1,7 @@
 export * from 'cofe-ct-b2b-ecommerce/actionControllers/StoreController';
 import { ActionContext, Request, Response } from '@frontastic/extension-types';
 import { Store } from '@Types/store/Store';
-import { ChannelResourceIdentifier } from 'cofe-ct-b2b-ecommerce/types/channel/channel';
+import { ChannelResourceIdentifier } from '@Types/channel/channel';
 import { BusinessUnitApi } from '../apis/BusinessUnitApi';
 import { StoreDraft } from '@commercetools/platform-sdk';
 import { getLocale } from 'cofe-ct-ecommerce/utils/Request';

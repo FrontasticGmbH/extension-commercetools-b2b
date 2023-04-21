@@ -1,8 +1,8 @@
 import { Cart } from '@Types/cart/Cart';
-import { LineItemReturnItemDraft } from 'cofe-ct-b2b-ecommerce/types/cart/LineItem';
+import { LineItemReturnItemDraft } from '@Types/cart/LineItem';
 import { LineItem } from '@Types/cart/LineItem';
 import { Order } from '@Types/cart/Order';
-import { Account } from 'cofe-ct-b2b-ecommerce/types/account/Account';
+import { Account } from '@Types/account/Account';
 import { CartDraft, Cart as CommercetoolsCart } from '@commercetools/platform-sdk';
 import {
   CartAddLineItemAction,

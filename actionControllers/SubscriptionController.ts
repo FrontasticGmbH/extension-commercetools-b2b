@@ -1,6 +1,6 @@
 import { ActionContext, Request, Response } from '@frontastic/extension-types';
 import { SubscriptionApi } from '../apis/SubscriptionApi';
-import { Account } from 'cofe-ct-b2b-ecommerce/types/account/Account';
+import { Account } from '@Types/account/Account';
 import { getLocale } from 'cofe-ct-ecommerce/utils/Request';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
