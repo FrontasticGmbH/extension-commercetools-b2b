@@ -1,4 +1,4 @@
-import { BaseApi } from 'cofe-ct-ecommerce/apis/BaseApi';
+import { BaseApi } from './BaseApi';
 import { calculateNextDeliveryDate, getSubscriptionGroups } from '../utils/Cart';
 import { Product } from '@Types/product/Product';
 import { ProductApi } from './ProductApi';
