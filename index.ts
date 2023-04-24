@@ -199,7 +199,7 @@ export default {
     const homePageMatch = getPath(request)?.match(/^\//);
     if (homePageMatch) {
       let organization = request.sessionData?.organization;
-      if (!organization.businessUnit && request.sessionData?.account?.accountId) {
+      if (!organization?.businessUnit && request.sessionData?.account?.accountId) {
         const businessUnitApi = new BusinessUnitApi(context.frontasticContext, getLocale(request));
         organization = await businessUnitApi.getOrganization(request.sessionData.account.accountId);
       }
