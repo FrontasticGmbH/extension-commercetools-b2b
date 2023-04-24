@@ -1,4 +1,4 @@
-export * from '../actionControllers/AccountController';
+export * from './BaseAccountController';
 import { Request, Response } from '@frontastic/extension-types';
 import { ActionContext } from '@frontastic/extension-types';
 import { AccountApi } from '../apis/AccountApi';
