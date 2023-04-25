@@ -165,6 +165,7 @@ export const login: ActionHook = async (request: Request, actionContext: ActionC
           businessUnit: BusinessUnitMapper.trimBusinessUnit(organization.businessUnit, account.accountId),
           superUserBusinessUnitKey: accountLoginBody.businessUnitKey,
         },
+        rootCategoryId: organization.store?.storeRootCategoryId,
       },
     };
   } catch (e) {
