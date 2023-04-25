@@ -1,16 +1,14 @@
-export * from './B2BAccountController';
+export * from './BaseAccountController';
 import { Request, Response } from '@frontastic/extension-types';
 import { ActionContext } from '@frontastic/extension-types';
-import { AccountApi as B2BAccountApi } from '../apis/AccountApi';
+import { AccountApi } from '../apis/AccountApi';
 import { getLocale } from '../utils/Request';
-import { Account } from '@Types/account/Account';
-import { Address } from '@Types/account/Address';
 import { CartFetcher } from '../utils/CartFetcher';
-import { NotificationApi } from '../apis/NotificationApi';
+import { EmailApiFactory } from '../utils/EmailApiFactory';
 import { BusinessUnitApi } from '../apis/BusinessUnitApi';
-import { Organization } from '@Types/organization/organization';
+import { Address } from '@Types/account/Address';
+import { Account } from '@Types/account/Account';
 import { BusinessUnitMapper } from '../mappers/BusinessUnitMapper';
-
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
 
 export type AccountRegisterBody = {
@@ -41,22 +39,102 @@ async function loginAccount(
   reverify = false,
   businessUnitKey = '',
 ) {
-  const accountApi = new B2BAccountApi(actionContext.frontasticContext, getLocale(request));
+  const accountApi = new AccountApi(actionContext.frontasticContext, getLocale(request));
   const businessUnitApi = new BusinessUnitApi(actionContext.frontasticContext, getLocale(request));
-  const notificationApi = new NotificationApi(actionContext.frontasticContext, getLocale(request));
 
   const cart = await CartFetcher.fetchCart(request, actionContext);
 
   try {
     const accountRes = await accountApi.login(account, cart, reverify);
-    const organization: Organization = await businessUnitApi.getOrganization(accountRes.accountId, businessUnitKey);
-    const token = await notificationApi.getToken(account.email, account.password);
+    const organization = await businessUnitApi.getOrganization(accountRes.accountId, businessUnitKey);
 
-    return { account: accountRes, organization, token };
+    return { account: accountRes, organization };
   } catch (e) {
     throw e;
   }
 }
+
+function parseBirthday(accountRegisterBody: AccountRegisterBody): Date | undefined {
+  if (accountRegisterBody.birthdayYear) {
+    return new Date(
+      +accountRegisterBody.birthdayYear,
+      +accountRegisterBody?.birthdayMonth ?? 1,
+      +accountRegisterBody?.birthdayDay ?? 1,
+    );
+  }
+
+  return null;
+}
+
+function mapRequestToAccount(request: Request): Account {
+  const accountRegisterBody: AccountRegisterBody = JSON.parse(request.body);
+
+  const account: Account = {
+    email: accountRegisterBody?.email,
+    confirmed: accountRegisterBody?.confirmed,
+    password: accountRegisterBody?.password,
+    salutation: accountRegisterBody?.salutation,
+    firstName: accountRegisterBody?.firstName,
+    lastName: accountRegisterBody?.lastName,
+    company: accountRegisterBody?.company,
+    birthday: parseBirthday(accountRegisterBody),
+    addresses: [],
+  };
+
+  if (accountRegisterBody.billingAddress) {
+    accountRegisterBody.billingAddress.isDefaultBillingAddress = true;
+    accountRegisterBody.billingAddress.isDefaultShippingAddress = !(accountRegisterBody.shippingAddress !== undefined);
+
+    account.addresses.push(accountRegisterBody.billingAddress);
+  }
+
+  if (accountRegisterBody.shippingAddress) {
+    accountRegisterBody.shippingAddress.isDefaultShippingAddress = true;
+    accountRegisterBody.shippingAddress.isDefaultBillingAddress = !(accountRegisterBody.billingAddress !== undefined);
+
+    account.addresses.push(accountRegisterBody.shippingAddress);
+  }
+
+  return account;
+}
+
+export const register: ActionHook = async (request: Request, actionContext: ActionContext) => {
+  const locale = getLocale(request);
+
+  const accountApi = new AccountApi(actionContext.frontasticContext, locale);
+
+  const accountData = mapRequestToAccount(request);
+
+  const cart = await CartFetcher.fetchCart(request, actionContext).catch(() => undefined);
+
+  let response: Response;
+
+  try {
+    const account = await accountApi.create(accountData, cart);
+
+    const emailApi = EmailApiFactory.getDefaultApi(actionContext.frontasticContext, locale);
+
+    emailApi.sendWelcomeCustomerEmail(account);
+
+    emailApi.sendAccountVerificationEmail(account);
+
+    response = {
+      statusCode: 200,
+      body: JSON.stringify({ accountId: account.accountId }),
+      sessionData: {
+        ...request.sessionData,
+      },
+    };
+  } catch (e) {
+    response = {
+      statusCode: 400,
+      // @ts-ignore
+      error: e?.message,
+      errorCode: 500,
+    };
+  }
+  return response;
+};
 
 export const login: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const accountLoginBody: AccountLoginBody = JSON.parse(request.body);
@@ -69,7 +147,7 @@ export const login: ActionHook = async (request: Request, actionContext: ActionC
   let response: Response;
 
   try {
-    const { account, organization, token } = await loginAccount(
+    const { account, organization } = await loginAccount(
       request,
       actionContext,
       loginInfo,
@@ -87,8 +165,6 @@ export const login: ActionHook = async (request: Request, actionContext: ActionC
           businessUnit: BusinessUnitMapper.trimBusinessUnit(organization.businessUnit, account.accountId),
           superUserBusinessUnitKey: accountLoginBody.businessUnitKey,
         },
-        rootCategoryId: organization.store?.storeRootCategoryId,
-        notificationToken: token,
       },
     };
   } catch (e) {
@@ -99,6 +175,64 @@ export const login: ActionHook = async (request: Request, actionContext: ActionC
       errorCode: 500,
     };
   }
+
+  return response;
+};
+
+export const logout: ActionHook = async (request: Request, actionContext: ActionContext) => {
+  return {
+    statusCode: 200,
+    body: JSON.stringify({}),
+    sessionData: {
+      ...request.sessionData,
+      organization: undefined,
+      account: undefined,
+      cartId: undefined,
+    },
+  } as Response;
+};
+
+/**
+ * Reset password
+ */
+export const reset: ActionHook = async (request: Request, actionContext: ActionContext) => {
+  type AccountResetBody = {
+    token?: string;
+    newPassword?: string;
+  };
+
+  const accountResetBody: AccountResetBody = JSON.parse(request.body);
+
+  const accountApi = new AccountApi(actionContext.frontasticContext, getLocale(request));
+
+  const newAccount = await accountApi.resetPassword(accountResetBody.token, accountResetBody.newPassword);
+  newAccount.password = accountResetBody.newPassword;
+
+  // TODO: do we need to log in the account after creation?
+  // TODO: handle exception when customer can't login if email is not confirmed
+  const { account, organization } = await loginAccount(request, actionContext, newAccount);
+
+  return {
+    statusCode: 200,
+    body: JSON.stringify(account),
+    sessionData: {
+      ...request.sessionData,
+      account,
+      organization,
+    },
+  } as Response;
+};
+
+export const getById: ActionHook = async (request: Request, actionContext: ActionContext) => {
+  const accountApi = new AccountApi(actionContext.frontasticContext, getLocale(request));
+
+  const customer = await accountApi.getCustomerById(request.query['id']);
+
+  const response: Response = {
+    statusCode: 200,
+    body: JSON.stringify(customer),
+    sessionData: request.sessionData,
+  };
 
   return response;
 };
