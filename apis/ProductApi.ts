@@ -5,12 +5,13 @@ import { FilterTypes } from '@Types/query/Filter';
 import { TermFilter } from '@Types/query/TermFilter';
 import { RangeFilter } from '@Types/query/RangeFilter';
 import { FacetDefinition } from '@Types/product/FacetDefinition';
-import { B2BProductApi } from './B2BProductApi';
 import { ProductMapper } from '../mappers/ProductMapper';
 import { Category } from '@Types/product/Category';
 import { CategoryQuery } from '@Types/query/CategoryQuery';
+import { BaseProductApi } from "@Commerce-commercetools/apis/BaseProductApi";
+import { Product } from "@Types/product/Product";
 
-export class ProductApi extends B2BProductApi {
+export class ProductApi extends BaseProductApi {
   query: (productQuery: ProductQuery, additionalQueryArgs?: object, additionalFacets?: object[]) => Promise<Result> =
     async (productQuery: ProductQuery, additionalQueryArgs?: object, additionalFacets: object[] = []) => {
       try {
@@ -149,6 +150,20 @@ export class ProductApi extends B2BProductApi {
       }
     };
 
+  getProduct: (productQuery: ProductQuery, additionalQueryArgs?: object) => Promise<Product> = async (
+    productQuery: ProductQuery,
+    additionalQueryArgs?: object,
+  ) => {
+    try {
+      const result = await this.query(productQuery, additionalQueryArgs);
+
+      return result.items.shift() as Product;
+    } catch (error) {
+      //TODO: better error, get status code etc...
+      throw new Error(`getProduct failed. ${error}`);
+    }
+  };
+
   getSearchableAttributes: (rootCategoryId?: string) => Promise<FilterField[]> = async (rootCategoryId?) => {
     try {
       const locale = await this.getCommercetoolsLocal();
@@ -175,6 +190,17 @@ export class ProductApi extends B2BProductApi {
     } catch (error) {
       //TODO: better error, get status code etc...
       throw new Error(`getSearchableAttributes failed. ${error}`);
+    }
+  };
+
+  getAttributeGroup: (key: string) => Promise<string[]> = async (key: string) => {
+    try {
+      const { body } = await this.getApiForProject().attributeGroups().withKey({ key }).get().execute();
+
+      return ProductMapper.commercetoolsAttributeGroupToString(body);
+    } catch (error) {
+      //TODO: better error, get status code etc...
+      throw new Error(`get attributeGroup failed. ${error}`);
     }
   };
 
