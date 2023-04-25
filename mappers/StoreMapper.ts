@@ -1,9 +1,7 @@
 import { Store as CommercetoolsStore } from '@commercetools/platform-sdk';
 import { Store } from '@Types/store/Store';
-import { B2BStoreMapper } from './B2BStoreMapper';
 
-// @ts-ignore
-export class StoreMapper extends B2BStoreMapper {
+export class StoreMapper {
   static mapCommercetoolsStoreToStore(
     store: CommercetoolsStore,
     locale: string,
@@ -31,10 +29,3 @@ export class StoreMapper extends B2BStoreMapper {
     };
   }
 }
-
-// Override the BaseMapper with new Mapper functions
-Object.getOwnPropertyNames(StoreMapper).forEach((key) => {
-  if (typeof StoreMapper[key] === 'function') {
-    B2BStoreMapper[key] = StoreMapper[key];
-  }
-});

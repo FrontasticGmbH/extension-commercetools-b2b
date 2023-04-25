@@ -2,7 +2,6 @@ import { Store } from '@Types/store/Store';
 import { StoreMapper } from '../mappers/StoreMapper';
 import { StoreDraft } from "@commercetools/platform-sdk";
 import { BaseApi } from "@Commerce-commercetools/apis/BaseApi";
-import { B2BStoreMapper } from "@Commerce-commercetools/mappers/B2BStoreMapper";
 
 const convertStoreToBody = (store: StoreDraft, locale: string): StoreDraft => {
   return {
@@ -60,6 +59,8 @@ export class StoreApi extends BaseApi {
 
   query: (where?: string) => Promise<any> = async (where: string): Promise<Store[]> => {
     const locale = await this.getCommercetoolsLocal();
+    const preBuyConfig = this.frontasticContext?.project?.configuration?.preBuy;
+    const storeConfig = this.frontasticContext?.project?.configuration?.storeContext;
 
     const queryArgs = where
       ? {
@@ -75,7 +76,7 @@ export class StoreApi extends BaseApi {
         })
         .execute()
         .then((response) => {
-          return response.body.results.map((store) => B2BStoreMapper.mapCommercetoolsStoreToStore(store, locale.language));
+          return response.body.results.map((store) => StoreMapper.mapCommercetoolsStoreToStore(store, locale.language, preBuyConfig, storeConfig));
         });
     } catch (e) {
       console.log(e);
