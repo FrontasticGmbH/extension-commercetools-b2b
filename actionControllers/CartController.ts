@@ -1,7 +1,8 @@
-export * from './B2BCartController';
+import { AddressDraft } from "@commercetools/platform-sdk";
+
 import { Context, Request, Response } from '@frontastic/extension-types';
 import { ActionContext } from '@frontastic/extension-types';
-import { LineItem } from '@Types/cart/LineItem';
+import { LineItem, LineItemReturnItemDraft } from "@Types/cart/LineItem";
 import { getLocale } from '../utils/Request';
 import { Cart } from '@Types/cart/Cart';
 import { Address } from '@Types/account/Address';
@@ -89,6 +90,114 @@ async function updateCartFromRequest(request: Request, actionContext: ActionCont
 
   return cart;
 }
+
+export const getCart: ActionHook = async (request: Request, actionContext: ActionContext) => {
+  let response: Response;
+  try {
+    const cart = await CartFetcher.fetchCart(request, actionContext);
+    const cartId = cart.cartId;
+
+    response = {
+      statusCode: 200,
+      body: JSON.stringify(cart),
+      sessionData: {
+        ...request.sessionData,
+        cartId,
+      },
+    };
+  } catch (e) {
+    response = {
+      statusCode: 400,
+      // @ts-ignore
+      error: e?.message ? e.message : e,
+      errorCode: 500,
+    };
+  }
+
+  return response;
+};
+
+export const getCartById: ActionHook = async (request: Request, actionContext: ActionContext) => {
+  const cartApi = new CartApi(
+    actionContext.frontasticContext,
+    getLocale(request),
+    request.sessionData?.organization,
+    request.sessionData?.account,
+  );
+  let response: Response;
+  try {
+    const id = request.query?.id;
+    const cart = await cartApi.getById(id);
+    const cartId = cart.cartId;
+
+    response = {
+      statusCode: 200,
+      body: JSON.stringify(cart),
+      sessionData: {
+        ...request.sessionData,
+        cartId,
+      },
+    };
+  } catch (e) {
+    response = {
+      statusCode: 400,
+      sessionData: request.sessionData,
+      // @ts-ignore
+      error: e?.message,
+      errorCode: 500,
+    };
+  }
+
+  return response;
+};
+
+export const getAllSuperUserCarts: ActionHook = async (request: Request, actionContext: ActionContext) => {
+  let carts: Cart[] = [];
+
+  if (request.sessionData?.organization?.superUserBusinessUnitKey) {
+    const cartApi = new CartApi(
+      actionContext.frontasticContext,
+      getLocale(request),
+      request.sessionData?.organization,
+      request.sessionData?.account,
+    );
+    carts = (await cartApi.getAllForSuperUser()) as Cart[];
+  }
+
+  const response: Response = {
+    statusCode: 200,
+    body: JSON.stringify(carts),
+  };
+
+  return response;
+};
+
+export const createCart: ActionHook = async (request: Request, actionContext: ActionContext) => {
+  let cart: Cart;
+  let cartId = request.sessionData?.cartId;
+
+  if (request.sessionData?.organization?.superUserBusinessUnitKey) {
+    const cartApi = new CartApi(
+      actionContext.frontasticContext,
+      getLocale(request),
+      request.sessionData?.organization,
+      request.sessionData?.account,
+    );
+    cart = (await cartApi.createCart()) as Cart;
+    cartId = cart.cartId;
+  }
+
+  const response: Response = {
+    statusCode: 200,
+    body: JSON.stringify(cart),
+    sessionData: {
+      ...request.sessionData,
+      cartId,
+    },
+  };
+
+  return response;
+};
 
 export const addToCart: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const cartApi = new CartApi(
@@ -186,6 +295,208 @@ export const addItemsToCart: ActionHook = async (request: Request, actionContext
   cart = await handleSubscriptionsOnAddItemsToCart(cart, body, config, cartApi);
 
   const cartId = cart.cartId;
+
+  const response: Response = {
+    statusCode: 200,
+    body: JSON.stringify(cart),
+    sessionData: {
+      ...request.sessionData,
+      cartId,
+    },
+  };
+
+  return response;
+};
+
+export const updateLineItem: ActionHook = async (request: Request, actionContext: ActionContext) => {
+  const cartApi = new CartApi(
+    actionContext.frontasticContext,
+    getLocale(request),
+    request.sessionData?.organization,
+    request.sessionData?.account,
+  );
+
+  const body: {
+    lineItem?: { id?: string; count: number };
+  } = JSON.parse(request.body);
+
+  const lineItem: LineItem = {
+    lineItemId: body.lineItem?.id,
+    count: +body.lineItem?.count || 1,
+  };
+
+  let cart = await CartFetcher.fetchCart(request, actionContext);
+  cart = (await cartApi.updateLineItem(cart, lineItem)) as Cart;
+
+  const cartId = cart.cartId;
+
+  const response: Response = {
+    statusCode: 200,
+    body: JSON.stringify(cart),
+    sessionData: {
+      ...request.sessionData,
+      cartId,
+    },
+  };
+
+  return response;
+};
+
+export const returnItems: ActionHook = async (request: Request, actionContext: ActionContext) => {
+  const cartApi = new CartApi(
+    actionContext.frontasticContext,
+    getLocale(request),
+    request.sessionData?.organization,
+    request.sessionData?.account,
+  );
+
+  let response: Response;
+
+  try {
+    const { orderNumber, returnLineItems }: { orderNumber: string; returnLineItems: LineItemReturnItemDraft[] } =
+      JSON.parse(request.body);
+    const res = await cartApi.returnItems(orderNumber, returnLineItems);
+    response = {
+      statusCode: 200,
+      body: JSON.stringify(res),
+      sessionData: request.sessionData,
+    };
+  } catch (e) {
+    response = {
+      statusCode: 400,
+      sessionData: request.sessionData,
+      // @ts-ignore
+      error: e?.message,
+      errorCode: 500,
+    };
+  }
+
+  return response;
+};
+
+export const updateOrderState: ActionHook = async (request: Request, actionContext: ActionContext) => {
+  const cartApi = new CartApi(
+    actionContext.frontasticContext,
+    getLocale(request),
+    request.sessionData?.organization,
+    request.sessionData?.account,
+  );
+
+  let response: Response;
+
+  try {
+    const { orderNumber, orderState }: { orderNumber: string; orderState: string } = JSON.parse(request.body);
+    const res = await cartApi.updateOrderState(orderNumber, orderState);
+    response = {
+      statusCode: 200,
+      body: JSON.stringify(res),
+      sessionData: request.sessionData,
+    };
+  } catch (e) {
+    response = {
+      statusCode: 400,
+      sessionData: request.sessionData,
+      // @ts-ignore
+      error: e?.message ? e.message : e,
+      errorCode: 500,
+    };
+  }
+
+  return response;
+};
+
+export const replicateCart: ActionHook = async (request: Request, actionContext: ActionContext) => {
+  const cartApi = new CartApi(
+    actionContext.frontasticContext,
+    getLocale(request),
+    request.sessionData?.organization,
+    request.sessionData?.account,
+  );
+  const orderId = request.query?.['orderId'];
+  try {
+    if (orderId) {
+      const cart = await cartApi.replicateCart(orderId);
+      const order = await cartApi.order(cart);
+      const response: Response = {
+        statusCode: 200,
+        body: JSON.stringify(order),
+        sessionData: {
+          ...request.sessionData,
+        },
+      };
+      return response;
+    }
+    throw new Error('Order not found');
+  } catch (e) {
+    const response: Response = {
+      statusCode: 400,
+      sessionData: request.sessionData,
+      // @ts-ignore
+      error: e?.message,
+      errorCode: 500,
+    };
+
+    return response;
+  }
+};
+
+export const splitLineItem: ActionHook = async (request: Request, actionContext: ActionContext) => {
+  const cartApi = new CartApi(
+    actionContext.frontasticContext,
+    getLocale(request),
+    request.sessionData?.organization,
+    request.sessionData?.account,
+  );
+  const cart = await CartFetcher.fetchCart(request, actionContext);
+
+  const body: {
+    lineItemId?: string;
+    data: { address: AddressDraft; quantity: number }[];
+  } = JSON.parse(request.body);
+
+  const cartItemsShippingAddresses = cart.itemShippingAddresses || [];
+  const remainingAddresses = body.data
+    .map((item) => item.address)
+    .filter(
+      (addressSplit) =>
+        // @ts-ignore
+        cartItemsShippingAddresses.findIndex((address: Address) => address.key === addressSplit.id) === -1,
+    );
+
+  if (remainingAddresses.length) {
+    for await (const address of remainingAddresses) {
+      await cartApi.addItemShippingAddress(cart, address);
+    }
+  }
+
+  const target = body.data.map((item) => ({ addressKey: item.address.id, quantity: item.quantity }));
+
+  const cartData = await cartApi.updateLineItemShippingDetails(cart, body.lineItemId, target);
+
+  const response: Response = {
+    statusCode: 200,
+    body: JSON.stringify(cartData),
+    sessionData: {
+      ...request.sessionData,
+      cartId: cart.cartId,
+    },
+  };
+
+  return response;
+};
+
+export const reassignCart: ActionHook = async (request: Request, actionContext: ActionContext) => {
+  let cart = await CartFetcher.fetchCart(request, actionContext);
+  const cartId = cart.cartId;
+
+  const cartApi = new CartApi(
+    actionContext.frontasticContext,
+    getLocale(request),
+    request.sessionData?.organization,
+    request.sessionData?.account,
+  );
+  cart = await cartApi.setCustomerId(cart, request.query?.customerId);
+  cart = (await cartApi.setEmail(cart, request.query?.email)) as Cart;
 
   const response: Response = {
     statusCode: 200,
