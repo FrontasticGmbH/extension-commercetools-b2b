@@ -5,15 +5,17 @@ import {
   StateReference,
 } from '@commercetools/platform-sdk';
 import { BaseCartMapper } from './BaseCartMapper';
-import { B2BCartMapper } from './B2BCartMapper';
 import { Locale } from '../interfaces/Locale';
 import { ProductMapper } from './ProductMapper';
 import { ProductRouter } from '../utils/ProductRouter';
 import { LineItem } from '@Types/cart/LineItem';
 import { Cart } from '@Types/cart/Cart';
-import { Order } from '@Types/cart/Order';
+import { Order, ReturnInfo } from "@Types/cart/Order";
+import {
+  ReturnInfo as CommercetoolsReturnInfo
+} from "@commercetools/platform-sdk/dist/declarations/src/generated/models/order";
 
-export class CartMapper extends B2BCartMapper {
+export class CartMapper extends BaseCartMapper {
   static commercetoolsCartToCart(
     commercetoolsCart: CommercetoolsCart,
     locale: Locale,
@@ -122,11 +124,28 @@ export class CartMapper extends B2BCartMapper {
     }
     return null;
   }
+
+  static commercetoolsReturnInfoToReturnInfo(commercetoolsReturnInfo: CommercetoolsReturnInfo[]): ReturnInfo[] {
+    return commercetoolsReturnInfo.map((ctReturnInfo) => ({
+      returnDate: ctReturnInfo.returnDate,
+      returnTrackingId: ctReturnInfo.returnTrackingId,
+      items: ctReturnInfo.items.map((item) => ({
+        comment: item.comment,
+        createdAt: item.createdAt,
+        // @ts-ignore
+        lineItemId: item.lineItemId,
+        returnInfoId: item.id,
+        quantity: item.quantity,
+        shipmentState: item.shipmentState,
+      })),
+    }));
+  }
 }
+
 // Override the BaseMapper with new Mapper functions
 Object.getOwnPropertyNames(CartMapper).forEach((key) => {
   if (typeof CartMapper[key] === 'function') {
     BaseCartMapper[key] = CartMapper[key];
-    B2BCartMapper[key] = CartMapper[key];
   }
 });
+
