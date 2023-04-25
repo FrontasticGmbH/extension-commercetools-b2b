@@ -1,4 +1,3 @@
-export * from './B2BStoreController';
 import { ActionContext, Request, Response } from '@frontastic/extension-types';
 import { Store } from '@Types/store/Store';
 import { ChannelResourceIdentifier } from '@Types/channel/channel';
@@ -49,6 +48,21 @@ export const create: ActionHook = async (request: Request, actionContext: Action
 
     return response;
   }
+};
+
+export const query: ActionHook = async (request: Request, actionContext: ActionContext) => {
+  const storeApi = new StoreApi(actionContext.frontasticContext, getLocale(request));
+  const where = request.query['where'];
+
+  const stores = await storeApi.query(where);
+
+  const response: Response = {
+    statusCode: 200,
+    body: JSON.stringify(stores),
+    sessionData: request.sessionData,
+  };
+
+  return response;
 };
 
 export const setMe: ActionHook = async (request: Request, actionContext: ActionContext) => {
