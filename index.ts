@@ -32,8 +32,9 @@ export default {
         pageMatchingPayload: {},
       } as DynamicPageSuccessResult;
     }
+    console.log('dynamic-page-handler', request, context);
     // Identify businessUnit page
-    const b2bPageMatch = getPath(request)?.match(/^\/(business-unit|dashboard)/);
+    const b2bPageMatch = getPath(request)?.match(/^\/(business-unit)/);
     if (b2bPageMatch) {
       let organization = request.sessionData?.organization;
       if (!organization.businessUnit && request.sessionData?.account?.accountId) {

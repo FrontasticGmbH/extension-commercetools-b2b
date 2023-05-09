@@ -7,7 +7,6 @@ import * as ProjectActions from './ProjectController';
 import * as BusinessUnitActions from './BusinessUnitController';
 import * as StoreActions from './StoreController';
 import * as CartActions from './CartController';
-import * as DashboardActions from './DashboardController';
 import * as SubscriptionActions from './SubscriptionController';
 
 export const actions = {
@@ -18,7 +17,6 @@ export const actions = {
   product: ProductAction,
   wishlist: WishlistAction,
   quote: QuoteAction,
-  dashboard: DashboardActions,
   project: ProjectActions,
   subscription: SubscriptionActions,
   associate: AssociateAction,
