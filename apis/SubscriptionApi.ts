@@ -14,7 +14,7 @@ export class SubscriptionApi extends BaseApi {
       const locale = await this.getCommercetoolsLocal();
       const config = this.frontasticContext?.project?.configuration?.subscriptions;
       if (config.orderCustomFieldNameOnCart && accountId) {
-        const response = await this.getApiForProject()
+        const response = await this.requestBuilder()
           .carts()
           .get({
             queryArgs: {

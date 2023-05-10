@@ -5,7 +5,7 @@ import { AssociateMapper } from '../mappers/AssociateMapper';
 export class AssociateApi extends BaseApi {
   getAllAssociateRoles: () => Promise<AssociateRole[]> = async () => {
     try {
-      return this.getApiForProject()
+      return this.requestBuilder()
         .associateRoles()
         .get()
         .execute()

@@ -1,4 +1,4 @@
-import { BusinessUnit, StoreMode } from "@Types/business-unit/BusinessUnit";
+import { BusinessUnit, StoreMode } from '@Types/business-unit/BusinessUnit';
 import { StoreApi } from './StoreApi';
 import { Cart } from '@Types/cart/Cart';
 import { Organization } from '@Types/organization/organization';
@@ -7,8 +7,8 @@ import jsonata from 'jsonata';
 import { StoreMapper } from '../mappers/StoreMapper';
 import { BusinessUnit as CommercetoolsBusinessUnit, BusinessUnitPagedQueryResponse } from '@commercetools/platform-sdk';
 import { BusinessUnitMapper } from '../mappers/BusinessUnitMapper';
-import { BaseApi } from "@Commerce-commercetools/apis/BaseApi";
-import { StoreKeyReference } from "@Types/store/Store";
+import { BaseApi } from '@Commerce-commercetools/apis/BaseApi';
+import { StoreKeyReference } from '@Types/store/Store';
 
 const MAX_LIMIT = 50;
 
@@ -72,7 +72,7 @@ export class BusinessUnitApi extends BaseApi {
 
   create: (data: any) => Promise<CommercetoolsBusinessUnit> = async (data: any) => {
     try {
-      return this.getApiForProject()
+      return this.requestBuilder()
         .businessUnits()
         .post({
           body: data,
@@ -87,7 +87,7 @@ export class BusinessUnitApi extends BaseApi {
   delete: (key: string) => Promise<any> = async (key: string) => {
     try {
       return this.getByKey(key).then((bu) => {
-        return this.getApiForProject()
+        return this.requestBuilder()
           .businessUnits()
           .withKey({ key })
           .delete({
@@ -106,7 +106,7 @@ export class BusinessUnitApi extends BaseApi {
   update: (key: string, actions: any[]) => Promise<any> = async (key: string, actions: any[]) => {
     try {
       return this.getByKey(key).then((res) => {
-        return this.getApiForProject()
+        return this.requestBuilder()
           .businessUnits()
           .withKey({ key })
           .post({
@@ -130,7 +130,7 @@ export class BusinessUnitApi extends BaseApi {
     expand?: string,
   ) => {
     try {
-      return this.getApiForProject()
+      return this.requestBuilder()
         .businessUnits()
         .get({
           queryArgs: {
@@ -177,17 +177,17 @@ export class BusinessUnitApi extends BaseApi {
 
     return filterAdmin
       ? justParents.filter((bu) =>
-        BusinessUnitMapper.isUserAdminInBusinessUnit(bu, accountId, config.defaultAdminRoleKey),
-      )
+          BusinessUnitMapper.isUserAdminInBusinessUnit(bu, accountId, config.defaultAdminRoleKey),
+        )
       : justParents
-        // sort by Admin first
-        .sort((a, b) =>
-          BusinessUnitMapper.isUserAdminInBusinessUnit(a, accountId, config.defaultAdminRoleKey)
-            ? -1
-            : BusinessUnitMapper.isUserAdminInBusinessUnit(b, accountId, config.defaultAdminRoleKey)
+          // sort by Admin first
+          .sort((a, b) =>
+            BusinessUnitMapper.isUserAdminInBusinessUnit(a, accountId, config.defaultAdminRoleKey)
+              ? -1
+              : BusinessUnitMapper.isUserAdminInBusinessUnit(b, accountId, config.defaultAdminRoleKey)
               ? 1
               : 0,
-        );
+          );
   };
 
   getMe: (accountId: string) => Promise<BusinessUnit> = async (accountId: string) => {
@@ -232,7 +232,7 @@ export class BusinessUnitApi extends BaseApi {
     }
     const storeApi = new StoreApi(this.frontasticContext, this.locale);
     try {
-      const bu = await this.getApiForProject()
+      const bu = await this.requestBuilder()
         .businessUnits()
         .withKey({ key })
         .get()
@@ -253,7 +253,7 @@ export class BusinessUnitApi extends BaseApi {
 
   getByKey: (key: string) => Promise<CommercetoolsBusinessUnit> = async (key: string) => {
     try {
-      return this.getApiForProject()
+      return this.requestBuilder()
         .businessUnits()
         .withKey({ key })
         .get()
@@ -272,7 +272,7 @@ export class BusinessUnitApi extends BaseApi {
     }
     let parentBU: CommercetoolsBusinessUnit = { ...businessUnit };
     while (parentBU.storeMode === StoreMode.FromParent && !!parentBU.parentUnit) {
-      const { body } = await this.getApiForProject()
+      const { body } = await this.requestBuilder()
         .businessUnits()
         .withKey({ key: parentBU.parentUnit.key })
         .get()
@@ -341,5 +341,4 @@ export class BusinessUnitApi extends BaseApi {
       BusinessUnitMapper.mapBusinessUnitToBusinessUnitTreeItem(bu, allStores, accountId, config.defaultAdminRoleKey),
     );
   };
-
 }

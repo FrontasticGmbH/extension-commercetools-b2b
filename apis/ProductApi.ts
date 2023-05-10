@@ -8,8 +8,8 @@ import { FacetDefinition } from '@Types/product/FacetDefinition';
 import { ProductMapper } from '../mappers/ProductMapper';
 import { Category } from '@Types/product/Category';
 import { CategoryQuery } from '@Types/query/CategoryQuery';
-import { BaseProductApi } from "@Commerce-commercetools/apis/BaseProductApi";
-import { Product } from "@Types/product/Product";
+import { BaseProductApi } from '@Commerce-commercetools/apis/BaseProductApi';
+import { Product } from '@Types/product/Product';
 
 export class ProductApi extends BaseProductApi {
   query: (productQuery: ProductQuery, additionalQueryArgs?: object, additionalFacets?: object[]) => Promise<Result> =
@@ -115,7 +115,7 @@ export class ProductApi extends BaseProductApi {
           },
         };
 
-        return await this.getApiForProject()
+        return await this.requestBuilder()
           .productProjections()
           .search()
           .get(methodArgs)
@@ -168,7 +168,7 @@ export class ProductApi extends BaseProductApi {
     try {
       const locale = await this.getCommercetoolsLocal();
 
-      const response = await this.getApiForProject().productTypes().get().execute();
+      const response = await this.requestBuilder().productTypes().get().execute();
 
       const filterFields = ProductMapper.commercetoolsProductTypesToFilterFields(response.body.results, locale);
 
@@ -195,7 +195,7 @@ export class ProductApi extends BaseProductApi {
 
   getAttributeGroup: (key: string) => Promise<string[]> = async (key: string) => {
     try {
-      const { body } = await this.getApiForProject().attributeGroups().withKey({ key }).get().execute();
+      const { body } = await this.requestBuilder().attributeGroups().withKey({ key }).get().execute();
 
       return ProductMapper.commercetoolsAttributeGroupToString(body);
     } catch (error) {
@@ -245,7 +245,7 @@ export class ProductApi extends BaseProductApi {
         },
       };
 
-      return await this.getApiForProject()
+      return await this.requestBuilder()
         .categories()
         .get(methodArgs)
         .execute()
@@ -274,9 +274,7 @@ export class ProductApi extends BaseProductApi {
             );
           }
 
-          const items = categories.map((category) =>
-            ProductMapper.commercetoolsCategoryToCategory(category, locale),
-          );
+          const items = categories.map((category) => ProductMapper.commercetoolsCategoryToCategory(category, locale));
 
           const result: Result = {
             total: response.body.total,

@@ -1,7 +1,7 @@
 import { Store } from '@Types/store/Store';
 import { StoreMapper } from '../mappers/StoreMapper';
-import { StoreDraft } from "@commercetools/platform-sdk";
-import { BaseApi } from "@Commerce-commercetools/apis/BaseApi";
+import { StoreDraft } from '@commercetools/platform-sdk';
+import { BaseApi } from '@Commerce-commercetools/apis/BaseApi';
 
 const convertStoreToBody = (store: StoreDraft, locale: string): StoreDraft => {
   return {
@@ -19,7 +19,7 @@ export class StoreApi extends BaseApi {
     const body = convertStoreToBody(store, locale.language);
 
     try {
-      return this.getApiForProject()
+      return this.requestBuilder()
         .stores()
         .post({
           body,
@@ -42,7 +42,7 @@ export class StoreApi extends BaseApi {
     const sotreConfig = this.frontasticContext?.project?.configuration?.storeContext;
 
     try {
-      return this.getApiForProject()
+      return this.requestBuilder()
         .stores()
         .withKey({ key })
         .get()
@@ -64,19 +64,21 @@ export class StoreApi extends BaseApi {
 
     const queryArgs = where
       ? {
-        where,
-      }
+          where,
+        }
       : {};
 
     try {
-      return this.getApiForProject()
+      return this.requestBuilder()
         .stores()
         .get({
           queryArgs,
         })
         .execute()
         .then((response) => {
-          return response.body.results.map((store) => StoreMapper.mapCommercetoolsStoreToStore(store, locale.language, preBuyConfig, storeConfig));
+          return response.body.results.map((store) =>
+            StoreMapper.mapCommercetoolsStoreToStore(store, locale.language, preBuyConfig, storeConfig),
+          );
         });
     } catch (e) {
       console.log(e);

@@ -3,7 +3,7 @@ import { LineItemReturnItemDraft } from '@Types/cart/LineItem';
 import { LineItem } from '@Types/cart/LineItem';
 import { Order } from '@Types/cart/Order';
 import { Account } from '@Types/account/Account';
-import { CartDraft, Cart as CommercetoolsCart, AddressDraft, CartUpdateAction } from "@commercetools/platform-sdk";
+import { CartDraft, Cart as CommercetoolsCart, AddressDraft, CartUpdateAction } from '@commercetools/platform-sdk';
 import {
   CartAddLineItemAction,
   CartSetCustomerIdAction,
@@ -17,8 +17,8 @@ import { isReadyForCheckout } from '../utils/Cart';
 import { Locale } from '../interfaces/Locale';
 import { Organization } from '@Types/organization/organization';
 import { CartMapper } from '../mappers/CartMapper';
-import { BaseCartApi } from "@Commerce-commercetools/apis/BaseCartApi";
-import { Context } from "@frontastic/extension-types";
+import { BaseCartApi } from '@Commerce-commercetools/apis/BaseCartApi';
+import { Context } from '@frontastic/extension-types';
 
 type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 
@@ -33,11 +33,11 @@ export class CartApi extends BaseCartApi {
     this.organization = organization;
     this.associateEndpoints =
       account && organization
-        ? this.getApiForProject()
-          .asAssociate()
-          .withAssociateIdValue({ associateId: account.accountId })
-          .inBusinessUnitKeyWithBusinessUnitKeyValue({ businessUnitKey: organization.businessUnit.key })
-        : this.getApiForProject();
+        ? this.requestBuilder()
+            .asAssociate()
+            .withAssociateIdValue({ associateId: account.accountId })
+            .inBusinessUnitKeyWithBusinessUnitKeyValue({ businessUnitKey: organization.businessUnit.key })
+        : this.requestBuilder();
   }
 
   getForUser: (account?: Account, organization?: Organization) => Promise<Cart> = async (
@@ -659,11 +659,11 @@ export class CartApi extends BaseCartApi {
       const config = this.frontasticContext?.project?.configuration?.preBuy;
 
       const endpoint = this.account
-        ? this.getApiForProject()
+        ? this.requestBuilder()
             .asAssociate()
             .withAssociateIdValue({ associateId: this.account.accountId })
             .inBusinessUnitKeyWithBusinessUnitKeyValue({ businessUnitKey: key })
-        : this.getApiForProject();
+        : this.requestBuilder();
 
       const response = await endpoint
         .orders()
@@ -998,5 +998,4 @@ export class CartApi extends BaseCartApi {
     const commercetoolsCart = await this.updateCart(cart.cartId, cartUpdate, locale);
     return (await this.buildCartWithAvailableShippingMethods(commercetoolsCart, locale)) as Cart;
   };
-
 }
