@@ -2,8 +2,8 @@ import { Cart } from '@Types/cart/Cart';
 import { LineItemReturnItemDraft } from 'cofe-ct-b2b-ecommerce/types/cart/LineItem';
 import { LineItem } from '@Types/cart/LineItem';
 import { Order } from '@Types/cart/Order';
-import { Account } from 'cofe-ct-b2b-ecommerce/types/account/Account';
-import { CartDraft, Cart as CommercetoolsCart } from '@commercetools/platform-sdk';
+import { Account } from '@Types/account/Account';
+import { CartDraft, Cart as CommercetoolsCart, AddressDraft, CartUpdateAction } from '@commercetools/platform-sdk';
 import {
   CartAddLineItemAction,
   CartRemoveLineItemAction,
@@ -17,10 +17,32 @@ import { isReadyForCheckout } from 'cofe-ct-ecommerce/utils/Cart';
 import { Locale } from 'cofe-ct-ecommerce/interfaces/Locale';
 import { Organization } from 'cofe-ct-b2b-ecommerce/types/organization/organization';
 import { CartMapper } from '../mappers/CartMapper';
-export class CartApi extends B2BCartApi {
-  getForUser: (account: Account, organization?: Organization) => Promise<Cart> = async (
-    account: Account,
-    organization: Organization,
+import { BaseCartApi } from '@Commerce-commercetools/apis/BaseCartApi';
+import { Context } from '@frontastic/extension-types';
+
+type Writeable<T> = { -readonly [P in keyof T]: T[P] };
+
+export class CartApi extends BaseCartApi {
+  protected organization?: Organization;
+  protected account?: Account;
+  protected associateEndpoints?;
+
+  constructor(frontasticContext: Context, locale: string, organization?: Organization, account?: Account) {
+    super(frontasticContext, locale);
+    this.account = account;
+    this.organization = organization;
+    this.associateEndpoints =
+      account && organization
+        ? this.requestBuilder()
+            .asAssociate()
+            .withAssociateIdValue({ associateId: account.accountId })
+            .inBusinessUnitKeyWithBusinessUnitKeyValue({ businessUnitKey: organization.businessUnit.key })
+        : this.requestBuilder();
+  }
+
+  getForUser: (account?: Account, organization?: Organization) => Promise<Cart> = async (
+    account: Account = this.account,
+    organization: Organization = this.organization,
   ) => {
     try {
       const locale = await this.getCommercetoolsLocal();
@@ -382,7 +404,14 @@ export class CartApi extends B2BCartApi {
       const locale = await this.getCommercetoolsLocal();
       const config = this.frontasticContext?.project?.configuration?.preBuy;
 
-      const response = await this.getApiForProject()
+      const endpoint = this.account
+        ? this.requestBuilder()
+            .asAssociate()
+            .withAssociateIdValue({ associateId: this.account.accountId })
+            .inBusinessUnitKeyWithBusinessUnitKeyValue({ businessUnitKey: key })
+        : this.requestBuilder();
+
+      const response = await endpoint
         .orders()
         .get({
           queryArgs: {
@@ -432,5 +461,287 @@ export class CartApi extends B2BCartApi {
     }
 
     return CartMapper.commercetoolsCartToCart(commercetoolsCart, locale, config) as Cart;
+  };
+
+  assertCartOrganization: (cart: Cart, organization: Organization) => boolean = (
+    cart: Cart,
+    organization: Organization,
+  ) => {
+    return (
+      !!cart.businessUnit &&
+      !!cart.store &&
+      cart.businessUnit === organization.businessUnit?.key &&
+      cart.store === organization.store?.key &&
+      cart.isPreBuyCart === organization.store?.isPreBuyStore
+    );
+  };
+
+  freezeCart: (cart: Cart) => Promise<Cart> = async (cart: Cart) => {
+    try {
+      const locale = await this.getCommercetoolsLocal();
+
+      const cartUpdate: CartUpdate = {
+        version: +cart.cartVersion,
+        actions: [
+          {
+            action: 'freezeCart',
+          } as any,
+        ],
+      };
+
+      const commercetoolsCart = await this.updateCart(cart.cartId, cartUpdate, locale);
+
+      return (await this.buildCartWithAvailableShippingMethods(commercetoolsCart, locale)) as Cart;
+    } catch (error) {
+      //TODO: better error, get status code etc...
+      throw new Error(`freeze error failed. ${error}`);
+    }
+  };
+
+  unfreezeCart: (cart: Cart) => Promise<Cart> = async (cart: Cart) => {
+    try {
+      const locale = await this.getCommercetoolsLocal();
+
+      const cartUpdate: CartUpdate = {
+        version: +cart.cartVersion,
+        actions: [
+          {
+            action: 'unfreezeCart',
+          } as any,
+        ],
+      };
+      const commercetoolsCart = await this.updateCart(cart.cartId, cartUpdate, locale);
+
+      return (await this.buildCartWithAvailableShippingMethods(commercetoolsCart, locale)) as Cart;
+    } catch (error) {
+      //TODO: better error, get status code etc...
+      throw new Error(`freeze error failed. ${error}`);
+    }
+  };
+
+  setCartExpirationDays: (cart: Cart, deleteDaysAfterLastModification: number) => Promise<Cart> = async (
+    cart: Cart,
+    deleteDaysAfterLastModification: number,
+  ) => {
+    try {
+      const locale = await this.getCommercetoolsLocal();
+
+      const cartUpdate: CartUpdate = {
+        version: +cart.cartVersion,
+        actions: [
+          {
+            action: 'setDeleteDaysAfterLastModification',
+            deleteDaysAfterLastModification,
+          } as any,
+        ],
+      };
+      const commercetoolsCart = await this.updateCart(cart.cartId, cartUpdate, locale);
+
+      return (await this.buildCartWithAvailableShippingMethods(commercetoolsCart, locale)) as Cart;
+    } catch (error) {
+      //TODO: better error, get status code etc...
+      throw new Error(`freeze error failed. ${error}`);
+    }
+  };
+
+  setCustomType: (cart: Cart, type: string, fields: any) => Promise<Cart> = async (
+    cart: Cart,
+    type: string,
+    fields: any,
+  ) => {
+    try {
+      const locale = await this.getCommercetoolsLocal();
+
+      const cartUpdate: CartUpdate = {
+        version: +cart.cartVersion,
+        actions: [
+          {
+            action: 'setCustomType',
+            type: {
+              typeId: 'type',
+              key: type,
+            },
+            fields,
+          } as any,
+        ],
+      };
+      const commercetoolsCart = await this.updateCart(cart.cartId, cartUpdate, locale);
+
+      return (await this.buildCartWithAvailableShippingMethods(commercetoolsCart, locale)) as Cart;
+    } catch (error) {
+      //TODO: better error, get status code etc...
+      throw new Error(`freeze error failed. ${error}`);
+    }
+  };
+
+  protected recreate: (primaryCommercetoolsCart: CommercetoolsCart, locale: Locale) => Promise<Cart> = async (
+    primaryCommercetoolsCart: CommercetoolsCart,
+    locale: Locale,
+  ) => {
+    const primaryCartId = primaryCommercetoolsCart.id;
+    const cartVersion = primaryCommercetoolsCart.version;
+    const lineItems = primaryCommercetoolsCart.lineItems;
+
+    const cartDraft: CartDraft = {
+      currency: locale.currency,
+      country: locale.country,
+      locale: locale.language,
+    };
+
+    // TODO: implement a logic that hydrate cartDraft with commercetoolsCart
+    // for (const key of Object.keys(commercetoolsCart)) {
+    //   if (cartDraft.hasOwnProperty(key) && cartDraft[key] !== undefined) {
+    //     cartDraft[key] = commercetoolsCart[key];
+    //   }
+    // }
+
+    const propertyList = [
+      'customerId',
+      'customerEmail',
+      'customerGroup',
+      'anonymousId',
+      'store',
+      'inventoryMode',
+      'taxMode',
+      'taxRoundingMode',
+      'taxCalculationMode',
+      'shippingAddress',
+      'billingAddress',
+      'shippingMethod',
+      'externalTaxRateForShippingMethod',
+      'deleteDaysAfterLastModification',
+      'origin',
+      'shippingRateInput',
+      'itemShippingAddresses',
+    ];
+
+    for (const key of propertyList) {
+      if (primaryCommercetoolsCart.hasOwnProperty(key)) {
+        cartDraft[key] = primaryCommercetoolsCart[key];
+      }
+    }
+
+    let replicatedCommercetoolsCart = await this.associateEndpoints
+      .carts()
+      .post({
+        queryArgs: {
+          expand: [
+            'lineItems[*].discountedPrice.includedDiscounts[*].discount',
+            'discountCodes[*].discountCode',
+            'paymentInfo.payments[*]',
+          ],
+        },
+        body: cartDraft,
+      })
+      .execute()
+      .then((response) => {
+        return response.body;
+      });
+
+    // Add line items to the replicated cart one by one to handle the exception
+    // if an item is not available on the new currency.
+    for (const lineItem of lineItems) {
+      try {
+        const cartUpdate: CartUpdate = {
+          version: +replicatedCommercetoolsCart.version,
+          actions: [
+            {
+              action: 'addLineItem',
+              sku: lineItem.variant.sku,
+              quantity: +lineItem.quantity,
+            },
+          ],
+        };
+
+        replicatedCommercetoolsCart = await this.updateCart(replicatedCommercetoolsCart.id, cartUpdate, locale);
+      } catch (error) {
+        // Ignore that a line item could not be added due to missing price, etc
+      }
+    }
+
+    // Delete previous cart
+    await this.deleteCart(primaryCartId, cartVersion);
+
+    return CartMapper.commercetoolsCartToCart(replicatedCommercetoolsCart, locale);
+  };
+
+  deleteCart: (primaryCartId: string, cartVersion: number) => Promise<void> = async (
+    primaryCartId: string,
+    cartVersion: number,
+  ) => {
+    await this.associateEndpoints
+      .carts()
+      .withId({
+        ID: primaryCartId,
+      })
+      .delete({
+        queryArgs: {
+          version: cartVersion,
+        },
+      })
+      .execute();
+  };
+
+  replicateCart: (orderId: string) => Promise<Cart> = async (orderId: string) => {
+    try {
+      const locale = await this.getCommercetoolsLocal();
+      const response = await this.associateEndpoints
+        .carts()
+        .replicate()
+        .post({
+          body: {
+            reference: {
+              id: orderId,
+              typeId: 'order',
+            },
+          },
+        })
+        .execute();
+      return (await this.buildCartWithAvailableShippingMethods(response.body, locale)) as Cart;
+    } catch (e) {
+      throw `cannot replicate ${e}`;
+    }
+  };
+
+  addItemShippingAddress: (originalCart: Cart, address: AddressDraft) => Promise<any> = async (
+    originalCart: Cart,
+    address: AddressDraft,
+  ) => {
+    const locale = await this.getCommercetoolsLocal();
+
+    const cartUpdate: CartUpdate = {
+      version: +originalCart.cartVersion,
+      actions: [
+        {
+          action: 'addItemShippingAddress',
+          address: {
+            ...address,
+            key: address.id,
+          },
+        },
+      ],
+    };
+    return this.updateCart(originalCart.cartId, cartUpdate, locale);
+  };
+
+  updateLineItemShippingDetails: (
+    cart: Cart,
+    lineItemId: string,
+    targets?: { addressKey: string; quantity: number }[],
+  ) => Promise<Cart> = async (cart: Cart, lineItemId: string, targets?: { addressKey: string; quantity: number }[]) => {
+    const locale = await this.getCommercetoolsLocal();
+
+    const cartUpdate: CartUpdate = {
+      version: +cart.cartVersion,
+      actions: [
+        {
+          action: 'setLineItemShippingDetails',
+          lineItemId,
+          shippingDetails: targets?.length ? { targets } : null,
+        },
+      ],
+    };
+    const commercetoolsCart = await this.updateCart(cart.cartId, cartUpdate, locale);
+    return (await this.buildCartWithAvailableShippingMethods(commercetoolsCart, locale)) as Cart;
   };
 }

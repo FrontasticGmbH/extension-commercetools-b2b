@@ -9,7 +9,10 @@ import { ProductApi as B2BProductApi } from 'cofe-ct-b2b-ecommerce/apis/ProductA
 import { ProductMapper as B2BProductMapper } from 'cofe-ct-b2b-ecommerce/mappers/ProductMapper';
 import { Category } from 'cofe-ct-b2b-ecommerce/types/product/Category';
 import { CategoryQuery } from '@Types/query/CategoryQuery';
-export class ProductApi extends B2BProductApi {
+import { BaseProductApi } from '@Commerce-commercetools/apis/BaseProductApi';
+import { Product } from '@Types/product/Product';
+
+export class ProductApi extends BaseProductApi {
   query: (productQuery: ProductQuery, additionalQueryArgs?: object, additionalFacets?: object[]) => Promise<Result> =
     async (productQuery: ProductQuery, additionalQueryArgs?: object, additionalFacets: object[] = []) => {
       try {
@@ -113,7 +116,7 @@ export class ProductApi extends B2BProductApi {
           },
         };
 
-        return await this.getApiForProject()
+        return await this.requestBuilder()
           .productProjections()
           .search()
           .get(methodArgs)
@@ -152,7 +155,7 @@ export class ProductApi extends B2BProductApi {
     try {
       const locale = await this.getCommercetoolsLocal();
 
-      const response = await this.getApiForProject().productTypes().get().execute();
+      const response = await this.requestBuilder().productTypes().get().execute();
 
       const filterFields = B2BProductMapper.commercetoolsProductTypesToFilterFields(response.body.results, locale);
 
@@ -174,6 +177,17 @@ export class ProductApi extends B2BProductApi {
     } catch (error) {
       //TODO: better error, get status code etc...
       throw new Error(`getSearchableAttributes failed. ${error}`);
+    }
+  };
+
+  getAttributeGroup: (key: string) => Promise<string[]> = async (key: string) => {
+    try {
+      const { body } = await this.requestBuilder().attributeGroups().withKey({ key }).get().execute();
+
+      return ProductMapper.commercetoolsAttributeGroupToString(body);
+    } catch (error) {
+      //TODO: better error, get status code etc...
+      throw new Error(`get attributeGroup failed. ${error}`);
     }
   };
 
@@ -218,7 +232,7 @@ export class ProductApi extends B2BProductApi {
         },
       };
 
-      return await this.getApiForProject()
+      return await this.requestBuilder()
         .categories()
         .get(methodArgs)
         .execute()
@@ -247,9 +261,7 @@ export class ProductApi extends B2BProductApi {
             );
           }
 
-          const items = categories.map((category) =>
-            B2BProductMapper.commercetoolsCategoryToCategory(category, locale),
-          );
+          const items = categories.map((category) => ProductMapper.commercetoolsCategoryToCategory(category, locale));
 
           const result: Result = {
             total: response.body.total,
