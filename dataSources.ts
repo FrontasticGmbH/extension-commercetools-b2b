@@ -1,5 +1,5 @@
 import { DataSourceConfiguration, DataSourceContext } from '@frontastic/extension-types';
-import { getLocale } from 'cofe-ct-ecommerce/utils/Request';
+import { getLocale } from './utils/Request';
 import { ProductApi } from './apis/ProductApi';
 import { ProductQueryFactory } from './utils/ProductQueryFactory';
 import { BusinessUnitApi } from './apis/BusinessUnitApi';

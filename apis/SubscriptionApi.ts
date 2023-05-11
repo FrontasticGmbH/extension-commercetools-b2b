@@ -1,9 +1,9 @@
-import { BaseApi } from 'cofe-ct-ecommerce/apis/BaseApi';
+import { BaseApi } from './BaseApi';
 import { calculateNextDeliveryDate, getSubscriptionGroups } from '../utils/Cart';
-import { Product } from '@commercetools/frontend-domain-types/product/Product';
+import { Product } from '@Types/product/Product';
 import { ProductApi } from './ProductApi';
-import { ProductQuery } from 'cofe-ct-b2b-ecommerce/types/query/ProductQuery';
-import { Order } from 'cofe-ct-b2b-ecommerce/types/cart/Order';
+import { ProductQuery } from '@Types/query/ProductQuery';
+import { Order } from '@Types/cart/Order';
 import { Cart } from '@Types/cart/Cart';
 import { CartApi } from './CartApi';
 import { SubscriptionMapper } from '../mappers/SubscriptionMapper';
@@ -44,6 +44,7 @@ export class SubscriptionApi extends BaseApi {
     const config = this.frontasticContext?.project?.configuration?.subscriptions;
     if (
       config?.customLineItemKeyOfBundle &&
+      config?.customLineItemKeyOfSubscription &&
       config.subscriptionProductAttributeName &&
       config.customTypeKeyOnCart &&
       config.orderCustomFieldNameOnCart &&

@@ -1,23 +1,31 @@
 import { ActionContext, Request } from '@frontastic/extension-types';
-import { Cart } from 'cofe-ct-b2b-ecommerce/types/cart/Cart';
-import { CartFetcher as B2BCartFetcher } from 'cofe-ct-b2b-ecommerce/utils/CartFetcher';
+import { Cart } from '@Types/cart/Cart';
 import { CartApi } from '../apis/CartApi';
-import { getLocale } from 'cofe-ct-ecommerce/utils/Request';
+import { getLocale } from './Request';
+import { BaseCartFetcher } from './BaseCartFetcher';
 
-export class CartFetcher extends B2BCartFetcher {
+export class CartFetcher extends BaseCartFetcher {
   static async fetchCart(request: Request, actionContext: ActionContext): Promise<Cart> {
-    const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request));
-
-    if (request.sessionData?.account !== undefined) {
-      return await cartApi.getForUser(request.sessionData.account, request.sessionData.organization);
-    }
+    const cartApi = new CartApi(
+      actionContext.frontasticContext,
+      getLocale(request),
+      request.sessionData?.organization,
+      request.sessionData?.account,
+    );
 
     if (request.sessionData?.cartId !== undefined) {
       try {
-        return (await cartApi.getById(request.sessionData.cartId)) as Cart;
+        const cart = (await cartApi.getById(request.sessionData.cartId)) as Cart;
+        if (cartApi.assertCartOrganization(cart, request.sessionData.organization)) {
+          return cart;
+        }
       } catch (error) {
         console.info(`Error fetching the cart ${request.sessionData.cartId}, creating a new one. ${error}`);
       }
+    }
+
+    if (request.sessionData?.account !== undefined) {
+      return await cartApi.getForUser();
     }
     // @ts-ignore
     return {};
@@ -27,6 +35,7 @@ export class CartFetcher extends B2BCartFetcher {
 // Override the BaseMapper with new Mapper functions
 Object.getOwnPropertyNames(CartFetcher).forEach((key) => {
   if (typeof CartFetcher[key] === 'function') {
-    B2BCartFetcher[key] = CartFetcher[key];
+    BaseCartFetcher[key] = CartFetcher[key];
   }
 });
+

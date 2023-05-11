@@ -5,12 +5,12 @@ import {
   ExtensionRegistry,
   Request,
 } from '@frontastic/extension-types';
-import { getLocale, getPath } from 'cofe-ct-ecommerce/utils/Request';
+import { getLocale, getPath } from './utils/Request';
 import { BusinessUnitApi } from './apis/BusinessUnitApi';
 import { ProductRouter } from './utils/ProductRouter';
-import { Product } from '@commercetools/frontend-domain-types/product/Product';
+import { Product } from '@Types/product/Product';
 import { SearchRouter } from './utils/SearchRouter';
-import { Result } from '@commercetools/frontend-domain-types/product/Result';
+import { Result } from '@Types/product/Result';
 import { CategoryRouter } from './utils/CategoryRouter';
 import dataSources from './dataSources';
 import { actions } from './actionControllers';
@@ -64,28 +64,19 @@ export default {
     if (ProductRouter.identifyPreviewFrom(request)) {
       return ProductRouter.loadPreviewFor(request, context.frontasticContext).then((product: Product) => {
         if (product) {
-          return ProductRouter.getSubscriptionBundles(request, context.frontasticContext, product).then(
-            (subscriptionProducts) => {
-              if (subscriptionProducts?.length) {
-                return {
-                  dynamicPageType: 'frontastic/product-detail-page',
-                  dataSourcePayload: {
-                    product: product,
-                    subscriptions: subscriptionProducts,
-                  },
-                  pageMatchingPayload: {
-                    product: product,
-                    subscriptions: subscriptionProducts,
-                  },
-                };
-              }
+          return ProductRouter.getBundles(request, context.frontasticContext, product).then(
+            ({ subscriptions, configurableComponents }) => {
               return {
                 dynamicPageType: 'frontastic/product-detail-page',
                 dataSourcePayload: {
                   product: product,
+                  subscriptions,
+                  configurableComponents,
                 },
                 pageMatchingPayload: {
                   product: product,
+                  subscriptions,
+                  configurableComponents,
                 },
               };
             },
@@ -101,28 +92,19 @@ export default {
     if (ProductRouter.identifyFrom(request)) {
       return ProductRouter.loadFor(request, context.frontasticContext).then((product: Product) => {
         if (product) {
-          return ProductRouter.getSubscriptionBundles(request, context.frontasticContext, product).then(
-            (subscriptionProducts) => {
-              if (subscriptionProducts?.length) {
-                return {
-                  dynamicPageType: 'frontastic/product-detail-page',
-                  dataSourcePayload: {
-                    product: product,
-                    subscriptions: subscriptionProducts,
-                  },
-                  pageMatchingPayload: {
-                    product: product,
-                    subscriptions: subscriptionProducts,
-                  },
-                };
-              }
+          return ProductRouter.getBundles(request, context.frontasticContext, product).then(
+            ({ configurableComponents, subscriptions }) => {
               return {
                 dynamicPageType: 'frontastic/product-detail-page',
                 dataSourcePayload: {
                   product: product,
+                  subscriptions,
+                  configurableComponents,
                 },
                 pageMatchingPayload: {
                   product: product,
+                  subscriptions,
+                  configurableComponents,
                 },
               };
             },

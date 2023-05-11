@@ -1,9 +1,9 @@
 import { Context, Request } from '@frontastic/extension-types';
 import { ProductApi } from '../apis/ProductApi';
 import { CategoryQuery } from '@Types/query/CategoryQuery';
-import { Category } from 'cofe-ct-b2b-ecommerce/types/product/Category';
-import { getLocale, getPath } from 'cofe-ct-ecommerce/utils/Request';
-import { Result } from '@commercetools/frontend-domain-types/product/Result';
+import { Category } from '@Types/product/Category';
+import { getLocale, getPath } from './Request';
+import { Result } from '@Types/product/Result';
 import { ProductQueryFactory } from './ProductQueryFactory';
 
 export class CategoryRouter {

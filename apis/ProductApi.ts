@@ -1,13 +1,12 @@
-import { Result } from '@commercetools/frontend-domain-types/product/Result';
-import { ProductQuery } from 'cofe-ct-b2b-ecommerce/types/query/ProductQuery';
-import { FilterField, FilterFieldTypes } from '@commercetools/frontend-domain-types/product/FilterField';
-import { FilterTypes } from '@commercetools/frontend-domain-types/query/Filter';
-import { TermFilter } from '@commercetools/frontend-domain-types/query/TermFilter';
-import { RangeFilter } from '@commercetools/frontend-domain-types/query/RangeFilter';
-import { FacetDefinition } from '@commercetools/frontend-domain-types/product/FacetDefinition';
-import { ProductApi as B2BProductApi } from 'cofe-ct-b2b-ecommerce/apis/ProductApi';
-import { ProductMapper as B2BProductMapper } from 'cofe-ct-b2b-ecommerce/mappers/ProductMapper';
-import { Category } from 'cofe-ct-b2b-ecommerce/types/product/Category';
+import { Result } from '@Types/product/Result';
+import { ProductQuery } from '@Types/query/ProductQuery';
+import { FilterField, FilterFieldTypes } from '@Types/product/FilterField';
+import { FilterTypes } from '@Types/query/Filter';
+import { TermFilter } from '@Types/query/TermFilter';
+import { RangeFilter } from '@Types/query/RangeFilter';
+import { FacetDefinition } from '@Types/product/FacetDefinition';
+import { ProductMapper } from '../mappers/ProductMapper';
+import { Category } from '@Types/product/Category';
 import { CategoryQuery } from '@Types/query/CategoryQuery';
 import { BaseProductApi } from '@Commerce-commercetools/apis/BaseProductApi';
 import { Product } from '@Types/product/Product';
@@ -26,7 +25,7 @@ export class ProductApi extends BaseProductApi {
         const sortAttributes: string[] = [];
 
         const facetDefinitions: FacetDefinition[] = [
-          ...B2BProductMapper.commercetoolsProductTypesToFacetDefinitions(await this.getProductTypes(), locale),
+          ...ProductMapper.commercetoolsProductTypesToFacetDefinitions(await this.getProductTypes(), locale),
           ...additionalFacets,
           // Include Scoped Price facet
           {
@@ -40,7 +39,7 @@ export class ProductApi extends BaseProductApi {
           },
         ];
 
-        const queryArgFacets = B2BProductMapper.facetDefinitionsToCommercetoolsQueryArgFacets(facetDefinitions, locale);
+        const queryArgFacets = ProductMapper.facetDefinitionsToCommercetoolsQueryArgFacets(facetDefinitions, locale);
 
         if (productQuery.productIds !== undefined && productQuery.productIds.length !== 0) {
           filterQuery.push(`id:"${productQuery.productIds.join('","')}"`);
@@ -86,7 +85,7 @@ export class ProductApi extends BaseProductApi {
 
         if (productQuery.facets !== undefined) {
           filterFacets.push(
-            ...B2BProductMapper.facetDefinitionsToFilterFacets(productQuery.facets, facetDefinitions, locale),
+            ...ProductMapper.facetDefinitionsToFilterFacets(productQuery.facets, facetDefinitions, locale),
           );
         }
 
@@ -123,16 +122,16 @@ export class ProductApi extends BaseProductApi {
           .execute()
           .then((response) => {
             const items = response.body.results.map((product) =>
-              B2BProductMapper.commercetoolsProductProjectionToProduct(product, locale),
+              ProductMapper.commercetoolsProductProjectionToProduct(product, locale),
             );
 
             const result: Result = {
               total: response.body.total,
               items: items,
               count: response.body.count,
-              facets: B2BProductMapper.commercetoolsFacetResultsToFacets(response.body.facets, productQuery, locale),
-              previousCursor: B2BProductMapper.calculatePreviousCursor(response.body.offset, response.body.count),
-              nextCursor: B2BProductMapper.calculateNextCursor(
+              facets: ProductMapper.commercetoolsFacetResultsToFacets(response.body.facets, productQuery, locale),
+              previousCursor: ProductMapper.calculatePreviousCursor(response.body.offset, response.body.count),
+              nextCursor: ProductMapper.calculateNextCursor(
                 response.body.offset,
                 response.body.count,
                 response.body.total,
@@ -151,13 +150,27 @@ export class ProductApi extends BaseProductApi {
       }
     };
 
+  getProduct: (productQuery: ProductQuery, additionalQueryArgs?: object) => Promise<Product> = async (
+    productQuery: ProductQuery,
+    additionalQueryArgs?: object,
+  ) => {
+    try {
+      const result = await this.query(productQuery, additionalQueryArgs);
+
+      return result.items.shift() as Product;
+    } catch (error) {
+      //TODO: better error, get status code etc...
+      throw new Error(`getProduct failed. ${error}`);
+    }
+  };
+
   getSearchableAttributes: (rootCategoryId?: string) => Promise<FilterField[]> = async (rootCategoryId?) => {
     try {
       const locale = await this.getCommercetoolsLocal();
 
       const response = await this.requestBuilder().productTypes().get().execute();
 
-      const filterFields = B2BProductMapper.commercetoolsProductTypesToFilterFields(response.body.results, locale);
+      const filterFields = ProductMapper.commercetoolsProductTypesToFilterFields(response.body.results, locale);
 
       filterFields.push({
         field: 'categoryId',
@@ -267,8 +280,8 @@ export class ProductApi extends BaseProductApi {
             total: response.body.total,
             items: items,
             count: response.body.count,
-            previousCursor: B2BProductMapper.calculatePreviousCursor(response.body.offset, response.body.count),
-            nextCursor: B2BProductMapper.calculateNextCursor(
+            previousCursor: ProductMapper.calculatePreviousCursor(response.body.offset, response.body.count),
+            nextCursor: ProductMapper.calculateNextCursor(
               response.body.offset,
               response.body.count,
               response.body.total,

@@ -1,7 +1,7 @@
 import { BusinessUnit, StoreMode } from '@Types/business-unit/BusinessUnit';
 import { StoreApi } from './StoreApi';
-import { Cart } from 'cofe-ct-b2b-ecommerce/types/cart/Cart';
-import { Organization } from 'cofe-ct-b2b-ecommerce/types/organization/organization';
+import { Cart } from '@Types/cart/Cart';
+import { Organization } from '@Types/organization/organization';
 import { Workflow } from '@Types/workflow/Workflow';
 import jsonata from 'jsonata';
 import { StoreMapper } from '../mappers/StoreMapper';
@@ -10,22 +10,16 @@ import { BusinessUnitMapper } from '../mappers/BusinessUnitMapper';
 import { BaseApi } from '@Commerce-commercetools/apis/BaseApi';
 import { StoreKeyReference } from '@Types/store/Store';
 
-export class BusinessUnitApi extends B2BBusinessUnitApi {
-  getOrganizationByBusinessUnit = async (businessUnit: BusinessUnit): Promise<Record<string, object>> => {
-    const organization: Record<string, object> = {};
+const MAX_LIMIT = 50;
+
+export class BusinessUnitApi extends BaseApi {
+  getOrganizationByBusinessUnit = async (businessUnit: BusinessUnit): Promise<Organization> => {
+    const organization: Organization = {} as Organization;
     organization.businessUnit = businessUnit;
     if (businessUnit.stores?.[0]) {
       const storeApi = new StoreApi(this.frontasticContext, this.locale);
-      // @ts-ignore
       const store = await storeApi.get(businessUnit.stores?.[0].key);
-      // @ts-ignore
-      organization.store = {
-        id: store.id,
-        key: store.key,
-        name: store.name,
-        custom: store.custom,
-        isPreBuyStore: store.isPreBuyStore,
-      };
+      organization.store = StoreMapper.mapStoreToSmallerStore(store);
       if (store?.distributionChannels?.length) {
         organization.distributionChannel = store.distributionChannels[0];
       }
@@ -33,6 +27,7 @@ export class BusinessUnitApi extends B2BBusinessUnitApi {
 
     return organization;
   };
+
   getOrderStateFromWorkflows = async (
     cart: Cart,
     organization: Organization,

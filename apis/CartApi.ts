@@ -1,21 +1,21 @@
 import { Cart } from '@Types/cart/Cart';
-import { LineItemReturnItemDraft } from 'cofe-ct-b2b-ecommerce/types/cart/LineItem';
+import { LineItemReturnItemDraft } from '@Types/cart/LineItem';
 import { LineItem } from '@Types/cart/LineItem';
 import { Order } from '@Types/cart/Order';
 import { Account } from '@Types/account/Account';
 import { CartDraft, Cart as CommercetoolsCart, AddressDraft, CartUpdateAction } from '@commercetools/platform-sdk';
 import {
   CartAddLineItemAction,
+  CartSetCustomerIdAction,
   CartRemoveLineItemAction,
   CartSetCountryAction,
   CartSetLocaleAction,
   CartUpdate,
 } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/cart';
 import { OrderFromCartDraft } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/order';
-import { CartApi as B2BCartApi } from 'cofe-ct-b2b-ecommerce/apis/CartApi';
-import { isReadyForCheckout } from 'cofe-ct-ecommerce/utils/Cart';
-import { Locale } from 'cofe-ct-ecommerce/interfaces/Locale';
-import { Organization } from 'cofe-ct-b2b-ecommerce/types/organization/organization';
+import { isReadyForCheckout } from '../utils/Cart';
+import { Locale } from '../interfaces/Locale';
+import { Organization } from '@Types/organization/organization';
 import { CartMapper } from '../mappers/CartMapper';
 import { BaseCartApi } from '@Commerce-commercetools/apis/BaseCartApi';
 import { Context } from '@frontastic/extension-types';
@@ -46,24 +46,49 @@ export class CartApi extends BaseCartApi {
   ) => {
     try {
       const locale = await this.getCommercetoolsLocal();
+      const allCarts = await this.getAllCarts(account, organization);
+      if (allCarts.length >= 1) {
+        const cart = (await this.buildCartWithAvailableShippingMethods(allCarts[0], locale)) as Cart;
+        if (this.assertCartOrganization(cart, organization)) {
+          return cart;
+        }
+      }
+
+      return (await this.createCart(account.accountId, organization)) as Cart;
+    } catch (error) {
+      //TODO: better error, get status code etc...
+      throw new Error(`getForUser failed. ${error}`);
+    }
+  };
+
+  getAllCarts: (account?: Account, organization?: Organization) => Promise<CommercetoolsCart[]> = async (
+    account: Account = this.account,
+    organization: Organization = this.organization,
+  ) => {
+    try {
       const subscriptionConfig = this.frontasticContext?.project?.configuration?.subscriptions;
+      const preBuyConfig = this.frontasticContext?.project?.configuration?.preBuy;
+
       const where = [
-        `customerId="${account.accountId}"`,
+        `store(key="${organization.store?.key}")`,
         `cartState="Active"`,
-        `businessUnit(key="${organization.businessUnit.key}")`,
-        `store(key="${organization.store.key}")`,
         `custom(fields(${subscriptionConfig.isSubscriptionCustomFieldNameOnCart} is not defined))`,
       ];
 
-      if (organization.superUserBusinessUnitKey) {
-        where.push('origin="Merchant"');
+      if (organization.store?.isPreBuyStore) {
+        where.push(`custom(fields(${preBuyConfig.orderCustomField} = true))`);
+        where.push(`inventoryMode="None"`);
       }
 
-      const response = await this.getApiForProject()
+      if (!organization.superUserBusinessUnitKey) {
+        where.push(`customerId="${account.accountId}"`);
+      }
+
+      const response = await this.associateEndpoints
         .carts()
         .get({
           queryArgs: {
-            limit: 1,
+            limit: 15,
             expand: [
               'lineItems[*].discountedPrice.includedDiscounts[*].discount',
               'discountCodes[*].discountCode',
@@ -76,43 +101,52 @@ export class CartApi extends BaseCartApi {
         .execute();
 
       if (response.body.count >= 1) {
-        return (await this.buildCartWithAvailableShippingMethods(response.body.results[0], locale)) as Cart;
+        return response.body.results;
       }
-
-      return this.createCart(account.accountId, organization);
+      return [];
     } catch (error) {
       //TODO: better error, get status code etc...
       throw new Error(`getForUser failed. ${error}`);
     }
   };
 
-  createCart: (customerId: string, organization?: Organization) => Promise<Cart> = async (
-    customerId: string,
-    organization: Organization,
+  getAllForSuperUser: (account?: Account, organization?: Organization) => Promise<Cart[]> = async (
+    account: Account = this.account,
+    organization: Organization = this.organization,
+  ) => {
+    const locale = await this.getCommercetoolsLocal();
+    const allCarts = await this.getAllCarts(account, organization);
+    if (allCarts.length >= 1) {
+      return allCarts.map((cart) => CartMapper.commercetoolsCartToCart(cart, locale));
+    }
+    return [];
+  };
+
+  createCart: (customerId?: string, organization?: Organization) => Promise<Cart> = async (
+    customerId: string = this.account?.accountId,
+    organization: Organization = this.organization,
   ) => {
     try {
       const locale = await this.getCommercetoolsLocal();
       const config = this.frontasticContext?.project?.configuration?.preBuy;
 
-      const cartDraft: CartDraft = {
+      const cartDraft: Writeable<CartDraft> = {
         currency: locale.currency,
         country: locale.country,
         locale: locale.language,
-        customerId,
-        businessUnit: {
-          key: organization.businessUnit.key,
-          typeId: 'business-unit',
-        },
         store: {
-          key: organization.store.key,
+          key: organization.store?.key,
           typeId: 'store',
         },
         inventoryMode: 'ReserveOnOrder',
-        origin: organization.superUserBusinessUnitKey ? 'Merchant' : 'Customer',
       };
+      if (!organization.superUserBusinessUnitKey) {
+        cartDraft.customerId = customerId;
+      } else {
+        cartDraft.origin = 'Merchant';
+      }
 
-      if (organization.store.isPreBuyStore) {
-        // @ts-ignore
+      if (organization.store?.isPreBuyStore) {
         cartDraft.custom = {
           type: {
             typeId: 'type',
@@ -122,11 +156,10 @@ export class CartApi extends BaseCartApi {
             [config.orderCustomField]: true,
           },
         };
-        // @ts-ignore
         cartDraft.inventoryMode = 'None';
       }
 
-      const commercetoolsCart = await this.getApiForProject()
+      const commercetoolsCart = await this.associateEndpoints
         .carts()
         .post({
           queryArgs: {
@@ -144,6 +177,160 @@ export class CartApi extends BaseCartApi {
     } catch (error) {
       //TODO: better error, get status code etc...
       throw error;
+    }
+  };
+
+  // @ts-ignore
+  addToCart: (cart: Cart, lineItem: LineItem, distributionChannel?: string) => Promise<Cart> = async (
+    cart: Cart,
+    lineItem: LineItem,
+    distributionChannel: string,
+  ) => {
+    try {
+      const locale = await this.getCommercetoolsLocal();
+
+      const cartUpdate: CartUpdate = {
+        version: +cart.cartVersion,
+        actions: [
+          {
+            action: 'addLineItem',
+            sku: lineItem.variant.sku,
+            quantity: +lineItem.count,
+            distributionChannel: { id: distributionChannel, typeId: 'channel' },
+          } as CartAddLineItemAction,
+        ],
+      };
+
+      const oldLineItem = cart.lineItems?.find((li) => li.variant?.sku === lineItem.variant.sku);
+      if (oldLineItem) {
+        cartUpdate.actions.push({
+          action: 'setLineItemShippingDetails',
+          lineItemId: oldLineItem.lineItemId,
+          shippingDetails: null,
+        });
+      }
+
+      const commercetoolsCart = await this.updateCart(cart.cartId, cartUpdate, locale);
+
+      return (await this.buildCartWithAvailableShippingMethods(commercetoolsCart, locale)) as Cart;
+    } catch (error) {
+      //TODO: better error, get status code etc...
+      throw new Error(`addToCart failed. ${error}`);
+    }
+  };
+
+  // @ts-ignore
+  addItemsToCart: (cart: Cart, lineItems: LineItem[], distributionChannel: string) => Promise<Cart> = async (
+    cart: Cart,
+    lineItems: LineItem[],
+    distributionChannel: string,
+  ) => {
+    try {
+      const locale = await this.getCommercetoolsLocal();
+
+      const actions: CartUpdateAction[] = [];
+      lineItems.forEach((lineItem) => {
+        actions.push({
+          action: 'addLineItem',
+          sku: lineItem.variant.sku,
+          quantity: +lineItem.count,
+          distributionChannel: { id: distributionChannel, typeId: 'channel' },
+        });
+        const oldLineItem = cart.lineItems?.find((li) => li.variant?.sku === lineItem.variant.sku);
+        if (oldLineItem) {
+          actions.push({
+            action: 'setLineItemShippingDetails',
+            lineItemId: oldLineItem.lineItemId,
+            shippingDetails: null,
+          });
+        }
+      });
+      const cartUpdate: CartUpdate = {
+        version: +cart.cartVersion,
+        actions,
+      };
+
+      const commercetoolsCart = await this.updateCart(cart.cartId, cartUpdate, locale);
+
+      return this.buildCartWithAvailableShippingMethods(commercetoolsCart, locale);
+    } catch (error) {
+      //TODO: better error, get status code etc...
+      throw new Error(`addToCart failed. ${error}`);
+    }
+  };
+
+  // @ts-ignore
+  updateLineItem: (cart: Cart, lineItem: LineItem) => Promise<Cart> = async (cart: Cart, lineItem: LineItem) => {
+    const locale = await this.getCommercetoolsLocal();
+
+    const cartUpdate: CartUpdate = {
+      version: +cart.cartVersion,
+      actions: [
+        {
+          action: 'changeLineItemQuantity',
+          lineItemId: lineItem.lineItemId,
+          quantity: +lineItem.count,
+        },
+      ],
+    };
+
+    const oldLineItem = cart.lineItems?.find((li) => li.lineItemId === lineItem.lineItemId);
+    if (oldLineItem) {
+      cartUpdate.actions.push({
+        action: 'setLineItemShippingDetails',
+        lineItemId: oldLineItem.lineItemId,
+        shippingDetails: null,
+      });
+    }
+
+    const commercetoolsCart = await this.updateCart(cart.cartId, cartUpdate, locale);
+
+    return (await this.buildCartWithAvailableShippingMethods(commercetoolsCart, locale)) as Cart;
+  };
+
+  // @ts-ignore
+  removeAllLineItems: (cart: Cart) => Promise<Cart> = async (cart: Cart) => {
+    try {
+      const locale = await this.getCommercetoolsLocal();
+
+      const cartUpdate: CartUpdate = {
+        version: +cart.cartVersion,
+        actions: cart.lineItems.map((lineItem) => ({
+          action: 'removeLineItem',
+          lineItemId: lineItem.lineItemId,
+        })),
+      };
+
+      const commercetoolsCart = await this.updateCart(cart.cartId, cartUpdate, locale);
+
+      return this.buildCartWithAvailableShippingMethods(commercetoolsCart, locale);
+    } catch (error) {
+      //TODO: better error, get status code etc...
+      throw new Error(`removeLineItem failed. ${error}`);
+    }
+  };
+
+  // @ts-ignore
+  setCustomerId: (cart: Cart, customerId: string) => Promise<Cart> = async (cart: Cart, customerId: string) => {
+    try {
+      const locale = await this.getCommercetoolsLocal();
+
+      const cartUpdate: CartUpdate = {
+        version: +cart.cartVersion,
+        actions: [
+          {
+            action: 'setCustomerId',
+            customerId,
+          } as CartSetCustomerIdAction,
+        ],
+      };
+
+      const commercetoolsCart = await this.updateCart(cart.cartId, cartUpdate, locale);
+
+      return this.buildCartWithAvailableShippingMethods(commercetoolsCart, locale);
+    } catch (error) {
+      //TODO: better error, get status code etc...
+      throw new Error(`setCustomerId failed. ${error}`);
     }
   };
 
@@ -251,7 +438,7 @@ export class CartApi extends BaseCartApi {
       }
       const config = this.frontasticContext?.project?.configuration?.preBuy;
 
-      const response = await this.getApiForProject()
+      const response = await this.associateEndpoints
         .orders()
         .post({
           queryArgs: {
@@ -278,7 +465,7 @@ export class CartApi extends BaseCartApi {
       const locale = await this.getCommercetoolsLocal();
       const config = this.frontasticContext?.project?.configuration?.preBuy;
 
-      const response = await this.getApiForProject()
+      const response = await this.associateEndpoints
         .orders()
         .get({
           queryArgs: {
@@ -306,7 +493,7 @@ export class CartApi extends BaseCartApi {
       const locale = await this.getCommercetoolsLocal();
       const config = this.frontasticContext?.project?.configuration?.preBuy;
 
-      const response = await this.getApiForProject()
+      const response = await this.associateEndpoints
         .orders()
         .withOrderNumber({ orderNumber })
         .get({
@@ -328,6 +515,73 @@ export class CartApi extends BaseCartApi {
     }
   };
 
+  updateOrderState: (orderNumber: string, orderState: string) => Promise<Order> = async (
+    orderNumber: string,
+    orderState: string,
+  ) => {
+    try {
+      const locale = await this.getCommercetoolsLocal();
+
+      const response = await this.getOrder(orderNumber).then((order) => {
+        if (order.orderState === 'Complete') {
+          throw 'Cannot cancel a Completed order.';
+        }
+        return this.associateEndpoints
+          .orders()
+          .withOrderNumber({ orderNumber })
+          .post({
+            body: {
+              version: +order.orderVersion,
+              actions: [
+                {
+                  action: 'changeOrderState',
+                  orderState,
+                },
+              ],
+            },
+            queryArgs: {
+              expand: [
+                'lineItems[*].discountedPrice.includedDiscounts[*].discount',
+                'discountCodes[*].discountCode',
+                'paymentInfo.payments[*]',
+              ],
+            },
+          })
+          .execute();
+      });
+
+      return CartMapper.commercetoolsOrderToOrder(response.body, locale);
+    } catch (error) {
+      //TODO: better error, get status code etc...
+      throw new Error(`get orders failed. ${error}`);
+    }
+  };
+
+  protected async updateCart(cartId: string, cartUpdate: CartUpdate, locale: Locale): Promise<CommercetoolsCart> {
+    return await this.associateEndpoints
+      .carts()
+      .withId({
+        ID: cartId,
+      })
+      .post({
+        queryArgs: {
+          expand: [
+            'lineItems[*].discountedPrice.includedDiscounts[*].discount',
+            'discountCodes[*].discountCode',
+            'paymentInfo.payments[*]',
+          ],
+        },
+        body: cartUpdate,
+      })
+      .execute()
+      .then((response) => {
+        return response.body;
+      })
+      .catch((error) => {
+        throw new Error(`Update cart failed ${error}`);
+      });
+  }
+
   returnItems: (orderNumber: string, returnLineItems: LineItemReturnItemDraft[]) => Promise<Order> = async (
     orderNumber: string,
     returnLineItems: LineItemReturnItemDraft[],
@@ -337,7 +591,7 @@ export class CartApi extends BaseCartApi {
       const config = this.frontasticContext?.project?.configuration?.preBuy;
 
       const response = await this.getOrder(orderNumber).then((order) => {
-        return this.getApiForProject()
+        return this.associateEndpoints
           .orders()
           .withOrderNumber({ orderNumber })
           .post({
@@ -372,7 +626,7 @@ export class CartApi extends BaseCartApi {
       const config = this.frontasticContext?.project?.configuration?.preBuy;
 
       const response = await this.getOrder(orderNumber).then((order) => {
-        return this.getApiForProject()
+        return this.associateEndpoints
           .orders()
           .withOrderNumber({ orderNumber })
           .post({
@@ -399,7 +653,7 @@ export class CartApi extends BaseCartApi {
     }
   };
 
-  getBusinessUnitOrders: (keys: string) => Promise<Order[]> = async (keys: string) => {
+  getBusinessUnitOrders: (key: string) => Promise<Order[]> = async (key: string) => {
     try {
       const locale = await this.getCommercetoolsLocal();
       const config = this.frontasticContext?.project?.configuration?.preBuy;
@@ -416,7 +670,7 @@ export class CartApi extends BaseCartApi {
         .get({
           queryArgs: {
             expand: ['state'],
-            where: `businessUnit(key in (${keys}))`,
+            where: `businessUnit(key="${key}")`,
             sort: 'createdAt desc',
           },
         })

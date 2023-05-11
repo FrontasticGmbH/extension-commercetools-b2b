@@ -3,8 +3,18 @@ import { StoreMapper } from '../mappers/StoreMapper';
 import { StoreDraft } from '@commercetools/platform-sdk';
 import { BaseApi } from '@Commerce-commercetools/apis/BaseApi';
 
-export class StoreApi extends B2BStoreApi {
-  get: (key: string) => Promise<any> = async (key: string): Promise<Store> => {
+const convertStoreToBody = (store: StoreDraft, locale: string): StoreDraft => {
+  return {
+    ...store,
+    // @ts-ignore
+    name: {
+      [locale]: store.name,
+    },
+  };
+};
+
+export class StoreApi extends BaseApi {
+  create: (store: StoreDraft) => Promise<any> = async (store: StoreDraft) => {
     const locale = await this.getCommercetoolsLocal();
     const body = convertStoreToBody(store, locale.language);
 

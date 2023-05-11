@@ -1,7 +1,7 @@
 import { CustomFields } from '@commercetools/platform-sdk';
-import { Locale } from 'cofe-ct-ecommerce/interfaces/Locale';
+import { Locale } from '../interfaces/Locale';
 import { CartMapper } from './CartMapper';
-import { ProductMapper as B2BProductMapper } from 'cofe-ct-b2b-ecommerce/mappers/ProductMapper';
+import { ProductMapper } from './ProductMapper';
 import { Cart as CommercetoolsCart } from '@commercetools/platform-sdk';
 import { Cart } from '@Types/cart/Cart';
 import { Subscription } from '@Types/cart/Cart';
@@ -13,10 +13,11 @@ export class SubscriptionMapper {
   ): Cart {
     return {
       cartId: commercetoolsCart.id,
+      customerId: commercetoolsCart.customerId,
       cartVersion: commercetoolsCart.version.toString(),
       lineItems: CartMapper.commercetoolsLineItemsToLineItems(commercetoolsCart.lineItems, locale),
       email: commercetoolsCart?.customerEmail,
-      sum: B2BProductMapper.commercetoolsMoneyToMoney(commercetoolsCart.totalPrice),
+      sum: ProductMapper.commercetoolsMoneyToMoney(commercetoolsCart.totalPrice),
       shippingAddress: CartMapper.commercetoolsAddressToAddress(commercetoolsCart.shippingAddress),
       billingAddress: CartMapper.commercetoolsAddressToAddress(commercetoolsCart.billingAddress),
       shippingInfo: CartMapper.commercetoolsShippingInfoToShippingInfo(commercetoolsCart.shippingInfo, locale),
@@ -41,7 +42,7 @@ export class SubscriptionMapper {
     return {
       order: commercetoolsCustom?.fields?.[config.orderCustomFieldNameOnCart]?.obj,
       sku: commercetoolsCustom?.fields?.[config.skuCustomFieldNameOnCart],
-      product: B2BProductMapper.commercetoolsProductProjectionToProduct(
+      product: ProductMapper.commercetoolsProductProjectionToProduct(
         commercetoolsCustom?.fields?.[config.productCustomFieldNameOnCart]?.obj?.masterData?.current,
         locale,
       ),
