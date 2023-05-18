@@ -318,24 +318,6 @@ export const update: ActionHook = async (request: Request, actionContext: Action
   } as Response;
 };
 
-export const addIsSubscribedType: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  assertIsAuthenticated(request);
-
-  let account = fetchAccountFromSession(request);
-  const accountApi = new AccountApi(actionContext.frontasticContext, getLocale(request));
-
-  account = await accountApi.addIsSubscribedType(account);
-
-  return {
-    statusCode: 200,
-    body: JSON.stringify(account),
-    sessionData: {
-      ...request.sessionData,
-      account,
-    },
-  } as Response;
-};
-
 export const updateSubscription: ActionHook = async (request: Request, actionContext: ActionContext) => {
   assertIsAuthenticated(request);
 

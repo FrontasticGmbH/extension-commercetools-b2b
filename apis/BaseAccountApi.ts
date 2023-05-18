@@ -1,11 +1,9 @@
 import { BaseApi } from './BaseApi';
-//import { Account } from '@Types/account/Account';
 import { AccountExtended as Account } from '../interfaces/AccountExtended';
 import { AccountToken } from '@Types/account/AccountToken';
 import {
   CustomerDraft,
   CustomerSetCustomFieldAction,
-  CustomerSetCustomTypeAction,
   CustomerUpdate,
   CustomerUpdateAction,
 } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/customer';
@@ -268,43 +266,6 @@ export class BaseAccountApi extends BaseApi {
     // TODO: should we also update addresses in this method?
 
     return await this.updateAccount(account, customerUpdateActions);
-  };
-
-  addIsSubscribedType: (account: Account) => Promise<Account> = async (account: Account) => {
-    const locale = await this.getCommercetoolsLocal();
-    const accountVersion = await this.fetchAccountVersion(account);
-
-    // The ID generated for the type 'isSubscribed'
-    const TYPE_ID = 'ff098c54-f6ba-4dda-bd90-c9e6d39e88e5';
-
-    const customerUpdateActions: CustomerSetCustomTypeAction[] = [
-      {
-        action: 'setCustomType',
-        type: {
-          id: TYPE_ID,
-          typeId: 'type',
-        },
-      },
-    ];
-
-    const customerUpdate: CustomerUpdate = {
-      version: accountVersion,
-      actions: customerUpdateActions,
-    };
-
-    return this.requestBuilder()
-      .customers()
-      .withId({ ID: account.accountId })
-      .post({
-        body: customerUpdate,
-      })
-      .execute()
-      .then((response) => {
-        return BaseAccountMapper.commercetoolsCustomerToAccount(response.body, locale);
-      })
-      .catch((error) => {
-        throw new ExternalError({ status: error.code, message: error.message, body: error.body });
-      });
   };
 
   updateSubscription: (account: Account, isSubscribed: Account['isSubscribed']) => Promise<Account> = async (
