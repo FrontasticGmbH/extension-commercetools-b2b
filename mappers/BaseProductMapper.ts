@@ -20,11 +20,7 @@ import { Attributes } from '@Types/product/Attributes';
 import { ProductRouter } from '../utils/ProductRouter';
 import { Locale } from '../interfaces/Locale';
 import { Money } from '@Types/product/Money';
-import {
-  FilterField,
-  FilterFieldTypes,
-  FilterFieldValue,
-} from '@Types/product/FilterField';
+import { FilterField, FilterFieldTypes, FilterFieldValue } from '@Types/product/FilterField';
 import {
   AttributeEnumType,
   AttributeLocalizedEnumType,

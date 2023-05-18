@@ -10,10 +10,8 @@ import { ProductMapper } from './ProductMapper';
 import { ProductRouter } from '../utils/ProductRouter';
 import { LineItem } from '@Types/cart/LineItem';
 import { Cart } from '@Types/cart/Cart';
-import { Order, ReturnInfo } from "@Types/cart/Order";
-import {
-  ReturnInfo as CommercetoolsReturnInfo
-} from "@commercetools/platform-sdk/dist/declarations/src/generated/models/order";
+import { Order, ReturnInfo } from '@Types/cart/Order';
+import { ReturnInfo as CommercetoolsReturnInfo } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/order';
 
 export class CartMapper extends BaseCartMapper {
   static commercetoolsCartToCart(
@@ -148,4 +146,3 @@ Object.getOwnPropertyNames(CartMapper).forEach((key) => {
     BaseCartMapper[key] = CartMapper[key];
   }
 });
-

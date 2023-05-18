@@ -38,4 +38,3 @@ Object.getOwnPropertyNames(CartFetcher).forEach((key) => {
     BaseCartFetcher[key] = CartFetcher[key];
   }
 });
-

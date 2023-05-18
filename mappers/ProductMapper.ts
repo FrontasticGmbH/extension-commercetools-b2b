@@ -101,4 +101,3 @@ Object.getOwnPropertyNames(ProductMapper).forEach((key) => {
     BaseProductMapper[key] = ProductMapper[key];
   }
 });
-

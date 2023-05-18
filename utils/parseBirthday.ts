@@ -5,7 +5,7 @@ export function parseBirthday(accountRegisterBody: AccountRegisterBody): Date | 
     return new Date(
       +accountRegisterBody.birthdayYear,
       +(accountRegisterBody?.birthdayMonth ?? 1),
-      +(accountRegisterBody?.birthdayDay ?? 1)
+      +(accountRegisterBody?.birthdayDay ?? 1),
     );
   }
 

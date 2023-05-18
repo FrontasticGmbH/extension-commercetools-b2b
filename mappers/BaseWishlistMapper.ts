@@ -20,10 +20,7 @@ export class BaseWishlistMapper {
     };
   }
 
-  static commercetoolsLineItemToLineItem(
-    commercetoolsLineItem: ShoppingListLineItem,
-    locale: Locale,
-  ): LineItem {
+  static commercetoolsLineItemToLineItem(commercetoolsLineItem: ShoppingListLineItem, locale: Locale): LineItem {
     const lineItem: LineItem = {
       lineItemId: commercetoolsLineItem.id,
       name: commercetoolsLineItem.name[locale.language],

@@ -1,14 +1,14 @@
-import { AccountApi } from "@Commerce-commercetools/apis/AccountApi";
+import { AccountApi } from '@Commerce-commercetools/apis/AccountApi';
 
 import { ActionContext, Request, Response } from '@frontastic/extension-types';
 import { AccountRegisterBody } from './AccountController';
-import { Store, StoreKeyReference } from "@Types/store/Store";
+import { Store, StoreKeyReference } from '@Types/store/Store';
 import { getLocale } from '../utils/Request';
 import { StoreApi } from '../apis/StoreApi';
 import { BusinessUnitApi } from '../apis/BusinessUnitApi';
 import { CartApi } from '../apis/CartApi';
 import { BusinessUnitMapper } from '../mappers/BusinessUnitMapper';
-import { BusinessUnit, BusinessUnitStatus, BusinessUnitType, StoreMode } from "@Types/business-unit/BusinessUnit";
+import { BusinessUnit, BusinessUnitStatus, BusinessUnitType, StoreMode } from '@Types/business-unit/BusinessUnit';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
 
@@ -407,4 +407,3 @@ function mapRequestToBusinessUnit(request: Request, config: Record<string, strin
 
   return businessUnit;
 }
-

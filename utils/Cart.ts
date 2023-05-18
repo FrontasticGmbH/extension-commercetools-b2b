@@ -44,7 +44,6 @@ export const getSubscriptionGroups = (
   return undefined;
 };
 
-
 export const hasUser = (cart: Cart): boolean => {
   return cart.email !== undefined;
 };

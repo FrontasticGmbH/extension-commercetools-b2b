@@ -159,7 +159,7 @@ export const requestConfirmationEmail: ActionHook = async (request: Request, act
 
   const emailApi = EmailApiFactory.getDefaultApi(actionContext.frontasticContext, locale);
 
-  emailApi.sendAccountVerificationEmail(account)
+  emailApi.sendAccountVerificationEmail(account);
 
   const response: Response = {
     statusCode: 200,
@@ -262,7 +262,7 @@ export const requestReset: ActionHook = async (request: Request, actionContext: 
   const passwordResetToken = await accountApi.generatePasswordResetToken(accountRequestResetBody.email);
 
   const emailApi = EmailApiFactory.getDefaultApi(actionContext.frontasticContext, locale);
-  emailApi.sendPasswordResetEmail(accountRequestResetBody as Account, passwordResetToken.token)
+  emailApi.sendPasswordResetEmail(accountRequestResetBody as Account, passwordResetToken.token);
 
   return {
     statusCode: 200,
