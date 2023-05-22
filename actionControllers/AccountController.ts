@@ -36,7 +36,6 @@ async function loginAccount(
   request: Request,
   actionContext: ActionContext,
   account: Account,
-  reverify = false,
   businessUnitKey = '',
 ) {
   const accountApi = new AccountApi(actionContext.frontasticContext, getLocale(request));
@@ -45,7 +44,7 @@ async function loginAccount(
   const cart = await CartFetcher.fetchCart(request, actionContext);
 
   try {
-    const accountRes = await accountApi.login(account, cart, reverify);
+    const accountRes = await accountApi.login(account, cart);
     const organization = await businessUnitApi.getOrganization(accountRes.accountId, businessUnitKey);
 
     return { account: accountRes, organization };
@@ -151,7 +150,6 @@ export const login: ActionHook = async (request: Request, actionContext: ActionC
       request,
       actionContext,
       loginInfo,
-      false,
       accountLoginBody.businessUnitKey,
     );
     response = {

@@ -86,62 +86,6 @@ export class AccountApi extends BaseAccountApi {
     }
   };
 
-  login: (account: Account, cart: Cart | undefined, reverify?: boolean) => Promise<Account> = async (
-    account: Account,
-    cart: Cart | undefined,
-    reverify = false,
-  ) => {
-    try {
-      account = await this.requestBuilder()
-        .login()
-        .post({
-          body: {
-            email: account.email,
-            password: account.password,
-            anonymousCart:
-              cart !== undefined
-                ? ({
-                    typeId: 'cart',
-                    id: cart.cartId,
-                  } as CartResourceIdentifier)
-                : undefined,
-          },
-        })
-        .execute()
-        .then((response) => {
-          return AccountMapper.commercetoolsCustomerToSmallerAccount(response.body.customer);
-        })
-        .catch((error) => {
-          if (error.code && error.code === 400) {
-            if (error.body && error.body?.errors?.[0]?.code === 'InvalidCredentials') {
-              throw new Error(`Invalid credentials to login with the account ${account.email}`);
-            }
-
-            /*
-             * The cart might already belong to another user, so we try to log in without the cart.
-             */
-            if (cart) {
-              return this.login(account, undefined, reverify);
-            }
-          }
-
-          throw new Error(`Failed to login account  ${account.email}.`);
-        });
-
-      if (reverify) {
-        const token = await this.getConfirmationToken(account);
-        account.confirmationToken = token;
-      } else if (!account.confirmed) {
-        throw new Error(`Your account ${account.email} is not activated yet!`);
-      }
-
-      return account;
-    } catch (error) {
-      //TODO: better error, get status code etc...
-      throw error;
-    }
-  };
-
   getCustomerByEmail: (email: string) => Promise<Customer | null> = async (email: string) => {
     const {
       body: { results },
