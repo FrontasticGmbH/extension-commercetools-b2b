@@ -32,12 +32,7 @@ type AccountLoginBody = {
   businessUnitKey?: string;
 };
 
-async function loginAccount(
-  request: Request,
-  actionContext: ActionContext,
-  account: Account,
-  businessUnitKey = '',
-) {
+async function loginAccount(request: Request, actionContext: ActionContext, account: Account, businessUnitKey = '') {
   const accountApi = new AccountApi(actionContext.frontasticContext, getLocale(request));
   const businessUnitApi = new BusinessUnitApi(actionContext.frontasticContext, getLocale(request));
 
