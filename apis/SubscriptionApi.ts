@@ -57,7 +57,7 @@ export class SubscriptionApi extends BaseApi {
       const subscriptionGroups = getSubscriptionGroups(cart, config);
 
       if (subscriptionGroups) {
-        const productApi = new ProductApi(this.frontasticContext, this.locale);
+        const productApi = new ProductApi(this.frontasticContext, this.locale, this.currency);
         const cartApi = new CartApi(this.frontasticContext, this.locale);
 
         for await (const sku of Object.keys(subscriptionGroups)) {

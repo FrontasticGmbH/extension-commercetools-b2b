@@ -1,6 +1,6 @@
 import { ActionContext, Request, Response } from '@frontastic/extension-types';
 import { Cart as CommercetoolsCart } from '@commercetools/platform-sdk';
-import { getLocale } from '../utils/Request';
+import { getCurrency, getLocale } from '../utils/Request';
 import { QuoteRequest } from '@Types/quotes/QuoteRequest';
 import { Quote } from '@Types/quotes/Quote';
 import { StagedQuote } from '@Types/quotes/StagedQuote';
@@ -36,7 +36,7 @@ const mergeQuotesOverview = (quoteRequests: QuoteRequest[], stagedQuotes: Staged
 };
 
 export const createQuoteRequest: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const quoteApi = new QuoteApi(actionContext.frontasticContext, getLocale(request));
+  const quoteApi = new QuoteApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
   const cartApi = new CartApi(
     actionContext.frontasticContext,
     getLocale(request),
@@ -80,7 +80,7 @@ export const createQuoteRequest: ActionHook = async (request: Request, actionCon
 };
 
 export const getMyQuoteRequests: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const quoteApi = new QuoteApi(actionContext.frontasticContext, getLocale(request));
+  const quoteApi = new QuoteApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 
   const accountId = request.sessionData?.account?.accountId;
   if (!accountId) {
@@ -99,7 +99,7 @@ export const getMyQuoteRequests: ActionHook = async (request: Request, actionCon
 };
 
 export const getMyQuotesOverview: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const quoteApi = new QuoteApi(actionContext.frontasticContext, getLocale(request));
+  const quoteApi = new QuoteApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 
   const accountId = request.sessionData?.account?.accountId;
   if (!accountId) {
@@ -122,7 +122,7 @@ export const getMyQuotesOverview: ActionHook = async (request: Request, actionCo
 };
 
 export const getBusinessUnitQuotesOverview: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const quoteApi = new QuoteApi(actionContext.frontasticContext, getLocale(request));
+  const quoteApi = new QuoteApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 
   const keys = request.query['keys'];
 
@@ -146,7 +146,7 @@ export const getBusinessUnitQuotesOverview: ActionHook = async (request: Request
 };
 
 export const updateQuoteState: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const quoteApi = new QuoteApi(actionContext.frontasticContext, getLocale(request));
+  const quoteApi = new QuoteApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 
   const ID = request.query?.['id'];
   const { state } = JSON.parse(request.body);
@@ -187,7 +187,7 @@ export const updateQuoteState: ActionHook = async (request: Request, actionConte
 };
 
 export const updateQuoteRequestState: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const quoteApi = new QuoteApi(actionContext.frontasticContext, getLocale(request));
+  const quoteApi = new QuoteApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 
   const ID = request.query?.['id'];
   const { state } = JSON.parse(request.body);

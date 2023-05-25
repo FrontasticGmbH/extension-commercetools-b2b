@@ -3,7 +3,7 @@ import { AddressDraft } from '@commercetools/platform-sdk';
 import { Context, Request, Response } from '@frontastic/extension-types';
 import { ActionContext } from '@frontastic/extension-types';
 import { LineItem, LineItemReturnItemDraft } from '@Types/cart/LineItem';
-import { getLocale } from '../utils/Request';
+import { getCurrency, getLocale } from '../utils/Request';
 import { Cart } from '@Types/cart/Cart';
 import { Address } from '@Types/account/Address';
 import { CartFetcher } from '../utils/CartFetcher';
@@ -23,6 +23,7 @@ interface LineItemVariant {
 async function checkForCompatibility(
   context: Context,
   locale: string,
+  currency: string,
   cart: Cart,
   lineItem: LineItem,
   compatibilityConfig: Record<string, string>,
@@ -31,7 +32,7 @@ async function checkForCompatibility(
   if (!inCompatibilityAttributeKey) {
     return;
   }
-  const productApi = new ProductApi(context, locale);
+  const productApi = new ProductApi(context, locale, currency);
   const currentProduct = await productApi.getProduct({ skus: [lineItem.variant.sku] });
   const cartIncompatibles = cart?.lineItems
     ?.reduce((prev, lineitem) => {
@@ -63,6 +64,7 @@ async function updateCartFromRequest(request: Request, actionContext: ActionCont
     getLocale(request),
     request.sessionData?.organization,
     request.sessionData?.account,
+    getCurrency(request)
   );
   let cart = await CartFetcher.fetchCart(request, actionContext);
 
@@ -123,6 +125,7 @@ export const getCartById: ActionHook = async (request: Request, actionContext: A
     getLocale(request),
     request.sessionData?.organization,
     request.sessionData?.account,
+    getCurrency(request)
   );
   let response: Response;
   try {
@@ -160,6 +163,7 @@ export const getAllSuperUserCarts: ActionHook = async (request: Request, actionC
       getLocale(request),
       request.sessionData?.organization,
       request.sessionData?.account,
+      getCurrency(request)
     );
     carts = (await cartApi.getAllForSuperUser()) as Cart[];
   }
@@ -182,6 +186,7 @@ export const createCart: ActionHook = async (request: Request, actionContext: Ac
       getLocale(request),
       request.sessionData?.organization,
       request.sessionData?.account,
+      getCurrency(request)
     );
     cart = (await cartApi.createCart()) as Cart;
     cartId = cart.cartId;
@@ -205,6 +210,7 @@ export const addToCart: ActionHook = async (request: Request, actionContext: Act
     getLocale(request),
     request.sessionData?.organization,
     request.sessionData?.account,
+    getCurrency(request)
   );
   const subscriptionsConfig = actionContext.frontasticContext?.project?.configuration?.subscriptions;
   const compatibilityConfig = actionContext.frontasticContext?.project?.configuration?.compatibility;
@@ -232,6 +238,7 @@ export const addToCart: ActionHook = async (request: Request, actionContext: Act
     await checkForCompatibility(
       actionContext.frontasticContext,
       getLocale(request),
+      getCurrency(request),
       cart,
       lineItem,
       compatibilityConfig,
@@ -270,6 +277,7 @@ export const addItemsToCart: ActionHook = async (request: Request, actionContext
     getLocale(request),
     request.sessionData?.organization,
     request.sessionData?.account,
+    getCurrency(request)
   );
   const config = actionContext.frontasticContext?.project?.configuration?.subscriptions;
 
@@ -314,6 +322,7 @@ export const updateLineItem: ActionHook = async (request: Request, actionContext
     getLocale(request),
     request.sessionData?.organization,
     request.sessionData?.account,
+    getCurrency(request)
   );
 
   const body: {
@@ -348,6 +357,7 @@ export const returnItems: ActionHook = async (request: Request, actionContext: A
     getLocale(request),
     request.sessionData?.organization,
     request.sessionData?.account,
+    getCurrency(request)
   );
 
   let response: Response;
@@ -380,6 +390,7 @@ export const updateOrderState: ActionHook = async (request: Request, actionConte
     getLocale(request),
     request.sessionData?.organization,
     request.sessionData?.account,
+    getCurrency(request)
   );
 
   let response: Response;
@@ -411,6 +422,7 @@ export const replicateCart: ActionHook = async (request: Request, actionContext:
     getLocale(request),
     request.sessionData?.organization,
     request.sessionData?.account,
+    getCurrency(request)
   );
   const orderId = request.query?.['orderId'];
   try {
@@ -446,6 +458,7 @@ export const splitLineItem: ActionHook = async (request: Request, actionContext:
     getLocale(request),
     request.sessionData?.organization,
     request.sessionData?.account,
+    getCurrency(request)
   );
   const cart = await CartFetcher.fetchCart(request, actionContext);
 
@@ -494,6 +507,7 @@ export const reassignCart: ActionHook = async (request: Request, actionContext: 
     getLocale(request),
     request.sessionData?.organization,
     request.sessionData?.account,
+    getCurrency(request)
   );
   cart = await cartApi.setCustomerId(cart, request.query?.customerId);
   cart = (await cartApi.setEmail(cart, request.query?.email)) as Cart;
@@ -516,6 +530,7 @@ export const removeLineItem: ActionHook = async (request: Request, actionContext
     getLocale(request),
     request.sessionData?.organization,
     request.sessionData?.account,
+    getCurrency(request)
   );
 
   const body: {
@@ -548,14 +563,15 @@ export const removeLineItem: ActionHook = async (request: Request, actionContext
 
 export const checkout: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const locale = getLocale(request);
-  const businessUnitApi = new BusinessUnitApi(actionContext.frontasticContext, getLocale(request));
+  const businessUnitApi = new BusinessUnitApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
   const cartApi = new CartApi(
     actionContext.frontasticContext,
     locale,
     request.sessionData?.organization,
     request.sessionData?.account,
+    getCurrency(request)
   );
-  const subscriptionApi = new SubscriptionApi(actionContext.frontasticContext, getLocale(request));
+  const subscriptionApi = new SubscriptionApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 
   const config = actionContext.frontasticContext?.project?.configuration?.workflows;
   const clientHost = actionContext.frontasticContext?.project?.configuration?.smtp?.client_host;
@@ -610,6 +626,7 @@ export const transitionOrderState: ActionHook = async (request: Request, actionC
     getLocale(request),
     request.sessionData?.organization,
     request.sessionData?.account,
+    getCurrency(request)
   );
 
   let response: Response;

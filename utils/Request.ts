@@ -18,6 +18,18 @@ export const getCountry = (locale: string) => {
   return { de_DE: 'DE', en_GB: 'GB', 'de_DE@EUR': 'DE', 'en_GB@GBP': 'GB' }[locale];
 };
 
+export const getCurrency = (request: Request): string | null => {
+  if (request !== undefined) {
+    const currency = getHeader(request, 'frontastic-ct-currency') ?? request.query['ct-currency'];
+
+    if (currency !== undefined) {
+      return getHeader(request, 'frontastic-ct-currency') ?? request.query['ct-currency'];
+    }
+  }
+
+  return null;
+};
+
 const getHeader = (request: Request, header: string): string | null => {
   if (header in request.headers) {
     const foundHeader = request.headers[header];

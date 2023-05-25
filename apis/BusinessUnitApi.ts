@@ -17,7 +17,7 @@ export class BusinessUnitApi extends BaseApi {
     const organization: Organization = {} as Organization;
     organization.businessUnit = businessUnit;
     if (businessUnit.stores?.[0]) {
-      const storeApi = new StoreApi(this.frontasticContext, this.locale);
+      const storeApi = new StoreApi(this.frontasticContext, this.locale, this.currency);
       const store = await storeApi.get(businessUnit.stores?.[0].key);
       organization.store = StoreMapper.mapStoreToSmallerStore(store);
       if (store?.distributionChannels?.length) {
@@ -192,7 +192,7 @@ export class BusinessUnitApi extends BaseApi {
 
   getMe: (accountId: string) => Promise<BusinessUnit> = async (accountId: string) => {
     try {
-      const storeApi = new StoreApi(this.frontasticContext, this.locale);
+      const storeApi = new StoreApi(this.frontasticContext, this.locale, this.currency);
       const config = this.frontasticContext?.project?.configuration?.associateRoles;
       if (!config?.defaultAdminRoleKey || !config?.defaultSuperUserRoleKey) {
         throw new Error('Configuration error. No "defaultAdminRoleKey" exists');
@@ -230,7 +230,7 @@ export class BusinessUnitApi extends BaseApi {
     if (!config?.defaultAdminRoleKey) {
       throw new Error('Configuration error. No "defaultAdminRoleKey" exists');
     }
-    const storeApi = new StoreApi(this.frontasticContext, this.locale);
+    const storeApi = new StoreApi(this.frontasticContext, this.locale, this.currency);
     try {
       const bu = await this.requestBuilder()
         .businessUnits()
@@ -297,7 +297,7 @@ export class BusinessUnitApi extends BaseApi {
 
   getTree: (accoundId: string) => Promise<BusinessUnit[]> = async (accountId: string) => {
     let tree: CommercetoolsBusinessUnit[] = [];
-    const storeApi = new StoreApi(this.frontasticContext, this.locale);
+    const storeApi = new StoreApi(this.frontasticContext, this.locale, this.currency);
     const config = this.frontasticContext?.project?.configuration?.associateRoles;
     if (!config?.defaultAdminRoleKey) {
       throw new Error('Configuration error. No "defaultAdminRoleKey" exists');

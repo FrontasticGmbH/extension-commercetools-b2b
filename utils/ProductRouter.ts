@@ -3,7 +3,7 @@ import { Context, Request } from '@frontastic/extension-types';
 import { ProductQuery } from '@Types/query/ProductQuery';
 import { ProductApi } from '../apis/ProductApi';
 import { LineItem } from '@Types/cart/LineItem';
-import { getLocale, getPath } from './Request';
+import { getCurrency, getLocale, getPath } from './Request';
 import { LineItem as WishlistItem } from '@Types/wishlist/LineItem';
 import { Variant } from '@Types/product/Variant';
 
@@ -36,7 +36,7 @@ export class ProductRouter {
   }
 
   static loadFor = async (request: Request, frontasticContext: Context): Promise<Product> => {
-    const productApi = new ProductApi(frontasticContext, getLocale(request));
+    const productApi = new ProductApi(frontasticContext, getLocale(request), getCurrency(request));
 
     const urlMatches = getPath(request)?.match(/\/p\/([^\/]+)/);
 
@@ -60,7 +60,7 @@ export class ProductRouter {
   };
 
   static loadPreviewFor = async (request: Request, frontasticContext: Context): Promise<Product> => {
-    const productApi = new ProductApi(frontasticContext, getLocale(request));
+    const productApi = new ProductApi(frontasticContext, getLocale(request), getCurrency(request));
 
     const urlMatches = getPath(request)?.match(/\/preview\/.+\/p\/([^\/]+)/);
 
@@ -133,7 +133,7 @@ export class ProductRouter {
 
         // Fetch all products at once
         if (allProductIds.length) {
-          const productApi = new ProductApi(frontasticContext, getLocale(request));
+          const productApi = new ProductApi(frontasticContext, getLocale(request), getCurrency(request));
           const products = await productApi
             .query({ productIds: allProductIds })
             .then((result) => result.items as Product[]);

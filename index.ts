@@ -5,7 +5,7 @@ import {
   ExtensionRegistry,
   Request,
 } from '@frontastic/extension-types';
-import { getLocale, getPath } from './utils/Request';
+import { getCurrency, getLocale, getPath } from './utils/Request';
 import { BusinessUnitApi } from './apis/BusinessUnitApi';
 import { ProductRouter } from './utils/ProductRouter';
 import { Product } from '@Types/product/Product';
@@ -38,7 +38,7 @@ export default {
     if (b2bPageMatch) {
       let organization = request.sessionData?.organization;
       if (!organization.businessUnit && request.sessionData?.account?.accountId) {
-        const businessUnitApi = new BusinessUnitApi(context.frontasticContext, getLocale(request));
+        const businessUnitApi = new BusinessUnitApi(context.frontasticContext, getLocale(request), getCurrency(request));
         organization = await businessUnitApi.getOrganization(request.sessionData.account.accountId);
       }
       return {
@@ -201,7 +201,7 @@ export default {
     if (homePageMatch) {
       let organization = request.sessionData?.organization;
       if (!organization?.businessUnit && request.sessionData?.account?.accountId) {
-        const businessUnitApi = new BusinessUnitApi(context.frontasticContext, getLocale(request));
+        const businessUnitApi = new BusinessUnitApi(context.frontasticContext, getLocale(request), getCurrency(request));
         organization = await businessUnitApi.getOrganization(request.sessionData.account.accountId);
       }
 

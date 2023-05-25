@@ -2,7 +2,7 @@ export * from './BaseAccountController';
 import { Request, Response } from '@frontastic/extension-types';
 import { ActionContext } from '@frontastic/extension-types';
 import { AccountApi } from '../apis/AccountApi';
-import { getLocale } from '../utils/Request';
+import { getCurrency, getLocale } from '../utils/Request';
 import { CartFetcher } from '../utils/CartFetcher';
 import { EmailApiFactory } from '../utils/EmailApiFactory';
 import { BusinessUnitApi } from '../apis/BusinessUnitApi';
@@ -33,8 +33,8 @@ type AccountLoginBody = {
 };
 
 async function loginAccount(request: Request, actionContext: ActionContext, account: Account, businessUnitKey = '') {
-  const accountApi = new AccountApi(actionContext.frontasticContext, getLocale(request));
-  const businessUnitApi = new BusinessUnitApi(actionContext.frontasticContext, getLocale(request));
+  const accountApi = new AccountApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
+  const businessUnitApi = new BusinessUnitApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 
   const cart = await CartFetcher.fetchCart(request, actionContext);
 
@@ -95,7 +95,7 @@ function mapRequestToAccount(request: Request): Account {
 export const register: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const locale = getLocale(request);
 
-  const accountApi = new AccountApi(actionContext.frontasticContext, locale);
+  const accountApi = new AccountApi(actionContext.frontasticContext, locale, getCurrency(request));
 
   const accountData = mapRequestToAccount(request);
 
@@ -197,7 +197,7 @@ export const reset: ActionHook = async (request: Request, actionContext: ActionC
 
   const accountResetBody: AccountResetBody = JSON.parse(request.body);
 
-  const accountApi = new AccountApi(actionContext.frontasticContext, getLocale(request));
+  const accountApi = new AccountApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 
   const newAccount = await accountApi.resetPassword(accountResetBody.token, accountResetBody.newPassword);
   newAccount.password = accountResetBody.newPassword;
@@ -218,7 +218,7 @@ export const reset: ActionHook = async (request: Request, actionContext: ActionC
 };
 
 export const getById: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const accountApi = new AccountApi(actionContext.frontasticContext, getLocale(request));
+  const accountApi = new AccountApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 
   const customer = await accountApi.getCustomerById(request.query['id']);
 

@@ -27,8 +27,8 @@ export class CartApi extends BaseCartApi {
   protected account?: Account;
   protected associateEndpoints?;
 
-  constructor(frontasticContext: Context, locale: string, organization?: Organization, account?: Account) {
-    super(frontasticContext, locale);
+  constructor(frontasticContext: Context, locale: string, organization?: Organization, account?: Account, currency?: string) {
+    super(frontasticContext, locale, currency);
     this.account = account;
     this.organization = organization;
     this.associateEndpoints =

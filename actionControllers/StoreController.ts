@@ -3,7 +3,7 @@ import { Store } from '@Types/store/Store';
 import { ChannelResourceIdentifier } from '@Types/channel/channel';
 import { BusinessUnitApi } from '../apis/BusinessUnitApi';
 import { StoreDraft } from '@commercetools/platform-sdk';
-import { getLocale } from '../utils/Request';
+import { getCurrency, getLocale } from '../utils/Request';
 import { CartApi } from '../apis/CartApi';
 import { StoreApi } from '../apis/StoreApi';
 import { StoreMapper } from '../mappers/StoreMapper';
@@ -23,7 +23,7 @@ type AccountRegisterBody = {
 const DEFAULT_CHANNEL_KEY = 'default-channel';
 
 export const create: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const storeApi = new StoreApi(actionContext.frontasticContext, getLocale(request));
+  const storeApi = new StoreApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 
   const data = await mapRequestToStore(request, actionContext, storeApi);
 
@@ -51,7 +51,7 @@ export const create: ActionHook = async (request: Request, actionContext: Action
 };
 
 export const query: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const storeApi = new StoreApi(actionContext.frontasticContext, getLocale(request));
+  const storeApi = new StoreApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
   const where = request.query['where'];
 
   const stores = await storeApi.query(where);
@@ -66,7 +66,7 @@ export const query: ActionHook = async (request: Request, actionContext: ActionC
 };
 
 export const setMe: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const storeApi = new StoreApi(actionContext.frontasticContext, getLocale(request));
+  const storeApi = new StoreApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
   const cartApi = new CartApi(
     actionContext.frontasticContext,
     getLocale(request),
@@ -145,7 +145,7 @@ async function mapRequestToStore(
   let distributionChannels: ChannelResourceIdentifier[] = [];
 
   if (parentBusinessUnit) {
-    const businessUnitApi = new BusinessUnitApi(actionContext.frontasticContext, getLocale(request));
+    const businessUnitApi = new BusinessUnitApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
     const businessUnit = await businessUnitApi.get(parentBusinessUnit);
 
     if (businessUnit?.stores) {

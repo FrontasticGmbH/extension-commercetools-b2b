@@ -1,7 +1,7 @@
 import { ActionContext, Request } from '@frontastic/extension-types';
 import { Cart } from '@Types/cart/Cart';
 import { CartApi } from '../apis/CartApi';
-import { getLocale } from './Request';
+import { getCurrency, getLocale } from './Request';
 import { BaseCartFetcher } from './BaseCartFetcher';
 
 export class CartFetcher extends BaseCartFetcher {
@@ -11,6 +11,7 @@ export class CartFetcher extends BaseCartFetcher {
       getLocale(request),
       request.sessionData?.organization,
       request.sessionData?.account,
+      getCurrency(request)
     );
 
     if (request.sessionData?.cartId !== undefined) {
