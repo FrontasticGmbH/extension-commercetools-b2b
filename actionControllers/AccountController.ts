@@ -1,4 +1,4 @@
-import * as console from 'console';
+export * from './BaseAccountController';
 import { ActionContext, Request, Response } from '@frontastic/extension-types';
 import { AccountApi } from '../apis/AccountApi';
 import { getCurrency, getLocale } from '../utils/Request';
@@ -7,9 +7,9 @@ import { EmailApiFactory } from '../utils/EmailApiFactory';
 import { BusinessUnitApi } from '../apis/BusinessUnitApi';
 import { Address } from '@Types/account/Address';
 import { Account } from '@Types/account/Account';
+
 import { BusinessUnitMapper } from '../mappers/BusinessUnitMapper';
 
-export * from './BaseAccountController';
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
 
 export type AccountRegisterBody = {
@@ -40,7 +40,6 @@ async function loginAccount(request: Request, actionContext: ActionContext, acco
     getLocale(request),
     getCurrency(request),
   );
-  console.log('loginAccount', businessUnitApi);
   const cart = await CartFetcher.fetchCart(request, actionContext);
 
   try {
