@@ -411,6 +411,7 @@ export abstract class BaseApi {
   protected clientHashKey: string;
   protected token: Token;
   protected currency: string;
+  protected frontasticContext: Context;
 
   constructor(frontasticContext: Context, locale: string | null, currency: string | null) {
     this.defaultLocale = frontasticContext.project.defaultLocale;
@@ -428,6 +429,8 @@ export abstract class BaseApi {
     this.categoryIdField = this.clientSettings?.categoryIdField || 'key';
 
     this.token = clientTokensStored.get(this.getClientHashKey());
+
+    this.frontasticContext = frontasticContext;
   }
 
   private commercetoolsTokenCache(): TokenCache {
