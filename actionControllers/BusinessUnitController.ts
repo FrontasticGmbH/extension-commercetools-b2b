@@ -26,7 +26,11 @@ export const getMe: ActionHook = async (request: Request, actionContext: ActionC
   let businessUnit = organization?.businessUnit;
 
   if (request.sessionData?.account?.accountId && !businessUnit) {
-    const businessUnitApi = new BusinessUnitApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
+    const businessUnitApi = new BusinessUnitApi(
+      actionContext.frontasticContext,
+      getLocale(request),
+      getCurrency(request),
+    );
     businessUnit = await businessUnitApi.getMe(request.sessionData?.account?.accountId);
   }
 
@@ -37,7 +41,11 @@ export const getMe: ActionHook = async (request: Request, actionContext: ActionC
 };
 
 export const setMe: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const businessUnitApi = new BusinessUnitApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
+  const businessUnitApi = new BusinessUnitApi(
+    actionContext.frontasticContext,
+    getLocale(request),
+    getCurrency(request),
+  );
   const storeApi = new StoreApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
   const data = JSON.parse(request.body);
 
@@ -64,7 +72,11 @@ export const setMe: ActionHook = async (request: Request, actionContext: ActionC
 };
 
 export const getMyOrganization: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const businessUnitApi = new BusinessUnitApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
+  const businessUnitApi = new BusinessUnitApi(
+    actionContext.frontasticContext,
+    getLocale(request),
+    getCurrency(request),
+  );
 
   const allOrganization = await businessUnitApi.getTree(request.sessionData?.account?.accountId);
 
@@ -85,7 +97,11 @@ export const getSuperUserBusinessUnits: ActionHook = async (request: Request, ac
   const accountApi = new AccountApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
   const customerAccount = await accountApi.getCustomerByEmail(request.query.email);
   if (customerAccount) {
-    const businessUnitApi = new BusinessUnitApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
+    const businessUnitApi = new BusinessUnitApi(
+      actionContext.frontasticContext,
+      getLocale(request),
+      getCurrency(request),
+    );
     const results = await businessUnitApi.getAssociatedBusinessUnits(customerAccount.id);
     const highestNodes = businessUnitApi.getHighestNodesWithAssociation(results, customerAccount.id);
 
@@ -131,7 +147,11 @@ export const getBusinessUnitOrders: ActionHook = async (request: Request, action
 };
 
 export const create: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const businessUnitApi = new BusinessUnitApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
+  const businessUnitApi = new BusinessUnitApi(
+    actionContext.frontasticContext,
+    getLocale(request),
+    getCurrency(request),
+  );
   const config = actionContext.frontasticContext?.project?.configuration?.associateRoles;
   if (!config?.defaultBuyerRoleKey || !config?.defaultAdminRoleKey) {
     return {
@@ -154,7 +174,11 @@ export const create: ActionHook = async (request: Request, actionContext: Action
 };
 
 export const addAssociate: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const businessUnitApi = new BusinessUnitApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
+  const businessUnitApi = new BusinessUnitApi(
+    actionContext.frontasticContext,
+    getLocale(request),
+    getCurrency(request),
+  );
   const accountApi = new AccountApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
   const addUserBody: { email: string; roles: string[] } = JSON.parse(request.body);
 
@@ -195,7 +219,11 @@ export const addAssociate: ActionHook = async (request: Request, actionContext: 
 };
 
 export const removeAssociate: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const businessUnitApi = new BusinessUnitApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
+  const businessUnitApi = new BusinessUnitApi(
+    actionContext.frontasticContext,
+    getLocale(request),
+    getCurrency(request),
+  );
 
   const { id } = JSON.parse(request.body);
 
@@ -219,7 +247,11 @@ export const removeAssociate: ActionHook = async (request: Request, actionContex
 };
 
 export const updateAssociate: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const businessUnitApi = new BusinessUnitApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
+  const businessUnitApi = new BusinessUnitApi(
+    actionContext.frontasticContext,
+    getLocale(request),
+    getCurrency(request),
+  );
 
   const { id, roles }: { id: string; roles: string[] } = JSON.parse(request.body);
 
@@ -251,7 +283,11 @@ export const updateAssociate: ActionHook = async (request: Request, actionContex
 };
 
 export const update: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const businessUnitApi = new BusinessUnitApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
+  const businessUnitApi = new BusinessUnitApi(
+    actionContext.frontasticContext,
+    getLocale(request),
+    getCurrency(request),
+  );
   const { key, actions } = JSON.parse(request.body);
 
   const businessUnit = await businessUnitApi.update(key, actions);
@@ -273,7 +309,11 @@ export const update: ActionHook = async (request: Request, actionContext: Action
 };
 
 export const getByKey: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const businessUnitApi = new BusinessUnitApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
+  const businessUnitApi = new BusinessUnitApi(
+    actionContext.frontasticContext,
+    getLocale(request),
+    getCurrency(request),
+  );
   try {
     const businessUnit = await businessUnitApi.getByKey(request.query?.['key']);
 
@@ -297,7 +337,11 @@ export const getByKey: ActionHook = async (request: Request, actionContext: Acti
 };
 
 export const remove: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const businessUnitApi = new BusinessUnitApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
+  const businessUnitApi = new BusinessUnitApi(
+    actionContext.frontasticContext,
+    getLocale(request),
+    getCurrency(request),
+  );
   const key = request.query?.['key'];
 
   let response: Response;
@@ -323,7 +367,11 @@ export const remove: ActionHook = async (request: Request, actionContext: Action
 };
 
 export const query: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const businessUnitApi = new BusinessUnitApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
+  const businessUnitApi = new BusinessUnitApi(
+    actionContext.frontasticContext,
+    getLocale(request),
+    getCurrency(request),
+  );
 
   let where = '';
   if ('where' in request.query) {
