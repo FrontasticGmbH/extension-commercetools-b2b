@@ -145,7 +145,11 @@ async function mapRequestToStore(
   let distributionChannels: ChannelResourceIdentifier[] = [];
 
   if (parentBusinessUnit) {
-    const businessUnitApi = new BusinessUnitApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
+    const businessUnitApi = new BusinessUnitApi(
+      actionContext.frontasticContext,
+      getLocale(request),
+      getCurrency(request),
+    );
     const businessUnit = await businessUnitApi.get(parentBusinessUnit);
 
     if (businessUnit?.stores) {

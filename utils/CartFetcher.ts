@@ -11,7 +11,7 @@ export class CartFetcher extends BaseCartFetcher {
       getLocale(request),
       request.sessionData?.organization,
       request.sessionData?.account,
-      getCurrency(request)
+      getCurrency(request),
     );
 
     if (request.sessionData?.cartId !== undefined) {

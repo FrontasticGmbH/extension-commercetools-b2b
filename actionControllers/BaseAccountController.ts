@@ -224,7 +224,7 @@ export const password: ActionHook = async (request: Request, actionContext: Acti
 
   let account = fetchAccountFromSession(request);
 
-  const accountApi = new AccountApi(actionContext.frontasticContext, getLocale(request));
+  const accountApi = new AccountApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 
   const accountChangePasswordBody: AccountChangePasswordBody = JSON.parse(request.body);
 

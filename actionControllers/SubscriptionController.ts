@@ -20,7 +20,11 @@ function fetchAccountFromSessionEnsureLoggedIn(request: Request): Account {
 export const getAllSubscriptions: ActionHook = async (request, actionContext) => {
   const account = fetchAccountFromSessionEnsureLoggedIn(request);
 
-  const subscriptionApi = new SubscriptionApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
+  const subscriptionApi = new SubscriptionApi(
+    actionContext.frontasticContext,
+    getLocale(request),
+    getCurrency(request),
+  );
   const subscriptions = await subscriptionApi.getSubscriptionsForAccount(account.accountId);
 
   return {

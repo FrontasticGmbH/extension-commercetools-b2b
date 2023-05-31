@@ -5,7 +5,11 @@ import { ProductQueryFactory } from './utils/ProductQueryFactory';
 import { BusinessUnitApi } from './apis/BusinessUnitApi';
 
 function productQueryFromContext(context: DataSourceContext, config: DataSourceConfiguration) {
-  const productApi = new ProductApi(context.frontasticContext, context.request ? getLocale(context.request) : null, context.request ? getCurrency(context.request) : null);
+  const productApi = new ProductApi(
+    context.frontasticContext,
+    context.request ? getLocale(context.request) : null,
+    context.request ? getCurrency(context.request) : null,
+  );
   const additionalQueryArgs = {};
   const distributionChannelId =
     context.request.query?.['distributionChannelId'] ||
@@ -22,7 +26,11 @@ function productQueryFromContext(context: DataSourceContext, config: DataSourceC
 
 export default {
   'frontastic/categories': async (config: DataSourceConfiguration, context: DataSourceContext) => {
-    const productApi = new ProductApi(context.frontasticContext, context.request ? getLocale(context.request) : null, context.request ? getCurrency(context.request) : null);
+    const productApi = new ProductApi(
+      context.frontasticContext,
+      context.request ? getLocale(context.request) : null,
+      context.request ? getCurrency(context.request) : null,
+    );
     try {
       const categories = await productApi.getNavigationCategories(context?.request?.sessionData?.rootCategoryId);
       return {
@@ -54,7 +62,11 @@ export default {
       throw new Error(`Request is not defined in context ${context}`);
     }
 
-    const productApi = new ProductApi(context.frontasticContext, getLocale(context.request), getCurrency(context.request));
+    const productApi = new ProductApi(
+      context.frontasticContext,
+      getLocale(context.request),
+      getCurrency(context.request),
+    );
     const productQuery = ProductQueryFactory.queryFromParams(context.request, config);
     const queryWithCategoryId = {
       ...productQuery,
