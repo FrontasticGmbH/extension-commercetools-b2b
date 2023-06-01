@@ -1,4 +1,4 @@
-import { ApiRoot, createApiBuilderFromCtpClient, Project, ProductType } from '@commercetools/platform-sdk';
+import { ApiRoot, createApiBuilderFromCtpClient, ProductType, Project } from '@commercetools/platform-sdk';
 import { ClientFactory } from '../ClientFactory';
 import { Context } from '@frontastic/extension-types';
 import { getConfig } from '../utils/GetConfig';
@@ -10,7 +10,7 @@ import { TokenCache, TokenStore } from '@commercetools/sdk-client-v2';
 import { ClientConfig } from '../interfaces/ClientConfig';
 import { Token } from '@Types/Token';
 import { tokenHasExpired } from '../utils/Token';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 
 const defaultCurrency = 'EUR';
 
