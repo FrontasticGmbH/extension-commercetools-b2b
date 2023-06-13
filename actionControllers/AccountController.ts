@@ -8,6 +8,7 @@ import { BusinessUnitApi } from '../apis/BusinessUnitApi';
 import { Address } from '@Types/account/Address';
 import { Account } from '@Types/account/Account';
 import { ExternalError } from '@Commerce-commercetools/utils/Errors';
+import { BusinessUnitMapper } from '@Commerce-commercetools/mappers/BusinessUnitMapper';
 
 export * from './BaseAccountController';
 
@@ -48,16 +49,40 @@ async function loginAccount(request: Request, actionContext: ActionContext, acco
   }
 }
 
-export const getOrganization = async (request: Request, actionContext: ActionContext) => {
+export const getOrganization: ActionHook = async (request: Request, actionContext: ActionContext) => {
   try {
     const businessUnitApi = new BusinessUnitApi(
       actionContext.frontasticContext,
       getLocale(request),
       getCurrency(request),
     );
-    return await businessUnitApi.getOrganization(request.sessionData.account.accountId);
-  } catch (e) {
-    throw e;
+    const organization = await businessUnitApi.getOrganization(request.sessionData.account.accountId);
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify(organization),
+      sessionData: {
+        ...request.sessionData,
+        organization: {
+          ...organization,
+          businessUnit: BusinessUnitMapper.trimBusinessUnit(
+            organization.businessUnit,
+            request.sessionData.account.accountId,
+          ),
+        },
+        rootCategoryId: organization.store?.storeRootCategoryId,
+      },
+    };
+  } catch (error) {
+    const errorResponse = error as Error;
+
+    return {
+      statusCode: 400,
+      sessionData: {
+        ...request.sessionData,
+      },
+      error: errorResponse.message,
+    };
   }
 };
 
@@ -153,7 +178,7 @@ export const login: ActionHook = async (request, actionContext) => {
 
   try {
     const { account } = await loginAccount(request, actionContext, loginInfo);
-    
+
     return {
       statusCode: 200,
       body: JSON.stringify(account),
@@ -162,14 +187,14 @@ export const login: ActionHook = async (request, actionContext) => {
         account,
       },
     };
-  } catch (e) {
-    if (e instanceof AccountAuthenticationError || e instanceof ExternalError) {
+  } catch (error) {
+    if (error instanceof AccountAuthenticationError || error instanceof ExternalError) {
       return {
         statusCode: 400,
         sessionData: {
           ...request.sessionData,
         },
-        error: e.message,
+        error: error.message,
       };
     }
 
