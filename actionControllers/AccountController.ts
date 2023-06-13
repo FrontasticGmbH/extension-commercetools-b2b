@@ -153,6 +153,7 @@ export const login: ActionHook = async (request, actionContext) => {
 
   try {
     const { account } = await loginAccount(request, actionContext, loginInfo);
+    
     return {
       statusCode: 200,
       body: JSON.stringify(account),
