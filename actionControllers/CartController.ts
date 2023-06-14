@@ -1,7 +1,6 @@
 export * from './BaseCartController';
 import { AddressDraft } from '@commercetools/platform-sdk';
-import { Context, Request, Response } from '@frontastic/extension-types';
-import { ActionContext } from '@frontastic/extension-types';
+import { ActionContext, Context, Request, Response } from '@frontastic/extension-types';
 import { LineItem, LineItemReturnItemDraft } from '@Types/cart/LineItem';
 import { getCurrency, getLocale } from '../utils/Request';
 import { Cart } from '@Types/cart/Cart';
@@ -92,33 +91,6 @@ async function updateCartFromRequest(request: Request, actionContext: ActionCont
 
   return cart;
 }
-
-export const getCart: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  let response: Response;
-  try {
-    const cart = await CartFetcher.fetchCart(request, actionContext);
-    const cartId = cart.cartId;
-
-    response = {
-      statusCode: 200,
-      body: JSON.stringify(cart),
-      sessionData: {
-        ...request.sessionData,
-        cartId,
-      },
-    };
-  } catch (e) {
-    response = {
-      statusCode: 400,
-      // @ts-ignore
-      error: e?.message ? e.message : e,
-      errorCode: 500,
-    };
-  }
-
-  return response;
-};
-
 export const getCartById: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const cartApi = new CartApi(
     actionContext.frontasticContext,
