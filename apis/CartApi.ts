@@ -18,6 +18,7 @@ import { Organization } from '@Types/organization/organization';
 import { CartMapper } from '../mappers/CartMapper';
 import { BaseCartApi } from '@Commerce-commercetools/apis/BaseCartApi';
 import { Context } from '@frontastic/extension-types';
+import { ExternalError } from '@Commerce-commercetools/utils/Errors';
 
 type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 
@@ -53,7 +54,7 @@ export class CartApi extends BaseCartApi {
       const locale = await this.getCommercetoolsLocal();
       const allCarts = await this.getAllCarts(account, organization);
       if (allCarts.length >= 1) {
-        const cart = (await this.buildCartWithAvailableShippingMethods(allCarts[0], locale)) as Cart;
+        const cart = await this.buildCartWithAvailableShippingMethods(allCarts[0], locale);
         if (this.assertCartOrganization(cart, organization)) {
           return cart;
         }
@@ -131,58 +132,57 @@ export class CartApi extends BaseCartApi {
     customerId: string = this.account?.accountId,
     organization: Organization = this.organization,
   ) => {
-    try {
-      const locale = await this.getCommercetoolsLocal();
-      const config = this.frontasticContext?.project?.configuration?.preBuy;
+    const locale = await this.getCommercetoolsLocal();
+    const config = this.frontasticContext?.project?.configuration?.preBuy;
 
-      const cartDraft: Writeable<CartDraft> = {
-        currency: locale.currency,
-        country: locale.country,
-        locale: locale.language,
-        store: {
-          key: organization.store?.key,
-          typeId: 'store',
-        },
-        inventoryMode: 'ReserveOnOrder',
-      };
-      if (!organization.superUserBusinessUnitKey) {
-        cartDraft.customerId = customerId;
-      } else {
-        cartDraft.origin = 'Merchant';
-      }
-
-      if (organization.store?.isPreBuyStore) {
-        cartDraft.custom = {
-          type: {
-            typeId: 'type',
-            key: config.orderCustomType,
-          },
-          fields: {
-            [config.orderCustomField]: true,
-          },
-        };
-        cartDraft.inventoryMode = 'None';
-      }
-
-      const commercetoolsCart = await this.associateEndpoints
-        .carts()
-        .post({
-          queryArgs: {
-            expand: [
-              'lineItems[*].discountedPrice.includedDiscounts[*].discount',
-              'discountCodes[*].discountCode',
-              'paymentInfo.payments[*]',
-            ],
-          },
-          body: cartDraft,
-        })
-        .execute();
-
-      return (await this.buildCartWithAvailableShippingMethods(commercetoolsCart.body, locale)) as Cart;
-    } catch (error) {
-      //TODO: better error, get status code etc...
-      throw error;
+    const cartDraft: Writeable<CartDraft> = {
+      currency: locale.currency,
+      country: locale.country,
+      locale: locale.language,
+      store: {
+        key: organization.store?.key,
+        typeId: 'store',
+      },
+      inventoryMode: 'ReserveOnOrder',
+    };
+    if (!organization.superUserBusinessUnitKey) {
+      cartDraft.customerId = customerId;
+    } else {
+      cartDraft.origin = 'Merchant';
     }
+
+    if (organization.store?.isPreBuyStore) {
+      cartDraft.custom = {
+        type: {
+          typeId: 'type',
+          key: config.orderCustomType,
+        },
+        fields: {
+          [config.orderCustomField]: true,
+        },
+      };
+      cartDraft.inventoryMode = 'None';
+    }
+
+    const commercetoolsCart = await this.associateEndpoints
+      .carts()
+      .post({
+        queryArgs: {
+          expand: [
+            'lineItems[*].discountedPrice.includedDiscounts[*].discount',
+            'discountCodes[*].discountCode',
+            'paymentInfo.payments[*]',
+          ],
+        },
+        body: cartDraft,
+      })
+      .execute()
+      .then(({ body }) => body)
+      .catch((error) => {
+        throw new ExternalError({ status: error.code, message: error.message, body: error.body });
+      });
+
+    return await this.buildCartWithAvailableShippingMethods(commercetoolsCart, locale);
   };
 
   // @ts-ignore
@@ -744,13 +744,13 @@ export class CartApi extends BaseCartApi {
         actions: [
           {
             action: 'freezeCart',
-          } as any,
+          } as never,
         ],
       };
 
       const commercetoolsCart = await this.updateCart(cart.cartId, cartUpdate, locale);
 
-      return (await this.buildCartWithAvailableShippingMethods(commercetoolsCart, locale)) as Cart;
+      return await this.buildCartWithAvailableShippingMethods(commercetoolsCart, locale);
     } catch (error) {
       //TODO: better error, get status code etc...
       throw new Error(`freeze error failed. ${error}`);
