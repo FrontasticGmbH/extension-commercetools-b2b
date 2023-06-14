@@ -16,20 +16,24 @@ export class CartFetcher extends BaseCartFetcher {
 
     if (request.sessionData?.cartId !== undefined) {
       try {
-        const cart = (await cartApi.getById(request.sessionData.cartId)) as Cart;
+        const cart = await cartApi.getById(request.sessionData.cartId);
         if (cartApi.assertCartOrganization(cart, request.sessionData.organization)) {
           return cart;
         }
       } catch (error) {
-        console.info(`Error fetching the cart ${request.sessionData.cartId}, creating a new one. ${error}`);
+        throw new Error(`Error fetching the cart ${request.sessionData.cartId}, creating a new one. ${error}`);
       }
     }
 
     if (request.sessionData?.account !== undefined) {
-      return await cartApi.getForUser();
+      try {
+        return await cartApi.getForUser();
+      } catch (e) {
+        throw new Error(`Error fetching the cart for user ${request.sessionData.account}, creating a new one. ${e}`);
+      }
     }
-    // @ts-ignore
-    return {};
+
+    return {} as Cart;
   }
 }
 

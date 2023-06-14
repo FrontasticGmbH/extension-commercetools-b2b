@@ -1,4 +1,4 @@
-import { Request, Response, ActionContext } from '@frontastic/extension-types';
+import { ActionContext, Request, Response } from '@frontastic/extension-types';
 import { Cart } from '@Types/cart/Cart';
 import { LineItem } from '@Types/cart/LineItem';
 import { Discount } from '@Types/cart/Discount';
@@ -41,20 +41,27 @@ async function updateCartFromRequest(request: Request, actionContext: ActionCont
 
   return cart;
 }
-export const getCart: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const cart = await CartFetcher.fetchCart(request, actionContext);
-  const cartId = cart.cartId;
 
-  const response: Response = {
-    statusCode: 200,
-    body: JSON.stringify(cart),
-    sessionData: {
-      ...request.sessionData,
-      cartId,
-    },
-  };
+export const getCart: ActionHook = async (request, actionContext) => {
+  try {
+    const cart = await CartFetcher.fetchCart(request, actionContext);
+    const cartId = cart.cartId;
 
-  return response;
+    return {
+      statusCode: 200,
+      body: JSON.stringify(cart),
+      sessionData: {
+        ...request.sessionData,
+        cartId,
+      },
+    };
+  } catch (error) {
+    const errorResponse = error as Error;
+    return {
+      statusCode: 400,
+      message: errorResponse.message,
+    };
+  }
 };
 
 export const addToCart: ActionHook = async (request: Request, actionContext: ActionContext) => {
