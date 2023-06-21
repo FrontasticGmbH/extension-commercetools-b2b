@@ -101,8 +101,4 @@ export class AccountApi extends BaseAccountApi {
       .execute();
     return results.length ? results[0] : null;
   };
-  getCustomerById: (id: string) => Promise<Account | null> = async (id: string) => {
-    const { body } = await this.requestBuilder().customers().withId({ ID: id }).get().execute();
-    return body;
-  };
 }
