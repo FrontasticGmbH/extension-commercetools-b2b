@@ -35,56 +35,27 @@ type AccountLoginBody = {
   businessUnitKey?: string;
 };
 
-async function loginAccount(request: Request, actionContext: ActionContext, account: Account) {
+async function loginAccount(request: Request, actionContext: ActionContext, account: Account, businessUnitKey = '') {
   const accountApi = new AccountApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
+
+  const businessUnitApi = new BusinessUnitApi(
+    actionContext.frontasticContext,
+    getLocale(request),
+    getCurrency(request),
+  );
 
   const cart = await CartFetcher.fetchCart(request, actionContext);
 
   try {
     const accountRes = await accountApi.login(account, cart);
+    const organization = await businessUnitApi.getOrganization(accountRes.accountId, businessUnitKey);
 
-    return { account: accountRes };
+    return { account: accountRes, organization };
   } catch (e) {
     throw e;
   }
 }
 
-export const getOrganization: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  try {
-    const businessUnitApi = new BusinessUnitApi(
-      actionContext.frontasticContext,
-      getLocale(request),
-      getCurrency(request),
-    );
-    const organization = await businessUnitApi.getOrganization(request.sessionData.account.accountId);
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify(organization),
-      sessionData: {
-        ...request.sessionData,
-        organization: {
-          ...organization,
-          businessUnit: BusinessUnitMapper.trimBusinessUnit(
-            organization.businessUnit,
-            request.sessionData.account.accountId,
-          ),
-        },
-        rootCategoryId: organization.store?.storeRootCategoryId,
-      },
-    };
-  } catch (error) {
-    const errorResponse = error as Error;
-
-    return {
-      statusCode: 400,
-      sessionData: {
-        ...request.sessionData,
-      },
-      error: errorResponse.message,
-    };
-  }
-};
 
 function parseBirthday(accountRegisterBody: AccountRegisterBody): Date | undefined {
   if (accountRegisterBody.birthdayYear) {
@@ -177,14 +148,24 @@ export const login: ActionHook = async (request, actionContext) => {
   };
 
   try {
-    const { account } = await loginAccount(request, actionContext, loginInfo);
-
+    const { account, organization } = await loginAccount(
+      request,
+      actionContext,
+      loginInfo,
+      accountLoginBody.businessUnitKey,
+    );
     return {
       statusCode: 200,
       body: JSON.stringify(account),
       sessionData: {
         ...request.sessionData,
         account,
+        organization: {
+          ...organization,
+          businessUnit: BusinessUnitMapper.trimBusinessUnit(organization.businessUnit, account.accountId),
+          superUserBusinessUnitKey: accountLoginBody.businessUnitKey,
+        },
+        rootCategoryId: organization.store?.storeRootCategoryId,
       },
     };
   } catch (error) {
