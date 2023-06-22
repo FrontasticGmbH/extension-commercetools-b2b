@@ -109,8 +109,7 @@ export const register: ActionHook = async (request: Request, actionContext: Acti
   const accountData = mapRequestToAccount(request);
 
   const cart = await CartFetcher.fetchCart(request, actionContext).catch(() => undefined);
-
-  let response: Response;
+  
 
   try {
     const account = await accountApi.create(accountData, cart);
@@ -121,22 +120,32 @@ export const register: ActionHook = async (request: Request, actionContext: Acti
 
     emailApi.sendAccountVerificationEmail(account);
 
-    response = {
+    return {
       statusCode: 200,
       body: JSON.stringify({ accountId: account.accountId }),
       sessionData: {
         ...request.sessionData,
       },
     };
-  } catch (e) {
-    response = {
+  } catch (error) {
+    if (error instanceof AccountAuthenticationError || error instanceof ExternalError) {
+      return {
+        statusCode: 400,
+        sessionData: {
+          ...request.sessionData,
+        },
+        error: error.message,
+      };
+    }
+
+    return {
       statusCode: 400,
-      // @ts-ignore
-      error: e?.message,
-      errorCode: 500,
+      sessionData: {
+        ...request.sessionData,
+      },
     };
   }
-  return response;
+
 };
 
 export const login: ActionHook = async (request, actionContext) => {
