@@ -1,7 +1,7 @@
 import { BusinessUnit, StoreMode } from '@Types/business-unit/BusinessUnit';
 import { StoreApi } from './StoreApi';
 import { Cart } from '@Types/cart/Cart';
-import { Organization } from '@Types/organization/organization';
+import { Organization } from '../organization';
 import { Workflow } from '@Types/workflow/Workflow';
 import jsonata from 'jsonata';
 import { StoreMapper } from '../mappers/StoreMapper';

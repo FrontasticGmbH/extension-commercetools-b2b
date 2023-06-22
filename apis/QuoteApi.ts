@@ -11,7 +11,7 @@ import { QuoteRequest } from '@Types/quotes/QuoteRequest';
 import { Quote } from '@Types/quotes/Quote';
 import { StagedQuote } from '@Types/quotes/StagedQuote';
 import { QuoteMappers } from '../mappers/QuoteMappers';
-import { Organization } from '@Types/organization/organization';
+import { Organization } from '../organization';
 
 export class QuoteApi extends BaseApi {
   createQuoteRequest: (

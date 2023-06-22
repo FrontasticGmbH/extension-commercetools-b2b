@@ -9,6 +9,7 @@ import { BusinessUnitApi } from '../apis/BusinessUnitApi';
 import { CartApi } from '../apis/CartApi';
 import { BusinessUnitMapper } from '../mappers/BusinessUnitMapper';
 import { BusinessUnit, BusinessUnitStatus, BusinessUnitType, StoreMode } from '@Types/business-unit/BusinessUnit';
+import { fetchAccountFromSession } from '@Commerce-commercetools/utils/fetchAccountFromSession';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
 
@@ -21,6 +22,7 @@ export interface BusinessUnitRequestBody {
   };
 }
 
+// @deprecated
 export const getMe: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const organization = request.sessionData?.organization;
   let businessUnit = organization?.businessUnit;
@@ -40,6 +42,7 @@ export const getMe: ActionHook = async (request: Request, actionContext: ActionC
   };
 };
 
+// @deprecated
 export const setMe: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const businessUnitApi = new BusinessUnitApi(
     actionContext.frontasticContext,
@@ -84,6 +87,34 @@ export const getMyOrganization: ActionHook = async (request: Request, actionCont
     statusCode: 200,
     body: JSON.stringify(allOrganization),
     sessionData: request.sessionData,
+  };
+
+  return response;
+};
+
+// @deprecated
+export const getOrganization: ActionHook = async (request: Request, actionContext: ActionContext) => {
+  const businessUnitApi = new BusinessUnitApi(
+    actionContext.frontasticContext,
+    getLocale(request),
+    getCurrency(request),
+  );
+
+  const account = fetchAccountFromSession(request);
+
+  const organization = await businessUnitApi.getOrganization(account?.accountId);
+
+  const response: Response = {
+    statusCode: 200,
+    body: JSON.stringify({}),
+    sessionData: {
+      ...request.sessionData,
+      organization: {
+        ...organization,
+        businessUnit: BusinessUnitMapper.trimBusinessUnit(organization.businessUnit, account.accountId),
+      },
+      rootCategoryId: organization.store?.storeRootCategoryId,
+    },
   };
 
   return response;
@@ -282,6 +313,7 @@ export const updateAssociate: ActionHook = async (request: Request, actionContex
   return response;
 };
 
+// @deprecated
 export const update: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const businessUnitApi = new BusinessUnitApi(
     actionContext.frontasticContext,

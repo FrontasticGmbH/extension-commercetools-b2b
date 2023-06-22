@@ -47,15 +47,11 @@ async function loginAccount(request: Request, actionContext: ActionContext, acco
   const cart = await CartFetcher.fetchCart(request, actionContext);
 
   try {
-    const accountRes = await accountApi.login(account, cart);
-    const organization = await businessUnitApi.getOrganization(accountRes.accountId, businessUnitKey);
-
-    return { account: accountRes, organization };
+    return await accountApi.login(account, cart);
   } catch (e) {
     throw e;
   }
 }
-
 
 function parseBirthday(accountRegisterBody: AccountRegisterBody): Date | undefined {
   if (accountRegisterBody.birthdayYear) {
@@ -109,7 +105,6 @@ export const register: ActionHook = async (request: Request, actionContext: Acti
   const accountData = mapRequestToAccount(request);
 
   const cart = await CartFetcher.fetchCart(request, actionContext).catch(() => undefined);
-  
 
   try {
     const account = await accountApi.create(accountData, cart);
@@ -145,7 +140,6 @@ export const register: ActionHook = async (request: Request, actionContext: Acti
       },
     };
   }
-
 };
 
 export const login: ActionHook = async (request, actionContext) => {
@@ -157,24 +151,13 @@ export const login: ActionHook = async (request, actionContext) => {
   };
 
   try {
-    const { account, organization } = await loginAccount(
-      request,
-      actionContext,
-      loginInfo,
-      accountLoginBody.businessUnitKey,
-    );
+    const account = await loginAccount(request, actionContext, loginInfo, accountLoginBody.businessUnitKey);
     return {
       statusCode: 200,
       body: JSON.stringify(account),
       sessionData: {
         ...request.sessionData,
         account,
-        organization: {
-          ...organization,
-          businessUnit: BusinessUnitMapper.trimBusinessUnit(organization.businessUnit, account.accountId),
-          superUserBusinessUnitKey: accountLoginBody.businessUnitKey,
-        },
-        rootCategoryId: organization.store?.storeRootCategoryId,
       },
     };
   } catch (error) {
@@ -215,7 +198,7 @@ export const reset: ActionHook = async (request, actionContext) => {
 
   // TODO: do we need to log in the account after creation?
   // TODO: handle exception when customer can't login if email is not confirmed
-  const { account } = await loginAccount(request, actionContext, newAccount);
+  const account = await loginAccount(request, actionContext, newAccount);
 
   return {
     statusCode: 200,
