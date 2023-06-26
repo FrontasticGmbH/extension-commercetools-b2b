@@ -34,7 +34,11 @@ type AccountLoginBody = {
 
 async function loginAccount(request: Request, actionContext: ActionContext, account: Account, businessUnitKey = '') {
   const accountApi = new AccountApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-  const businessUnitApi = new BusinessUnitApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
+  const businessUnitApi = new BusinessUnitApi(
+    actionContext.frontasticContext,
+    getLocale(request),
+    getCurrency(request),
+  );
 
   const cart = await CartFetcher.fetchCart(request, actionContext);
 
