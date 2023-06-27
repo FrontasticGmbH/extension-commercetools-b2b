@@ -4,11 +4,9 @@ import { AccountApi } from '../apis/AccountApi';
 import { getCurrency, getLocale } from '../utils/Request';
 import { CartFetcher } from '../utils/CartFetcher';
 import { EmailApiFactory } from '../utils/EmailApiFactory';
-import { BusinessUnitApi } from '../apis/BusinessUnitApi';
 import { Address } from '@Types/account/Address';
 import { Account } from '@Types/account/Account';
 import { ExternalError } from '@Commerce-commercetools/utils/Errors';
-import { BusinessUnitMapper } from '@Commerce-commercetools/mappers/BusinessUnitMapper';
 
 export * from './BaseAccountController';
 
@@ -37,12 +35,6 @@ type AccountLoginBody = {
 
 async function loginAccount(request: Request, actionContext: ActionContext, account: Account, businessUnitKey = '') {
   const accountApi = new AccountApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-
-  const businessUnitApi = new BusinessUnitApi(
-    actionContext.frontasticContext,
-    getLocale(request),
-    getCurrency(request),
-  );
 
   const cart = await CartFetcher.fetchCart(request, actionContext);
 
