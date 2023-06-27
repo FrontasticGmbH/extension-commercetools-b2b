@@ -113,34 +113,6 @@ export const getAllSuperUserCarts: ActionHook = async (request: Request, actionC
   return response;
 };
 
-export const createCart: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  let cart: Cart;
-  let cartId = request.sessionData?.cartId;
-
-  if (request.sessionData?.organization?.superUserBusinessUnitKey) {
-    const cartApi = new CartApi(
-      actionContext.frontasticContext,
-      getLocale(request),
-      request.sessionData?.organization,
-      request.sessionData?.account,
-      getCurrency(request),
-    );
-    cart = (await cartApi.createCart()) as Cart;
-    cartId = cart.cartId;
-  }
-
-  const response: Response = {
-    statusCode: 200,
-    body: JSON.stringify(cart),
-    sessionData: {
-      ...request.sessionData,
-      cartId,
-    },
-  };
-
-  return response;
-};
-
 export const addToCart: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const cartApi = new CartApi(
     actionContext.frontasticContext,
