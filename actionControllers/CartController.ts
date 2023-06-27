@@ -1,3 +1,5 @@
+import {ExternalError} from "@Commerce-commercetools/utils/Errors";
+
 export * from './BaseCartController';
 import { AddressDraft } from '@commercetools/platform-sdk';
 import { ActionContext, Context, Request, Response } from '@frontastic/extension-types';
@@ -131,11 +133,11 @@ export const addToCart: ActionHook = async (request: Request, actionContext: Act
       compatibilityConfig,
     );
   } catch (e) {
+    const error = e as Error;
     return {
       statusCode: 400,
       errorCode: 500,
-      // @ts-ignore
-      error: e.message,
+      error: error.message,
     };
   }
   cart = (await cartApi.addToCart(cart, lineItem, distributionChannel)) as Cart;
@@ -259,12 +261,22 @@ export const returnItems: ActionHook = async (request: Request, actionContext: A
       sessionData: request.sessionData,
     };
   } catch (e) {
-    response = {
+
+    if ( e instanceof ExternalError) {
+      return {
+        statusCode: 400,
+        sessionData: {
+          ...request.sessionData,
+        },
+        error: e.message,
+      };
+    }
+
+    return {
       statusCode: 400,
-      sessionData: request.sessionData,
-      // @ts-ignore
-      error: e?.message,
-      errorCode: 500,
+      sessionData: {
+        ...request.sessionData,
+      },
     };
   }
 

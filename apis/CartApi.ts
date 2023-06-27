@@ -591,7 +591,6 @@ export class CartApi extends BaseCartApi {
     orderNumber: string,
     returnLineItems: LineItemReturnItemDraft[],
   ) => {
-    try {
       const locale = await this.getCommercetoolsLocal();
       const config = this.frontasticContext?.project?.configuration?.preBuy;
 
@@ -612,14 +611,14 @@ export class CartApi extends BaseCartApi {
               ],
             },
           })
-          .execute();
+          .execute().catch((error) => {
+            throw new ExternalError({ status: error.code, message: error.message, body: error.body });
+
+          });
       });
 
       return CartMapper.commercetoolsOrderToOrder(response.body, locale, config);
-    } catch (error) {
-      //TODO: better error, get status code etc...
-      throw error;
-    }
+
   };
 
   transitionOrderState: (orderNumber: string, stateKey: string) => Promise<Order> = async (
