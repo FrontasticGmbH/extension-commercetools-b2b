@@ -5,6 +5,7 @@ import { CartResourceIdentifier } from '@commercetools/platform-sdk/dist/declara
 import { BaseAccountApi } from './BaseAccountApi';
 import { AccountMapper } from '../mappers/AccountMapper';
 import { Cart } from '@Types/cart/Cart';
+import { ExternalError } from '@Commerce-commercetools/utils/Errors';
 
 export class AccountApi extends BaseAccountApi {
   create: (account: Account, cart: Cart | undefined) => Promise<Account> = async (
@@ -70,7 +71,7 @@ export class AccountApi extends BaseAccountApi {
             }
           }
 
-          throw error;
+          throw new ExternalError({ status: error.code, message: error.message, body: error.body });
         });
 
       const token = await this.getConfirmationToken(account);
@@ -99,9 +100,5 @@ export class AccountApi extends BaseAccountApi {
       })
       .execute();
     return results.length ? results[0] : null;
-  };
-  getCustomerById: (id: string) => Promise<Account | null> = async (id: string) => {
-    const { body } = await this.requestBuilder().customers().withId({ ID: id }).get().execute();
-    return body;
   };
 }

@@ -1,6 +1,5 @@
-export * from './BaseAccountController';
-import { Request, Response } from '@frontastic/extension-types';
-import { ActionContext } from '@frontastic/extension-types';
+import { AccountAuthenticationError } from '@Commerce-commercetools/errors/AccountAuthenticationError';
+import { ActionContext, Request, Response } from '@frontastic/extension-types';
 import { AccountApi } from '../apis/AccountApi';
 import { getCurrency, getLocale } from '../utils/Request';
 import { CartFetcher } from '../utils/CartFetcher';
@@ -8,7 +7,11 @@ import { EmailApiFactory } from '../utils/EmailApiFactory';
 import { BusinessUnitApi } from '../apis/BusinessUnitApi';
 import { Address } from '@Types/account/Address';
 import { Account } from '@Types/account/Account';
-import { BusinessUnitMapper } from '../mappers/BusinessUnitMapper';
+import { ExternalError } from '@Commerce-commercetools/utils/Errors';
+import { BusinessUnitMapper } from '@Commerce-commercetools/mappers/BusinessUnitMapper';
+
+export * from './BaseAccountController';
+
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
 
 export type AccountRegisterBody = {
@@ -34,6 +37,7 @@ type AccountLoginBody = {
 
 async function loginAccount(request: Request, actionContext: ActionContext, account: Account, businessUnitKey = '') {
   const accountApi = new AccountApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
+
   const businessUnitApi = new BusinessUnitApi(
     actionContext.frontasticContext,
     getLocale(request),
@@ -51,6 +55,7 @@ async function loginAccount(request: Request, actionContext: ActionContext, acco
     throw e;
   }
 }
+
 
 function parseBirthday(accountRegisterBody: AccountRegisterBody): Date | undefined {
   if (accountRegisterBody.birthdayYear) {
@@ -104,8 +109,7 @@ export const register: ActionHook = async (request: Request, actionContext: Acti
   const accountData = mapRequestToAccount(request);
 
   const cart = await CartFetcher.fetchCart(request, actionContext).catch(() => undefined);
-
-  let response: Response;
+  
 
   try {
     const account = await accountApi.create(accountData, cart);
@@ -116,33 +120,41 @@ export const register: ActionHook = async (request: Request, actionContext: Acti
 
     emailApi.sendAccountVerificationEmail(account);
 
-    response = {
+    return {
       statusCode: 200,
       body: JSON.stringify({ accountId: account.accountId }),
       sessionData: {
         ...request.sessionData,
       },
     };
-  } catch (e) {
-    response = {
+  } catch (error) {
+    if (error instanceof AccountAuthenticationError || error instanceof ExternalError) {
+      return {
+        statusCode: 400,
+        sessionData: {
+          ...request.sessionData,
+        },
+        error: error.message,
+      };
+    }
+
+    return {
       statusCode: 400,
-      // @ts-ignore
-      error: e?.message,
-      errorCode: 500,
+      sessionData: {
+        ...request.sessionData,
+      },
     };
   }
-  return response;
+
 };
 
-export const login: ActionHook = async (request: Request, actionContext: ActionContext) => {
+export const login: ActionHook = async (request, actionContext) => {
   const accountLoginBody: AccountLoginBody = JSON.parse(request.body);
 
-  const loginInfo = {
+  const loginInfo: Account = {
     email: accountLoginBody.email,
     password: accountLoginBody.password,
-  } as Account;
-
-  let response: Response;
+  };
 
   try {
     const { account, organization } = await loginAccount(
@@ -151,7 +163,7 @@ export const login: ActionHook = async (request: Request, actionContext: ActionC
       loginInfo,
       accountLoginBody.businessUnitKey,
     );
-    response = {
+    return {
       statusCode: 200,
       body: JSON.stringify(account),
       sessionData: {
@@ -165,35 +177,30 @@ export const login: ActionHook = async (request: Request, actionContext: ActionC
         rootCategoryId: organization.store?.storeRootCategoryId,
       },
     };
-  } catch (e) {
-    response = {
+  } catch (error) {
+    if (error instanceof AccountAuthenticationError || error instanceof ExternalError) {
+      return {
+        statusCode: 400,
+        sessionData: {
+          ...request.sessionData,
+        },
+        error: error.message,
+      };
+    }
+
+    return {
       statusCode: 400,
-      // @ts-ignore
-      error: e?.message,
-      errorCode: 500,
+      sessionData: {
+        ...request.sessionData,
+      },
     };
   }
-
-  return response;
-};
-
-export const logout: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  return {
-    statusCode: 200,
-    body: JSON.stringify({}),
-    sessionData: {
-      ...request.sessionData,
-      organization: undefined,
-      account: undefined,
-      cartId: undefined,
-    },
-  } as Response;
 };
 
 /**
  * Reset password
  */
-export const reset: ActionHook = async (request: Request, actionContext: ActionContext) => {
+export const reset: ActionHook = async (request, actionContext) => {
   type AccountResetBody = {
     token?: string;
     newPassword?: string;
@@ -208,7 +215,7 @@ export const reset: ActionHook = async (request: Request, actionContext: ActionC
 
   // TODO: do we need to log in the account after creation?
   // TODO: handle exception when customer can't login if email is not confirmed
-  const { account, organization } = await loginAccount(request, actionContext, newAccount);
+  const { account } = await loginAccount(request, actionContext, newAccount);
 
   return {
     statusCode: 200,
@@ -216,21 +223,6 @@ export const reset: ActionHook = async (request: Request, actionContext: ActionC
     sessionData: {
       ...request.sessionData,
       account,
-      organization,
     },
-  } as Response;
-};
-
-export const getById: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const accountApi = new AccountApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-
-  const customer = await accountApi.getCustomerById(request.query['id']);
-
-  const response: Response = {
-    statusCode: 200,
-    body: JSON.stringify(customer),
-    sessionData: request.sessionData,
   };
-
-  return response;
 };
