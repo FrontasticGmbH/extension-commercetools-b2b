@@ -91,28 +91,6 @@ async function updateCartFromRequest(request: Request, actionContext: ActionCont
 
   return cart;
 }
-export const getAllSuperUserCarts: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  let carts: Cart[] = [];
-
-  if (request.sessionData?.organization?.superUserBusinessUnitKey) {
-    const cartApi = new CartApi(
-      actionContext.frontasticContext,
-      getLocale(request),
-      request.sessionData?.organization,
-      request.sessionData?.account,
-      getCurrency(request),
-    );
-    carts = (await cartApi.getAllForSuperUser()) as Cart[];
-  }
-
-  const response: Response = {
-    statusCode: 200,
-    body: JSON.stringify(carts),
-  };
-
-  return response;
-};
-
 export const addToCart: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const cartApi = new CartApi(
     actionContext.frontasticContext,
