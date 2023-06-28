@@ -3,6 +3,7 @@ import { Cart } from '@Types/cart/Cart';
 import { CartApi } from '../apis/CartApi';
 import { getCurrency, getLocale } from './Request';
 import { BaseCartFetcher } from './BaseCartFetcher';
+import { Guid } from './Guid';
 
 export class CartFetcher extends BaseCartFetcher {
   static async fetchCart(request: Request, actionContext: ActionContext): Promise<Cart> {
@@ -33,7 +34,7 @@ export class CartFetcher extends BaseCartFetcher {
       }
     }
 
-    return {} as Cart;
+    return await cartApi.getAnonymous(Guid.newGuid());
   }
 }
 

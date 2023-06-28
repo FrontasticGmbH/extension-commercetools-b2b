@@ -260,15 +260,15 @@ export const returnItems: ActionHook = async (request: Request, actionContext: A
       body: JSON.stringify(res),
       sessionData: request.sessionData,
     };
-  } catch (e) {
+  } catch (error) {
 
-    if ( e instanceof ExternalError) {
+    if ( error instanceof ExternalError) {
       return {
         statusCode: 400,
         sessionData: {
           ...request.sessionData,
         },
-        error: e.message,
+        error: error.message,
       };
     }
 
