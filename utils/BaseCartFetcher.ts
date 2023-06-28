@@ -6,7 +6,7 @@ import { getCurrency, getLocale } from './Request';
 
 export class BaseCartFetcher {
   static async fetchCart(request: Request, actionContext: ActionContext): Promise<Cart> {
-    const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), null, null, getCurrency(request));
+    const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 
     if (request.sessionData?.account !== undefined) {
       return await cartApi.getForUser(request.sessionData.account);

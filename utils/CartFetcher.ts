@@ -6,13 +6,7 @@ import { BaseCartFetcher } from './BaseCartFetcher';
 
 export class CartFetcher extends BaseCartFetcher {
   static async fetchCart(request: Request, actionContext: ActionContext): Promise<Cart> {
-    const cartApi = new CartApi(
-      actionContext.frontasticContext,
-      getLocale(request),
-      request.sessionData?.organization,
-      request.sessionData?.account,
-      getCurrency(request),
-    );
+    const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 
     if (request.sessionData?.cartId !== undefined) {
       try {
@@ -26,7 +20,7 @@ export class CartFetcher extends BaseCartFetcher {
     }
 
     if (request.sessionData?.account !== undefined) {
-      return await cartApi.getForUser();
+      return await cartApi.getForUser(request.sessionData?.account, request.sessionData?.organization);
     }
     // @ts-ignore
     return {};
