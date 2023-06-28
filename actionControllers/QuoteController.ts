@@ -47,18 +47,14 @@ export const createQuoteRequest: ActionHook = async (request: Request, actionCon
 
   const cart = await cartApi.getById(cartId);
   const cartVersion = parseInt(cart.cartVersion, 10);
-  const quoteRequest = await quoteApi.createQuoteRequest(
-    {
-      cart: {
-        typeId: 'cart',
-        id: cartId,
-      },
-      cartVersion,
-      comment: quoteBody.comment,
+  const quoteRequest = await quoteApi.createQuoteRequest({
+    cart: {
+      typeId: 'cart',
+      id: cartId,
     },
-    request.sessionData?.account?.accountId,
-    request.sessionData?.organization,
-  );
+    cartVersion,
+    comment: quoteBody.comment,
+  });
 
   await cartApi.deleteCart(cartId, cartVersion, request.sessionData?.account, request.sessionData?.organization);
 

@@ -81,10 +81,6 @@ export class CartApi extends BaseCartApi {
         where.push(`inventoryMode="None"`);
       }
 
-      if (!organization.superUserBusinessUnitKey) {
-        where.push(`customerId="${account.accountId}"`);
-      }
-
       const response = await this.associateEndpoints(account, organization)
         .carts()
         .get({
@@ -140,12 +136,8 @@ export class CartApi extends BaseCartApi {
           typeId: 'store',
         },
         inventoryMode: 'ReserveOnOrder',
+        origin: 'Merchant',
       };
-      if (!organization.superUserBusinessUnitKey) {
-        cartDraft.customerId = account.accountId;
-      } else {
-        cartDraft.origin = 'Merchant';
-      }
 
       if (organization.store?.isPreBuyStore) {
         cartDraft.custom = {

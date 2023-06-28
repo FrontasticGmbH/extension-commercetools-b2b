@@ -143,15 +143,7 @@ export const getCartById: ActionHook = async (request: Request, actionContext: A
 };
 
 export const getAllSuperUserCarts: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  let carts: Cart[] = [];
-
-  if (request.sessionData?.organization?.superUserBusinessUnitKey) {
-    const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-    carts = (await cartApi.getAllForSuperUser(
-      request.sessionData?.account,
-      request.sessionData?.organization,
-    )) as Cart[];
-  }
+  const carts: Cart[] = [];
 
   const response: Response = {
     statusCode: 200,
@@ -163,13 +155,7 @@ export const getAllSuperUserCarts: ActionHook = async (request: Request, actionC
 
 export const createCart: ActionHook = async (request: Request, actionContext: ActionContext) => {
   let cart: Cart;
-  let cartId = request.sessionData?.cartId;
-
-  if (request.sessionData?.organization?.superUserBusinessUnitKey) {
-    const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-    cart = (await cartApi.createCart(request.sessionData?.account, request.sessionData?.organization)) as Cart;
-    cartId = cart.cartId;
-  }
+  const cartId = request.sessionData?.cartId;
 
   const response: Response = {
     statusCode: 200,

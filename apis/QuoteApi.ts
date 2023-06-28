@@ -11,27 +11,14 @@ import { QuoteRequest } from '@Types/quotes/QuoteRequest';
 import { Quote } from '@Types/quotes/Quote';
 import { StagedQuote } from '@Types/quotes/StagedQuote';
 import { QuoteMappers } from '../mappers/QuoteMappers';
-import { Organization } from '../interfaces/Organization';
 
 export class QuoteApi extends BaseApi {
-  createQuoteRequest: (
+  createQuoteRequest: (quoteRequest: QuoteRequestDraft) => Promise<CommercetoolsQuoteRequest> = async (
     quoteRequest: QuoteRequestDraft,
-    accountId?: string,
-    organization?: Organization,
-  ) => Promise<CommercetoolsQuoteRequest> = async (
-    quoteRequest: QuoteRequestDraft,
-    accountId?: string,
-    organization?: Organization,
   ) => {
     try {
-      const endpoint = organization?.superUserBusinessUnitKey
-        ? this.requestBuilder()
-            .asAssociate()
-            .withAssociateIdValue({ associateId: accountId })
-            .inBusinessUnitKeyWithBusinessUnitKeyValue({ businessUnitKey: organization?.businessUnit?.key })
-            .quoteRequests()
-        : this.requestBuilder().quoteRequests();
-      return endpoint
+      return this.requestBuilder()
+        .quoteRequests()
         .post({
           body: {
             ...quoteRequest,
