@@ -56,7 +56,6 @@ async function loginAccount(request: Request, actionContext: ActionContext, acco
   }
 }
 
-
 function parseBirthday(accountRegisterBody: AccountRegisterBody): Date | undefined {
   if (accountRegisterBody.birthdayYear) {
     return new Date(
@@ -109,7 +108,6 @@ export const register: ActionHook = async (request: Request, actionContext: Acti
   const accountData = mapRequestToAccount(request);
 
   const cart = await CartFetcher.fetchCart(request, actionContext).catch(() => undefined);
-  
 
   try {
     const account = await accountApi.create(accountData, cart);
@@ -145,7 +143,6 @@ export const register: ActionHook = async (request: Request, actionContext: Acti
       },
     };
   }
-
 };
 
 export const login: ActionHook = async (request, actionContext) => {
