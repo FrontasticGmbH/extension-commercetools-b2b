@@ -36,4 +36,3 @@ export class ExternalError extends ExtensionError {
     this.code = 'external_error';
   }
 }
-
