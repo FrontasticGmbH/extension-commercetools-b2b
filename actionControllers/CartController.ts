@@ -1,5 +1,3 @@
-import { Account } from '@Types/account/Account';
-
 export * from './BaseCartController';
 import { AddressDraft } from '@commercetools/platform-sdk';
 import { Context, Request, Response } from '@frontastic/extension-types';
