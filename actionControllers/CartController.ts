@@ -1,4 +1,4 @@
-import {ExternalError} from "@Commerce-commercetools/utils/Errors";
+import { ExternalError } from '@Commerce-commercetools/utils/Errors';
 
 export * from './BaseCartController';
 import { AddressDraft } from '@commercetools/platform-sdk';
@@ -261,8 +261,7 @@ export const returnItems: ActionHook = async (request: Request, actionContext: A
       sessionData: request.sessionData,
     };
   } catch (error) {
-
-    if ( error instanceof ExternalError) {
+    if (error instanceof ExternalError) {
       return {
         statusCode: 400,
         sessionData: {

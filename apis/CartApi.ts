@@ -591,34 +591,33 @@ export class CartApi extends BaseCartApi {
     orderNumber: string,
     returnLineItems: LineItemReturnItemDraft[],
   ) => {
-      const locale = await this.getCommercetoolsLocal();
-      const config = this.frontasticContext?.project?.configuration?.preBuy;
+    const locale = await this.getCommercetoolsLocal();
+    const config = this.frontasticContext?.project?.configuration?.preBuy;
 
-      const response = await this.getOrder(orderNumber).then((order) => {
-        return this.associateEndpoints
-          .orders()
-          .withOrderNumber({ orderNumber })
-          .post({
-            body: {
-              version: +order.orderVersion,
-              actions: [
-                {
-                  action: 'addReturnInfo',
-                  items: returnLineItems,
-                  returnDate: new Date().toISOString(),
-                  returnTrackingId: new Date().getTime().toString(),
-                },
-              ],
-            },
-          })
-          .execute().catch((error) => {
-            throw new ExternalError({ status: error.code, message: error.message, body: error.body });
+    const response = await this.getOrder(orderNumber).then((order) => {
+      return this.associateEndpoints
+        .orders()
+        .withOrderNumber({ orderNumber })
+        .post({
+          body: {
+            version: +order.orderVersion,
+            actions: [
+              {
+                action: 'addReturnInfo',
+                items: returnLineItems,
+                returnDate: new Date().toISOString(),
+                returnTrackingId: new Date().getTime().toString(),
+              },
+            ],
+          },
+        })
+        .execute()
+        .catch((error) => {
+          throw new ExternalError({ status: error.code, message: error.message, body: error.body });
+        });
+    });
 
-          });
-      });
-
-      return CartMapper.commercetoolsOrderToOrder(response.body, locale, config);
-
+    return CartMapper.commercetoolsOrderToOrder(response.body, locale, config);
   };
 
   transitionOrderState: (orderNumber: string, stateKey: string) => Promise<Order> = async (
