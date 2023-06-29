@@ -86,89 +86,6 @@ async function updateCartFromRequest(request: Request, actionContext: ActionCont
 
   return cart;
 }
-
-export const getCart: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  let response: Response;
-  try {
-    const cart = await CartFetcher.fetchCart(request, actionContext);
-    const cartId = cart.cartId;
-
-    response = {
-      statusCode: 200,
-      body: JSON.stringify(cart),
-      sessionData: {
-        ...request.sessionData,
-        cartId,
-      },
-    };
-  } catch (e) {
-    response = {
-      statusCode: 400,
-      // @ts-ignore
-      error: e?.message ? e.message : e,
-      errorCode: 500,
-    };
-  }
-
-  return response;
-};
-
-export const getCartById: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-  let response: Response;
-  try {
-    const id = request.query?.id;
-    const cart = await cartApi.getById(id);
-    const cartId = cart.cartId;
-
-    response = {
-      statusCode: 200,
-      body: JSON.stringify(cart),
-      sessionData: {
-        ...request.sessionData,
-        cartId,
-      },
-    };
-  } catch (e) {
-    response = {
-      statusCode: 400,
-      sessionData: request.sessionData,
-      // @ts-ignore
-      error: e?.message,
-      errorCode: 500,
-    };
-  }
-
-  return response;
-};
-
-export const getAllSuperUserCarts: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const carts: Cart[] = [];
-
-  const response: Response = {
-    statusCode: 200,
-    body: JSON.stringify(carts),
-  };
-
-  return response;
-};
-
-export const createCart: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  let cart: Cart;
-  const cartId = request.sessionData?.cartId;
-
-  const response: Response = {
-    statusCode: 200,
-    body: JSON.stringify(cart),
-    sessionData: {
-      ...request.sessionData,
-      cartId,
-    },
-  };
-
-  return response;
-};
-
 export const addToCart: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
   const subscriptionsConfig = actionContext.frontasticContext?.project?.configuration?.subscriptions;
@@ -202,12 +119,12 @@ export const addToCart: ActionHook = async (request: Request, actionContext: Act
       lineItem,
       compatibilityConfig,
     );
-  } catch (e) {
+  } catch (error) {
+    const errorInfo = error as Error;
     return {
       statusCode: 400,
       errorCode: 500,
-      // @ts-ignore
-      error: e.message,
+      error: errorInfo.message,
     };
   }
   cart = (await cartApi.addToCart(

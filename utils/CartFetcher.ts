@@ -3,6 +3,7 @@ import { Cart } from '@Types/cart/Cart';
 import { CartApi } from '../apis/CartApi';
 import { getCurrency, getLocale } from './Request';
 import { BaseCartFetcher } from './BaseCartFetcher';
+import { Guid } from './Guid';
 
 export class CartFetcher extends BaseCartFetcher {
   static async fetchCart(request: Request, actionContext: ActionContext): Promise<Cart> {
@@ -15,15 +16,14 @@ export class CartFetcher extends BaseCartFetcher {
           return cart;
         }
       } catch (error) {
-        console.info(`Error fetching the cart ${request.sessionData.cartId}, creating a new one. ${error}`);
+        throw new Error(`Error fetching the cart ${request.sessionData.cartId}, creating a new one. ${error}`);
       }
     }
 
     if (request.sessionData?.account !== undefined) {
       return await cartApi.getForUser(request.sessionData?.account, request.sessionData?.organization);
     }
-    // @ts-ignore
-    return {};
+    return await cartApi.getAnonymous(Guid.newGuid());
   }
 }
 
