@@ -101,20 +101,16 @@ export default {
     };
   },
   'b2b/associations': async (config: DataSourceConfiguration, context: DataSourceContext) => {
-    const superUserBusinessUnitKey = context.request.sessionData?.organization?.superUserBusinessUnitKey;
     const businessUnitApi = new BusinessUnitApi(
       context.frontasticContext,
       context.request ? getLocale(context.request) : null,
       context.request ? getCurrency(context.request) : null,
     );
     const results = await businessUnitApi.getAssociatedBusinessUnits(context.request.sessionData?.account?.accountId);
-    const filteredResults = !superUserBusinessUnitKey
-      ? results
-      : results.filter((bu) => bu.key === superUserBusinessUnitKey || bu.topLevelUnit.key === superUserBusinessUnitKey);
 
     return {
       dataSourcePayload: {
-        associations: filteredResults,
+        associations: results,
       },
     };
   },
@@ -128,19 +124,15 @@ export default {
     };
   },
   'b2b/organization-tree': async (config: DataSourceConfiguration, context: DataSourceContext) => {
-    const superUserBusinessUnitKey = context.request.sessionData?.organization?.superUserBusinessUnitKey;
     const businessUnitApi = new BusinessUnitApi(
       context.frontasticContext,
       context.request ? getLocale(context.request) : null,
       context.request ? getCurrency(context.request) : null,
     );
     const tree = await businessUnitApi.getTree(context.request.sessionData?.account?.accountId);
-    const filteredTree = !superUserBusinessUnitKey
-      ? tree
-      : tree.filter((bu) => bu.key === superUserBusinessUnitKey || bu.topLevelUnit.key === superUserBusinessUnitKey);
     return {
       dataSourcePayload: {
-        tree: filteredTree,
+        tree: tree,
       },
     };
   },

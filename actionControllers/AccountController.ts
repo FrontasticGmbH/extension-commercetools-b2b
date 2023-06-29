@@ -4,11 +4,9 @@ import { AccountApi } from '../apis/AccountApi';
 import { getCurrency, getLocale } from '../utils/Request';
 import { CartFetcher } from '../utils/CartFetcher';
 import { EmailApiFactory } from '../utils/EmailApiFactory';
-import { BusinessUnitApi } from '../apis/BusinessUnitApi';
 import { Address } from '@Types/account/Address';
 import { Account } from '@Types/account/Account';
 import { ExternalError } from '@Commerce-commercetools/utils/Errors';
-import { BusinessUnitMapper } from '@Commerce-commercetools/mappers/BusinessUnitMapper';
 
 export * from './BaseAccountController';
 
@@ -38,19 +36,10 @@ type AccountLoginBody = {
 async function loginAccount(request: Request, actionContext: ActionContext, account: Account, businessUnitKey = '') {
   const accountApi = new AccountApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 
-  const businessUnitApi = new BusinessUnitApi(
-    actionContext.frontasticContext,
-    getLocale(request),
-    getCurrency(request),
-  );
-
   const cart = await CartFetcher.fetchCart(request, actionContext);
 
   try {
-    const accountRes = await accountApi.login(account, cart);
-    const organization = await businessUnitApi.getOrganization(accountRes.accountId, businessUnitKey);
-
-    return { account: accountRes, organization };
+    return await accountApi.login(account, cart);
   } catch (e) {
     throw e;
   }
@@ -154,24 +143,13 @@ export const login: ActionHook = async (request, actionContext) => {
   };
 
   try {
-    const { account, organization } = await loginAccount(
-      request,
-      actionContext,
-      loginInfo,
-      accountLoginBody.businessUnitKey,
-    );
+    const account = await loginAccount(request, actionContext, loginInfo, accountLoginBody.businessUnitKey);
     return {
       statusCode: 200,
       body: JSON.stringify(account),
       sessionData: {
         ...request.sessionData,
         account,
-        organization: {
-          ...organization,
-          businessUnit: BusinessUnitMapper.trimBusinessUnit(organization.businessUnit, account.accountId),
-          superUserBusinessUnitKey: accountLoginBody.businessUnitKey,
-        },
-        rootCategoryId: organization.store?.storeRootCategoryId,
       },
     };
   } catch (error) {
@@ -212,7 +190,7 @@ export const reset: ActionHook = async (request, actionContext) => {
 
   // TODO: do we need to log in the account after creation?
   // TODO: handle exception when customer can't login if email is not confirmed
-  const { account } = await loginAccount(request, actionContext, newAccount);
+  const account = await loginAccount(request, actionContext, newAccount);
 
   return {
     statusCode: 200,

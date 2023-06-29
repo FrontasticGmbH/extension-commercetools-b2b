@@ -9,6 +9,7 @@ import { BusinessUnitApi } from '../apis/BusinessUnitApi';
 import { CartApi } from '../apis/CartApi';
 import { BusinessUnitMapper } from '../mappers/BusinessUnitMapper';
 import { BusinessUnit, BusinessUnitStatus, BusinessUnitType, StoreMode } from '@Types/business-unit/BusinessUnit';
+import { fetchAccountFromSession } from '@Commerce-commercetools/utils/fetchAccountFromSession';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
 
@@ -21,6 +22,7 @@ export interface BusinessUnitRequestBody {
   };
 }
 
+// @deprecated
 export const getMe: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const organization = request.sessionData?.organization;
   let businessUnit = organization?.businessUnit;
@@ -40,6 +42,7 @@ export const getMe: ActionHook = async (request: Request, actionContext: ActionC
   };
 };
 
+// @deprecated
 export const setMe: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const businessUnitApi = new BusinessUnitApi(
     actionContext.frontasticContext,
@@ -89,6 +92,34 @@ export const getMyOrganization: ActionHook = async (request: Request, actionCont
   return response;
 };
 
+// @deprecated
+export const getOrganization: ActionHook = async (request: Request, actionContext: ActionContext) => {
+  const businessUnitApi = new BusinessUnitApi(
+    actionContext.frontasticContext,
+    getLocale(request),
+    getCurrency(request),
+  );
+
+  const account = fetchAccountFromSession(request);
+
+  const organization = await businessUnitApi.getOrganization(account?.accountId);
+
+  const response: Response = {
+    statusCode: 200,
+    body: JSON.stringify({}),
+    sessionData: {
+      ...request.sessionData,
+      organization: {
+        ...organization,
+        businessUnit: BusinessUnitMapper.trimBusinessUnit(organization.businessUnit, account.accountId),
+      },
+      rootCategoryId: organization.store?.storeRootCategoryId,
+    },
+  };
+
+  return response;
+};
+
 export const getSuperUserBusinessUnits: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const config = actionContext.frontasticContext?.project?.configuration?.associateRoles;
   if (!config?.defaultSuperUserRoleKey) {
@@ -123,19 +154,14 @@ export const getSuperUserBusinessUnits: ActionHook = async (request: Request, ac
 };
 
 export const getBusinessUnitOrders: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const cartApi = new CartApi(
-    actionContext.frontasticContext,
-    getLocale(request),
-    request.sessionData?.organization,
-    request.sessionData?.account,
-  );
+  const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 
   const key = request?.query?.['key'];
   if (!key) {
     throw new Error('No key');
   }
 
-  const orders = await cartApi.getBusinessUnitOrders(key);
+  const orders = await cartApi.getBusinessUnitOrders(key, request.sessionData?.account);
 
   const response: Response = {
     statusCode: 200,
@@ -282,6 +308,7 @@ export const updateAssociate: ActionHook = async (request: Request, actionContex
   return response;
 };
 
+// @deprecated
 export const update: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const businessUnitApi = new BusinessUnitApi(
     actionContext.frontasticContext,

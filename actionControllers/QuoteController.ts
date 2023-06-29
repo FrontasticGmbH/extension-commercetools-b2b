@@ -37,12 +37,7 @@ const mergeQuotesOverview = (quoteRequests: QuoteRequest[], stagedQuotes: Staged
 
 export const createQuoteRequest: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const quoteApi = new QuoteApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-  const cartApi = new CartApi(
-    actionContext.frontasticContext,
-    getLocale(request),
-    request.sessionData?.organization,
-    request.sessionData?.account,
-  );
+  const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 
   const quoteBody: QuoteRequestBody = JSON.parse(request.body);
   const cartId = request.sessionData?.cartId;
@@ -52,20 +47,16 @@ export const createQuoteRequest: ActionHook = async (request: Request, actionCon
 
   const cart = await cartApi.getById(cartId);
   const cartVersion = parseInt(cart.cartVersion, 10);
-  const quoteRequest = await quoteApi.createQuoteRequest(
-    {
-      cart: {
-        typeId: 'cart',
-        id: cartId,
-      },
-      cartVersion,
-      comment: quoteBody.comment,
+  const quoteRequest = await quoteApi.createQuoteRequest({
+    cart: {
+      typeId: 'cart',
+      id: cartId,
     },
-    request.sessionData?.account?.accountId,
-    request.sessionData?.organization,
-  );
+    cartVersion,
+    comment: quoteBody.comment,
+  });
 
-  await cartApi.deleteCart(cartId, cartVersion);
+  await cartApi.deleteCart(cartId, cartVersion, request.sessionData?.account, request.sessionData?.organization);
 
   const response: Response = {
     statusCode: 200,
@@ -159,20 +150,15 @@ export const updateQuoteState: ActionHook = async (request: Request, actionConte
 
     const commercetoolsCart = stagedQuote.quotationCart.obj as CommercetoolsCart;
 
-    const cartApi = new CartApi(
-      actionContext.frontasticContext,
-      getLocale(request),
-      {
-        ...request.sessionData?.organization,
-        businessUnit: {
-          key: commercetoolsCart.businessUnit?.key,
-        },
-      },
-      request.sessionData?.account,
-    );
+    const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
     let cart = await cartApi.getById(commercetoolsCart.id);
     cart = await cartApi.setEmail(cart, stagedQuote.customer.obj.email);
-    cart = (await cartApi.setCustomerId(cart as Cart, stagedQuote.customer.obj.id)) as Cart;
+    cart = (await cartApi.setCustomerId(cart as Cart, stagedQuote.customer.obj.id, request.sessionData?.account, {
+      ...request.sessionData?.organization,
+      businessUnit: {
+        key: commercetoolsCart.businessUnit?.key,
+      },
+    })) as Cart;
 
     sessionData.cartId = cart.cartId;
   }

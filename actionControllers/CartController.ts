@@ -1,8 +1,7 @@
-import { ExternalError } from '@Commerce-commercetools/utils/Errors';
-
 export * from './BaseCartController';
 import { AddressDraft } from '@commercetools/platform-sdk';
-import { ActionContext, Context, Request, Response } from '@frontastic/extension-types';
+import { Context, Request, Response } from '@frontastic/extension-types';
+import { ActionContext } from '@frontastic/extension-types';
 import { LineItem, LineItemReturnItemDraft } from '@Types/cart/LineItem';
 import { getCurrency, getLocale } from '../utils/Request';
 import { Cart } from '@Types/cart/Cart';
@@ -60,13 +59,7 @@ async function checkForCompatibility(
 }
 
 async function updateCartFromRequest(request: Request, actionContext: ActionContext): Promise<Cart> {
-  const cartApi = new CartApi(
-    actionContext.frontasticContext,
-    getLocale(request),
-    request.sessionData?.organization,
-    request.sessionData?.account,
-    getCurrency(request),
-  );
+  const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
   let cart = await CartFetcher.fetchCart(request, actionContext);
 
   if (request?.body === undefined || request?.body === '') {
@@ -93,14 +86,91 @@ async function updateCartFromRequest(request: Request, actionContext: ActionCont
 
   return cart;
 }
+
+export const getCart: ActionHook = async (request: Request, actionContext: ActionContext) => {
+  let response: Response;
+  try {
+    const cart = await CartFetcher.fetchCart(request, actionContext);
+    const cartId = cart.cartId;
+
+    response = {
+      statusCode: 200,
+      body: JSON.stringify(cart),
+      sessionData: {
+        ...request.sessionData,
+        cartId,
+      },
+    };
+  } catch (e) {
+    response = {
+      statusCode: 400,
+      // @ts-ignore
+      error: e?.message ? e.message : e,
+      errorCode: 500,
+    };
+  }
+
+  return response;
+};
+
+export const getCartById: ActionHook = async (request: Request, actionContext: ActionContext) => {
+  const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
+  let response: Response;
+  try {
+    const id = request.query?.id;
+    const cart = await cartApi.getById(id);
+    const cartId = cart.cartId;
+
+    response = {
+      statusCode: 200,
+      body: JSON.stringify(cart),
+      sessionData: {
+        ...request.sessionData,
+        cartId,
+      },
+    };
+  } catch (e) {
+    response = {
+      statusCode: 400,
+      sessionData: request.sessionData,
+      // @ts-ignore
+      error: e?.message,
+      errorCode: 500,
+    };
+  }
+
+  return response;
+};
+
+export const getAllSuperUserCarts: ActionHook = async (request: Request, actionContext: ActionContext) => {
+  const carts: Cart[] = [];
+
+  const response: Response = {
+    statusCode: 200,
+    body: JSON.stringify(carts),
+  };
+
+  return response;
+};
+
+export const createCart: ActionHook = async (request: Request, actionContext: ActionContext) => {
+  let cart: Cart;
+  const cartId = request.sessionData?.cartId;
+
+  const response: Response = {
+    statusCode: 200,
+    body: JSON.stringify(cart),
+    sessionData: {
+      ...request.sessionData,
+      cartId,
+    },
+  };
+
+  return response;
+};
+
 export const addToCart: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const cartApi = new CartApi(
-    actionContext.frontasticContext,
-    getLocale(request),
-    request.sessionData?.organization,
-    request.sessionData?.account,
-    getCurrency(request),
-  );
+  const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
   const subscriptionsConfig = actionContext.frontasticContext?.project?.configuration?.subscriptions;
   const compatibilityConfig = actionContext.frontasticContext?.project?.configuration?.compatibility;
   const configurableComponentsConfig = actionContext.frontasticContext?.project?.configuration?.configurableComponents;
@@ -133,18 +203,24 @@ export const addToCart: ActionHook = async (request: Request, actionContext: Act
       compatibilityConfig,
     );
   } catch (e) {
-    const error = e as Error;
     return {
       statusCode: 400,
       errorCode: 500,
-      error: error.message,
+      // @ts-ignore
+      error: e.message,
     };
   }
-  cart = (await cartApi.addToCart(cart, lineItem, distributionChannel)) as Cart;
+  cart = (await cartApi.addToCart(
+    cart,
+    lineItem,
+    distributionChannel,
+    request.sessionData?.account,
+    request.sessionData?.organization,
+  )) as Cart;
 
   // handle subscription products bundled with this lineitem
-  cart = await handleSubscriptionsOnAddToCart(cart, body, subscriptionsConfig, cartApi);
-  cart = await handleConfigurableComponentsOnAddToCart(cart, body, configurableComponentsConfig, cartApi);
+  cart = await handleSubscriptionsOnAddToCart(cart, body, subscriptionsConfig, cartApi, request);
+  cart = await handleConfigurableComponentsOnAddToCart(cart, body, configurableComponentsConfig, cartApi, request);
 
   const cartId = cart.cartId;
 
@@ -161,13 +237,7 @@ export const addToCart: ActionHook = async (request: Request, actionContext: Act
 };
 
 export const addItemsToCart: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const cartApi = new CartApi(
-    actionContext.frontasticContext,
-    getLocale(request),
-    request.sessionData?.organization,
-    request.sessionData?.account,
-    getCurrency(request),
-  );
+  const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
   const config = actionContext.frontasticContext?.project?.configuration?.subscriptions;
 
   const body: {
@@ -186,10 +256,16 @@ export const addItemsToCart: ActionHook = async (request: Request, actionContext
   const distributionChannel = request.sessionData.organization?.distributionChannel?.id;
 
   let cart = await CartFetcher.fetchCart(request, actionContext);
-  cart = (await cartApi.addItemsToCart(cart, lineItems, distributionChannel)) as Cart;
+  cart = (await cartApi.addItemsToCart(
+    cart,
+    lineItems,
+    distributionChannel,
+    request.sessionData?.account,
+    request.sessionData?.organization,
+  )) as Cart;
 
   // find the lineitems that are added
-  cart = await handleSubscriptionsOnAddItemsToCart(cart, body, config, cartApi);
+  cart = await handleSubscriptionsOnAddItemsToCart(cart, body, config, cartApi, request);
 
   const cartId = cart.cartId;
 
@@ -206,13 +282,7 @@ export const addItemsToCart: ActionHook = async (request: Request, actionContext
 };
 
 export const updateLineItem: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const cartApi = new CartApi(
-    actionContext.frontasticContext,
-    getLocale(request),
-    request.sessionData?.organization,
-    request.sessionData?.account,
-    getCurrency(request),
-  );
+  const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 
   const body: {
     lineItem?: { id?: string; count: number };
@@ -224,7 +294,12 @@ export const updateLineItem: ActionHook = async (request: Request, actionContext
   };
 
   let cart = await CartFetcher.fetchCart(request, actionContext);
-  cart = (await cartApi.updateLineItem(cart, lineItem)) as Cart;
+  cart = (await cartApi.updateLineItem(
+    cart,
+    lineItem,
+    request.sessionData?.account,
+    request.sessionData?.organization,
+  )) as Cart;
 
   const cartId = cart.cartId;
 
@@ -241,41 +316,31 @@ export const updateLineItem: ActionHook = async (request: Request, actionContext
 };
 
 export const returnItems: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const cartApi = new CartApi(
-    actionContext.frontasticContext,
-    getLocale(request),
-    request.sessionData?.organization,
-    request.sessionData?.account,
-    getCurrency(request),
-  );
+  const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 
   let response: Response;
 
   try {
     const { orderNumber, returnLineItems }: { orderNumber: string; returnLineItems: LineItemReturnItemDraft[] } =
       JSON.parse(request.body);
-    const res = await cartApi.returnItems(orderNumber, returnLineItems);
+    const res = await cartApi.returnItems(
+      orderNumber,
+      returnLineItems,
+      request.sessionData?.account,
+      request.sessionData?.organization,
+    );
     response = {
       statusCode: 200,
       body: JSON.stringify(res),
       sessionData: request.sessionData,
     };
-  } catch (error) {
-    if (error instanceof ExternalError) {
-      return {
-        statusCode: 400,
-        sessionData: {
-          ...request.sessionData,
-        },
-        error: error.message,
-      };
-    }
-
-    return {
+  } catch (e) {
+    response = {
       statusCode: 400,
-      sessionData: {
-        ...request.sessionData,
-      },
+      sessionData: request.sessionData,
+      // @ts-ignore
+      error: e?.message,
+      errorCode: 500,
     };
   }
 
@@ -283,19 +348,18 @@ export const returnItems: ActionHook = async (request: Request, actionContext: A
 };
 
 export const updateOrderState: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const cartApi = new CartApi(
-    actionContext.frontasticContext,
-    getLocale(request),
-    request.sessionData?.organization,
-    request.sessionData?.account,
-    getCurrency(request),
-  );
+  const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 
   let response: Response;
 
   try {
     const { orderNumber, orderState }: { orderNumber: string; orderState: string } = JSON.parse(request.body);
-    const res = await cartApi.updateOrderState(orderNumber, orderState);
+    const res = await cartApi.updateOrderState(
+      orderNumber,
+      orderState,
+      request.sessionData?.account,
+      request.sessionData?.organization,
+    );
     response = {
       statusCode: 200,
       body: JSON.stringify(res),
@@ -315,18 +379,16 @@ export const updateOrderState: ActionHook = async (request: Request, actionConte
 };
 
 export const replicateCart: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const cartApi = new CartApi(
-    actionContext.frontasticContext,
-    getLocale(request),
-    request.sessionData?.organization,
-    request.sessionData?.account,
-    getCurrency(request),
-  );
+  const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
   const orderId = request.query?.['orderId'];
   try {
     if (orderId) {
-      const cart = await cartApi.replicateCart(orderId);
-      const order = await cartApi.order(cart);
+      const cart = await cartApi.replicateCart(
+        orderId,
+        request.sessionData?.account,
+        request.sessionData?.organization,
+      );
+      const order = await cartApi.order(cart, request.sessionData?.account, request.sessionData?.organization);
       const response: Response = {
         statusCode: 200,
         body: JSON.stringify(order),
@@ -351,13 +413,7 @@ export const replicateCart: ActionHook = async (request: Request, actionContext:
 };
 
 export const splitLineItem: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const cartApi = new CartApi(
-    actionContext.frontasticContext,
-    getLocale(request),
-    request.sessionData?.organization,
-    request.sessionData?.account,
-    getCurrency(request),
-  );
+  const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
   const cart = await CartFetcher.fetchCart(request, actionContext);
 
   const body: {
@@ -376,13 +432,24 @@ export const splitLineItem: ActionHook = async (request: Request, actionContext:
 
   if (remainingAddresses.length) {
     for await (const address of remainingAddresses) {
-      await cartApi.addItemShippingAddress(cart, address);
+      await cartApi.addItemShippingAddress(
+        cart,
+        address,
+        request.sessionData?.account,
+        request.sessionData?.organization,
+      );
     }
   }
 
   const target = body.data.map((item) => ({ addressKey: item.address.id, quantity: item.quantity }));
 
-  const cartData = await cartApi.updateLineItemShippingDetails(cart, body.lineItemId, target);
+  const cartData = await cartApi.updateLineItemShippingDetails(
+    cart,
+    body.lineItemId,
+    target,
+    request.sessionData?.account,
+    request.sessionData?.organization,
+  );
 
   const response: Response = {
     statusCode: 200,
@@ -400,14 +467,13 @@ export const reassignCart: ActionHook = async (request: Request, actionContext: 
   let cart = await CartFetcher.fetchCart(request, actionContext);
   const cartId = cart.cartId;
 
-  const cartApi = new CartApi(
-    actionContext.frontasticContext,
-    getLocale(request),
-    request.sessionData?.organization,
+  const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
+  cart = await cartApi.setCustomerId(
+    cart,
+    request.query?.customerId,
     request.sessionData?.account,
-    getCurrency(request),
+    request.sessionData?.organization,
   );
-  cart = await cartApi.setCustomerId(cart, request.query?.customerId);
   cart = (await cartApi.setEmail(cart, request.query?.email)) as Cart;
 
   const response: Response = {
@@ -423,13 +489,7 @@ export const reassignCart: ActionHook = async (request: Request, actionContext: 
 };
 
 export const removeLineItem: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const cartApi = new CartApi(
-    actionContext.frontasticContext,
-    getLocale(request),
-    request.sessionData?.organization,
-    request.sessionData?.account,
-    getCurrency(request),
-  );
+  const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 
   const body: {
     lineItem?: { id?: string };
@@ -443,7 +503,12 @@ export const removeLineItem: ActionHook = async (request: Request, actionContext
   };
 
   let cart = await CartFetcher.fetchCart(request, actionContext);
-  cart = (await cartApi.removeLineItem(cart, lineItem)) as Cart;
+  cart = (await cartApi.removeLineItem(
+    cart,
+    lineItem,
+    request.sessionData?.account,
+    request.sessionData?.organization,
+  )) as Cart;
 
   const cartId = cart.cartId;
 
@@ -461,18 +526,8 @@ export const removeLineItem: ActionHook = async (request: Request, actionContext
 
 export const checkout: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const locale = getLocale(request);
-  const businessUnitApi = new BusinessUnitApi(
-    actionContext.frontasticContext,
-    getLocale(request),
-    getCurrency(request),
-  );
-  const cartApi = new CartApi(
-    actionContext.frontasticContext,
-    locale,
-    request.sessionData?.organization,
-    request.sessionData?.account,
-    getCurrency(request),
-  );
+  const businessUnitApi = new BusinessUnitApi(actionContext.frontasticContext, locale, getCurrency(request));
+  const cartApi = new CartApi(actionContext.frontasticContext, locale, getCurrency(request));
   const subscriptionApi = new SubscriptionApi(
     actionContext.frontasticContext,
     getLocale(request),
@@ -490,7 +545,10 @@ export const checkout: ActionHook = async (request: Request, actionContext: Acti
   const orderState = await businessUnitApi.getOrderStateFromWorkflows(cart, request.sessionData.organization, config);
 
   try {
-    const order = await cartApi.order(cart, { ...body.payload, orderState });
+    const order = await cartApi.order(cart, request.sessionData?.account, request.sessionData?.organization, {
+      ...body.payload,
+      orderState,
+    });
     const emailApi = EmailApiFactory.getDefaultApi(actionContext.frontasticContext, locale);
 
     emailApi.sendOrderConfirmationEmail({ ...order, email: order.email || cart.email });
@@ -527,19 +585,18 @@ export const checkout: ActionHook = async (request: Request, actionContext: Acti
 };
 
 export const transitionOrderState: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const cartApi = new CartApi(
-    actionContext.frontasticContext,
-    getLocale(request),
-    request.sessionData?.organization,
-    request.sessionData?.account,
-    getCurrency(request),
-  );
+  const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 
   let response: Response;
 
   try {
     const { orderNumber, stateKey }: { orderNumber: string; stateKey: string } = JSON.parse(request.body);
-    const res = await cartApi.transitionOrderState(orderNumber, stateKey);
+    const res = await cartApi.transitionOrderState(
+      orderNumber,
+      stateKey,
+      request.sessionData?.account,
+      request.sessionData?.organization,
+    );
     response = {
       statusCode: 200,
       body: JSON.stringify(res),
@@ -563,6 +620,7 @@ const handleSubscriptionsOnAddToCart = async (
   body: { variant?: LineItemVariant; subscriptions?: Partial<LineItemVariant>[] },
   config: Record<string, string>,
   cartApi: CartApi,
+  request: Request,
 ): Promise<Cart> => {
   if (config?.customLineItemKeyOfBundle && config?.customLineItemKeyOfSubscription && config?.customTypeKeyOnLineItem) {
     const lineItemId = findNewLineItem(cart, body);
@@ -580,7 +638,12 @@ const handleSubscriptionsOnAddToCart = async (
         'subscriptions',
       );
       // @ts-ignore
-      cart = await cartApi.addSubscriptionsToCart(cart, bundleLineItems);
+      cart = await cartApi.addSubscriptionsToCart(
+        cart,
+        bundleLineItems,
+        request.sessionData?.account,
+        request.sessionData?.organization,
+      );
     }
   }
   return cart;
@@ -591,6 +654,7 @@ const handleConfigurableComponentsOnAddToCart = async (
   body: { variant?: LineItemVariant; configurableComponents?: Partial<LineItemVariant>[] },
   config: Record<string, string>,
   cartApi: CartApi,
+  request: Request,
 ): Promise<Cart> => {
   if (config?.customLineItemKeyOfBundle && config?.customLineItemTypeKey) {
     const lineItemId = findNewLineItem(cart, body);
@@ -602,7 +666,12 @@ const handleConfigurableComponentsOnAddToCart = async (
         'configurableComponents',
       );
       // @ts-ignore
-      cart = await cartApi.addSubscriptionsToCart(cart, bundleLineItems);
+      cart = await cartApi.addSubscriptionsToCart(
+        cart,
+        bundleLineItems,
+        request.sessionData?.account,
+        request.sessionData?.organization,
+      );
     }
   }
   return cart;
@@ -613,6 +682,7 @@ const handleSubscriptionsOnAddItemsToCart = async (
   body: { list?: LineItemVariant[]; subscriptions?: Partial<LineItemVariant>[] },
   config: Record<string, string>,
   cartApi: CartApi,
+  request: Request,
 ): Promise<Cart> => {
   if (config?.customLineItemKeyOfBundle && config?.customTypeKeyOnLineItem) {
     const lineItemIds = cart.lineItems
@@ -642,7 +712,12 @@ const handleSubscriptionsOnAddItemsToCart = async (
           })),
         );
       }, []);
-      cart = await cartApi.addSubscriptionsToCart(cart, bundleLineItems);
+      cart = await cartApi.addSubscriptionsToCart(
+        cart,
+        bundleLineItems,
+        request.sessionData?.account,
+        request.sessionData?.organization,
+      );
     }
   }
 
