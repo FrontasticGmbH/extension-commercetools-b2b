@@ -9,6 +9,7 @@ import { mapRequestToAccount } from '../utils/mapRequestToAccount';
 import { fetchAccountFromSession } from '../utils/fetchAccountFromSession';
 import { AccountApi } from '../apis/AccountApi';
 import { EmailApiFactory } from '../utils/EmailApiFactory';
+import * as console from 'console';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
 
@@ -255,12 +256,11 @@ export const requestReset: ActionHook = async (request: Request, actionContext: 
 
   const accountApi = new AccountApi(actionContext.frontasticContext, locale, getCurrency(request));
 
-  const accountRequestResetBody: AccountRequestResetBody = JSON.parse(request.body);
-
-  const passwordResetToken = await accountApi.generatePasswordResetToken(accountRequestResetBody.email);
+  const requestResetBody = JSON.parse(request.body).account;
+  const passwordResetToken = await accountApi.generatePasswordResetToken(requestResetBody.email);
 
   const emailApi = EmailApiFactory.getDefaultApi(actionContext.frontasticContext, locale);
-  emailApi.sendPasswordResetEmail(accountRequestResetBody as Account, passwordResetToken.token);
+  emailApi.sendPasswordResetEmail(requestResetBody as Account, passwordResetToken.token);
 
   return {
     statusCode: 200,
