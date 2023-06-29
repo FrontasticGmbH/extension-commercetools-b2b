@@ -106,7 +106,7 @@ export default {
       context.request ? getLocale(context.request) : null,
       context.request ? getCurrency(context.request) : null,
     );
-    const results = await businessUnitApi.getAssociatedBusinessUnits(context.request.sessionData?.account?.accountId);
+    const results = await businessUnitApi.getCommercetoolsBusinessUnitsForUser(context.request.sessionData?.account);
 
     return {
       dataSourcePayload: {
@@ -129,7 +129,7 @@ export default {
       context.request ? getLocale(context.request) : null,
       context.request ? getCurrency(context.request) : null,
     );
-    const tree = await businessUnitApi.getTree(context.request.sessionData?.account?.accountId);
+    const tree = await businessUnitApi.getTree(context.request.sessionData?.account);
     return {
       dataSourcePayload: {
         tree: tree,

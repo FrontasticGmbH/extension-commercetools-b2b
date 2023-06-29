@@ -32,7 +32,7 @@ export default {
         pageMatchingPayload: {},
       } as DynamicPageSuccessResult;
     }
-    console.log('dynamic-page-handler', request, context);
+
     // Identify businessUnit page
     const b2bPageMatch = getPath(request)?.match(/^\/(business-unit)/);
     if (b2bPageMatch) {
@@ -43,7 +43,7 @@ export default {
           getLocale(request),
           getCurrency(request),
         );
-        organization = await businessUnitApi.getOrganization(request.sessionData.account.accountId);
+        organization = await businessUnitApi.getOrganization(request.sessionData.account);
       }
       return {
         dynamicPageType: `b2b${b2bPageMatch[0]}`,
@@ -210,7 +210,7 @@ export default {
           getLocale(request),
           getCurrency(request),
         );
-        organization = await businessUnitApi.getOrganization(request.sessionData.account.accountId);
+        organization = await businessUnitApi.getOrganization(request.sessionData.account);
       }
 
       return {
