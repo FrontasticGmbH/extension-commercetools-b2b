@@ -9,7 +9,6 @@ import { mapRequestToAccount } from '../utils/mapRequestToAccount';
 import { fetchAccountFromSession } from '../utils/fetchAccountFromSession';
 import { AccountApi } from '../apis/AccountApi';
 import { EmailApiFactory } from '../utils/EmailApiFactory';
-import * as console from 'console';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
 
