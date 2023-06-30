@@ -712,8 +712,8 @@ export class CartApi extends BaseCartApi {
     }
   };
 
-  getBusinessUnitOrders: (key: string, account?: Account) => Promise<Order[]> = async (
-    key: string,
+  getBusinessUnitOrders: (businessUnitKey: string, account?: Account) => Promise<Order[]> = async (
+    businessUnitKey: string,
     account?: Account,
   ) => {
     try {
@@ -724,7 +724,7 @@ export class CartApi extends BaseCartApi {
         ? this.requestBuilder()
             .asAssociate()
             .withAssociateIdValue({ associateId: account.accountId })
-            .inBusinessUnitKeyWithBusinessUnitKeyValue({ businessUnitKey: key })
+            .inBusinessUnitKeyWithBusinessUnitKeyValue({ businessUnitKey: businessUnitKey })
         : this.requestBuilder();
 
       const response = await endpoint
@@ -732,7 +732,7 @@ export class CartApi extends BaseCartApi {
         .get({
           queryArgs: {
             expand: ['state'],
-            where: `businessUnit(key="${key}")`,
+            where: `businessUnit(key="${businessUnitKey}")`,
             sort: 'createdAt desc',
           },
         })

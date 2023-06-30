@@ -222,6 +222,12 @@ export const getSuperUserBusinessUnits: ActionHook = async (request: Request, ac
 };
 
 export const getBusinessUnitOrders: ActionHook = async (request: Request, actionContext: ActionContext) => {
+  const account = fetchAccountFromSession(request);
+
+  if (account === undefined) {
+    throw new AccountAuthenticationError({ message: 'Not logged in.' });
+  }
+
   const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 
   const key = request?.query?.['key'];
@@ -229,7 +235,7 @@ export const getBusinessUnitOrders: ActionHook = async (request: Request, action
     throw new Error('No key');
   }
 
-  const orders = await cartApi.getBusinessUnitOrders(key, request.sessionData?.account);
+  const orders = await cartApi.getBusinessUnitOrders(key, account);
 
   const response: Response = {
     statusCode: 200,
