@@ -127,18 +127,24 @@ export const setMe: ActionHook = async (request: Request, actionContext: ActionC
   return response;
 };
 
-export const getMyOrganization: ActionHook = async (request: Request, actionContext: ActionContext) => {
+export const getCompanies: ActionHook = async (request: Request, actionContext: ActionContext) => {
+  const account = fetchAccountFromSession(request);
+
+  if (account === undefined) {
+    throw new AccountAuthenticationError({ message: 'Not logged in.' });
+  }
+
   const businessUnitApi = new BusinessUnitApi(
     actionContext.frontasticContext,
     getLocale(request),
     getCurrency(request),
   );
 
-  const allOrganization = await businessUnitApi.getTree(request.sessionData?.account);
+  const companies = await businessUnitApi.getCompaniesForUser(account);
 
   const response: Response = {
     statusCode: 200,
-    body: JSON.stringify(allOrganization),
+    body: JSON.stringify(companies),
     sessionData: request.sessionData,
   };
 
@@ -175,6 +181,9 @@ export const getOrganization: ActionHook = async (request: Request, actionContex
   return response;
 };
 
+/**
+ * @deprecated
+ */
 export const getSuperUserBusinessUnits: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const config = actionContext.frontasticContext?.project?.configuration?.associateRoles;
   if (!config?.defaultSuperUserRoleKey) {

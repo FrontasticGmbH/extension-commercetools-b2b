@@ -170,6 +170,7 @@ export class BusinessUnitApi extends BaseApi {
     }
 
     const rootNodes = commercetoolsBusinessUnits.filter((bu) => !bu.parentUnit);
+
     if (rootNodes.length) {
       return rootNodes;
     }
@@ -459,7 +460,7 @@ export class BusinessUnitApi extends BaseApi {
     return businessUnits;
   };
 
-  getTree: (account: Account) => Promise<BusinessUnit[]> = async (account: Account) => {
+  getCompaniesForUser: (account: Account) => Promise<BusinessUnit[]> = async (account: Account) => {
     let tree: CommercetoolsBusinessUnit[] = [];
     const storeApi = new StoreApi(this.frontasticContext, this.locale, this.currency);
     const config = this.frontasticContext?.project?.configuration?.associateRoles;
