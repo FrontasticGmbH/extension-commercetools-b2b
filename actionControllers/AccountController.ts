@@ -17,7 +17,7 @@ export type AccountRegisterBody = {
   shippingAddress?: Address;
 };
 
-export type AccountLoginBody = {
+type AccountLoginBody = {
   email?: string;
   password?: string;
   businessUnitKey?: string;
