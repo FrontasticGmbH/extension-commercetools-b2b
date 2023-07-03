@@ -22,6 +22,3 @@ export type AccountLoginBody = {
   password?: string;
   businessUnitKey?: string;
 };
-
-
-
