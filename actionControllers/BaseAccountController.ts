@@ -252,13 +252,15 @@ export const requestReset: ActionHook = async (request: Request, actionContext: 
   type AccountRequestResetBody = {
     email?: string;
   };
+
   const accountApi = new AccountApi(actionContext.frontasticContext, locale, getCurrency(request));
 
-  const requestResetBody: AccountRequestResetBody = JSON.parse(request.body).account;
-  const passwordResetToken = await accountApi.generatePasswordResetToken(requestResetBody.email);
+  const accountRequestResetBody: AccountRequestResetBody = JSON.parse(request.body);
+
+  const passwordResetToken = await accountApi.generatePasswordResetToken(accountRequestResetBody.email);
 
   const emailApi = EmailApiFactory.getDefaultApi(actionContext.frontasticContext, locale);
-  emailApi.sendPasswordResetEmail(requestResetBody as Account, passwordResetToken.token);
+  emailApi.sendPasswordResetEmail(accountRequestResetBody as Account, passwordResetToken.token);
 
   return {
     statusCode: 200,
