@@ -249,7 +249,6 @@ export const password: ActionHook = async (request: Request, actionContext: Acti
 export const requestReset: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const locale = getLocale(request);
 
-
   const accountApi = new AccountApi(actionContext.frontasticContext, locale, getCurrency(request));
 
   const requestResetBody = JSON.parse(request.body).account;
