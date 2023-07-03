@@ -1,24 +1,14 @@
-import { Address } from '@Types/account/Address';
-
 export * from './BaseAccountController';
 
-export type AccountRegisterBody = {
-  email?: string;
-  confirmed?: boolean;
-  password?: string;
-  salutation?: string;
-  firstName?: string;
-  lastName?: string;
-  company?: string;
-  birthdayYear?: string;
-  birthdayMonth?: string;
-  birthdayDay?: string;
-  billingAddress?: Address;
-  shippingAddress?: Address;
-};
+import {
+  AccountRegisterBody as BaseAccountRegisterBody,
+  AccountLoginBody as BaseAccountLoginBody,
+} from './BaseAccountController';
 
-type AccountLoginBody = {
-  email?: string;
-  password?: string;
+export interface AccountRegisterBody extends BaseAccountRegisterBody {
+  company?: string;
+}
+
+export interface AccountLoginBody extends BaseAccountLoginBody {
   businessUnitKey?: string;
-};
+}
