@@ -1,7 +1,6 @@
 export * from './BaseCartController';
 import { AddressDraft } from '@commercetools/platform-sdk';
-import { Context, Request, Response } from '@frontastic/extension-types';
-import { ActionContext } from '@frontastic/extension-types';
+import { ActionContext, Context, Request, Response } from '@frontastic/extension-types';
 import { LineItem, LineItemReturnItemDraft } from '@Types/cart/LineItem';
 import { getCurrency, getLocale } from '../utils/Request';
 import { Cart } from '@Types/cart/Cart';
@@ -86,6 +85,7 @@ async function updateCartFromRequest(request: Request, actionContext: ActionCont
 
   return cart;
 }
+
 export const addToCart: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
   const subscriptionsConfig = actionContext.frontasticContext?.project?.configuration?.subscriptions;
@@ -640,6 +640,7 @@ const handleSubscriptionsOnAddItemsToCart = async (
 
   return cart;
 };
+
 function getBundleLineItemsDraft(
   body: {
     variant?: LineItemVariant;
