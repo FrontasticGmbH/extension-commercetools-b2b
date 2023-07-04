@@ -88,9 +88,7 @@ async function updateCartFromRequest(request: Request, actionContext: ActionCont
 
 export const addToCart: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-  const subscriptionsConfig = actionContext.frontasticContext?.project?.configuration?.subscriptions;
   const compatibilityConfig = actionContext.frontasticContext?.project?.configuration?.compatibility;
-  const configurableComponentsConfig = actionContext.frontasticContext?.project?.configuration?.configurableComponents;
 
   const body: {
     variant?: LineItemVariant;
@@ -127,17 +125,13 @@ export const addToCart: ActionHook = async (request: Request, actionContext: Act
       error: errorInfo.message,
     };
   }
-  cart = (await cartApi.addToCart(
+  cart = await cartApi.addToCart(
     cart,
     lineItem,
     distributionChannel,
     request.sessionData?.account,
     request.sessionData?.organization,
-  )) as Cart;
-
-  // handle subscription products bundled with this lineitem
-  cart = await handleSubscriptionsOnAddToCart(cart, body, subscriptionsConfig, cartApi, request);
-  cart = await handleConfigurableComponentsOnAddToCart(cart, body, configurableComponentsConfig, cartApi, request);
+  );
 
   const cartId = cart.cartId;
 
@@ -180,9 +174,6 @@ export const addItemsToCart: ActionHook = async (request: Request, actionContext
     request.sessionData?.account,
     request.sessionData?.organization,
   )) as Cart;
-
-  // find the lineitems that are added
-  cart = await handleSubscriptionsOnAddItemsToCart(cart, body, config, cartApi, request);
 
   const cartId = cart.cartId;
 
@@ -530,115 +521,6 @@ export const transitionOrderState: ActionHook = async (request: Request, actionC
   }
 
   return response;
-};
-
-const handleSubscriptionsOnAddToCart = async (
-  cart: Cart,
-  body: { variant?: LineItemVariant; subscriptions?: Partial<LineItemVariant>[] },
-  config: Record<string, string>,
-  cartApi: CartApi,
-  request: Request,
-): Promise<Cart> => {
-  if (config?.customLineItemKeyOfBundle && config?.customLineItemKeyOfSubscription && config?.customTypeKeyOnLineItem) {
-    const lineItemId = findNewLineItem(cart, body);
-
-    if (lineItemId && body.subscriptions?.length) {
-      const bundleLineItems = getBundleLineItemsDraft(
-        body,
-
-        config.customTypeKeyOnLineItem,
-        {
-          [config.customLineItemKeyOfBundle]: lineItemId,
-          [config.customLineItemKeyOfSubscription]: true,
-        },
-
-        'subscriptions',
-      );
-      // @ts-ignore
-      cart = await cartApi.addSubscriptionsToCart(
-        cart,
-        bundleLineItems,
-        request.sessionData?.account,
-        request.sessionData?.organization,
-      );
-    }
-  }
-  return cart;
-};
-
-const handleConfigurableComponentsOnAddToCart = async (
-  cart: Cart,
-  body: { variant?: LineItemVariant; configurableComponents?: Partial<LineItemVariant>[] },
-  config: Record<string, string>,
-  cartApi: CartApi,
-  request: Request,
-): Promise<Cart> => {
-  if (config?.customLineItemKeyOfBundle && config?.customLineItemTypeKey) {
-    const lineItemId = findNewLineItem(cart, body);
-    if (lineItemId && body.configurableComponents?.length) {
-      const bundleLineItems = getBundleLineItemsDraft(
-        body,
-        config.customLineItemTypeKey,
-        { [config.customLineItemKeyOfBundle]: lineItemId },
-        'configurableComponents',
-      );
-      // @ts-ignore
-      cart = await cartApi.addSubscriptionsToCart(
-        cart,
-        bundleLineItems,
-        request.sessionData?.account,
-        request.sessionData?.organization,
-      );
-    }
-  }
-  return cart;
-};
-
-const handleSubscriptionsOnAddItemsToCart = async (
-  cart: Cart,
-  body: { list?: LineItemVariant[]; subscriptions?: Partial<LineItemVariant>[] },
-  config: Record<string, string>,
-  cartApi: CartApi,
-  request: Request,
-): Promise<Cart> => {
-  if (config?.customLineItemKeyOfBundle && config?.customTypeKeyOnLineItem) {
-    const lineItemIds = cart.lineItems
-      .filter((item) =>
-        body.list.find((listItem) => item.variant.sku === listItem.sku && item.count === listItem.count),
-      )
-      ?.map((lineItem) => lineItem.lineItemId);
-
-    if (lineItemIds && body.subscriptions?.length) {
-      const bundleLineItems = lineItemIds.reduce((prev, lineItemId) => {
-        return prev.concat(
-          body.subscriptions.map((subscription) => ({
-            variant: {
-              sku: subscription.sku || undefined,
-              price: undefined,
-            },
-            count: +subscription.count || 1,
-            custom: {
-              type: {
-                key: config.customTypeKeyOnLineItem,
-                typeId: 'type',
-              },
-              fields: {
-                [config.customLineItemKeyOfBundle as string]: lineItemId,
-              },
-            },
-          })),
-        );
-      }, []);
-      cart = await cartApi.addSubscriptionsToCart(
-        cart,
-        bundleLineItems,
-        request.sessionData?.account,
-        request.sessionData?.organization,
-      );
-    }
-  }
-
-  return cart;
 };
 
 function getBundleLineItemsDraft(
