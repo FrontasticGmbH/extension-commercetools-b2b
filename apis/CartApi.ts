@@ -81,6 +81,8 @@ export class CartApi extends BaseCartApi {
         where.push(`inventoryMode="None"`);
       }
 
+      where.push(`customerId="${account.accountId}"`);
+
       const response = await this.associateEndpoints(account, organization)
         .carts()
         .get({
@@ -136,7 +138,7 @@ export class CartApi extends BaseCartApi {
           typeId: 'store',
         },
         inventoryMode: 'ReserveOnOrder',
-        origin: 'Merchant',
+        customerId: account.accountId,
       };
 
       if (organization.store?.isPreBuyStore) {

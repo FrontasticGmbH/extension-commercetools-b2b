@@ -26,7 +26,7 @@ export type AccountRegisterBody = {
   isSubscribed?: boolean;
 };
 
-type AccountLoginBody = {
+export type AccountLoginBody = {
   email?: string;
   password?: string;
 };

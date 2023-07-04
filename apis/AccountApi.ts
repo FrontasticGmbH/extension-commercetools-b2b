@@ -12,79 +12,72 @@ export class AccountApi extends BaseAccountApi {
     account: Account,
     cart: Cart | undefined,
   ) => {
-    try {
-      const locale = await this.getCommercetoolsLocal();
+    const locale = await this.getCommercetoolsLocal();
 
-      const {
-        commercetoolsAddresses,
-        billingAddresses,
-        shippingAddresses,
-        defaultBillingAddress,
-        defaultShippingAddress,
-      } = this.extractAddresses(account);
+    const {
+      commercetoolsAddresses,
+      billingAddresses,
+      shippingAddresses,
+      defaultBillingAddress,
+      defaultShippingAddress,
+    } = this.extractAddresses(account);
 
-      const customerDraft: CustomerDraft = {
-        email: account.email,
-        password: account.password,
-        salutation: account?.salutation,
-        firstName: account?.firstName,
-        lastName: account?.lastName,
-        companyName: account.company,
-        dateOfBirth: account?.birthday
-          ? account.birthday.getFullYear() + '-' + account.birthday.getMonth() + '-' + account.birthday.getDate()
+    const customerDraft: CustomerDraft = {
+      email: account.email,
+      password: account.password,
+      salutation: account?.salutation,
+      firstName: account?.firstName,
+      lastName: account?.lastName,
+      companyName: account.company,
+      dateOfBirth: account?.birthday
+        ? account.birthday.getFullYear() + '-' + account.birthday.getMonth() + '-' + account.birthday.getDate()
+        : undefined,
+      isEmailVerified: account?.confirmed,
+      addresses: commercetoolsAddresses.length > 0 ? commercetoolsAddresses : undefined,
+      defaultBillingAddress: defaultBillingAddress,
+      defaultShippingAddress: defaultShippingAddress,
+      billingAddresses: billingAddresses.length > 0 ? billingAddresses : undefined,
+      shippingAddresses: shippingAddresses.length > 0 ? shippingAddresses : undefined,
+      anonymousCart:
+        cart !== undefined
+          ? ({
+              typeId: 'cart',
+              id: cart.cartId,
+            } as CartResourceIdentifier)
           : undefined,
-        isEmailVerified: account?.confirmed,
-        addresses: commercetoolsAddresses.length > 0 ? commercetoolsAddresses : undefined,
-        defaultBillingAddress: defaultBillingAddress,
-        defaultShippingAddress: defaultShippingAddress,
-        billingAddresses: billingAddresses.length > 0 ? billingAddresses : undefined,
-        shippingAddresses: shippingAddresses.length > 0 ? shippingAddresses : undefined,
-        anonymousCart:
-          cart !== undefined
-            ? ({
-                typeId: 'cart',
-                id: cart.cartId,
-              } as CartResourceIdentifier)
-            : undefined,
-      };
+    };
 
-      account = await this.requestBuilder()
-        .customers()
-        .post({
-          body: customerDraft,
-        })
-        .execute()
-        .then((response) => {
-          return AccountMapper.commercetoolsCustomerToAccount(response.body.customer, locale);
-        })
-        .catch((error) => {
-          if (error.code && error.code === 400) {
-            if (error.body && error.body?.errors?.[0]?.code === 'DuplicateField') {
-              throw new Error(`The account ${account.email} does already exist.`);
-            }
-
-            /*
-             * The cart might already belong to another user, so we try to create tje account without the cart.
-             */
-            if (cart) {
-              return this.create(account, undefined);
-            }
+    account = await this.requestBuilder()
+      .customers()
+      .post({
+        body: customerDraft,
+      })
+      .execute()
+      .then((response) => {
+        return AccountMapper.commercetoolsCustomerToAccount(response.body.customer, locale);
+      })
+      .catch((error) => {
+        if (error.code && error.code === 400) {
+          if (error.body && error.body?.errors?.[0]?.code === 'DuplicateField') {
+            throw new Error(`The account ${account.email} does already exist.`);
           }
 
-          throw new ExternalError({ status: error.code, message: error.message, body: error.body });
-        });
+          /*
+           * The cart might already belong to another user, so we try to create tje account without the cart.
+           */
+          if (cart) {
+            return this.create(account, undefined);
+          }
+        }
 
-      const token = await this.getConfirmationToken(account);
+        throw new ExternalError({ status: error.code, message: error.message, body: error.body });
+      });
 
-      if (token) {
-        account.confirmationToken = token;
-      }
-
-      return account;
-    } catch (error) {
-      //TODO: better error, get status code etc...
-      throw error;
+    if (!account.confirmed) {
+      account.confirmationToken = await this.getConfirmationToken(account);
     }
+
+    return account;
   };
 
   getCustomerByEmail: (email: string) => Promise<Customer | null> = async (email: string) => {
