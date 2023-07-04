@@ -1,14 +1,13 @@
 import { Cart } from '@Types/cart/Cart';
-import { LineItemReturnItemDraft } from '@Types/cart/LineItem';
-import { LineItem } from '@Types/cart/LineItem';
+import { LineItem, LineItemReturnItemDraft } from '@Types/cart/LineItem';
 import { Order } from '@Types/cart/Order';
 import { Account } from '@Types/account/Account';
-import { CartDraft, Cart as CommercetoolsCart, AddressDraft, CartUpdateAction } from '@commercetools/platform-sdk';
+import { AddressDraft, Cart as CommercetoolsCart, CartDraft, CartUpdateAction } from '@commercetools/platform-sdk';
 import {
   CartAddLineItemAction,
-  CartSetCustomerIdAction,
   CartRemoveLineItemAction,
   CartSetCountryAction,
+  CartSetCustomerIdAction,
   CartSetLocaleAction,
   CartUpdate,
 } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/cart';
@@ -107,18 +106,6 @@ export class CartApi extends BaseCartApi {
       //TODO: better error, get status code etc...
       throw new Error(`getForUser failed. ${error}`);
     }
-  };
-
-  getAllForSuperUser: (account?: Account, organization?: Organization) => Promise<Cart[]> = async (
-    account?: Account,
-    organization?: Organization,
-  ) => {
-    const locale = await this.getCommercetoolsLocal();
-    const allCarts = await this.getAllCarts(account, organization);
-    if (allCarts.length >= 1) {
-      return allCarts.map((cart) => CartMapper.commercetoolsCartToCart(cart, locale));
-    }
-    return [];
   };
 
   createCart: (account?: Account, organization?: Organization) => Promise<Cart> = async (

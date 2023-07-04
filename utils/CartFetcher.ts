@@ -10,13 +10,9 @@ export class CartFetcher extends BaseCartFetcher {
     const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 
     if (request.sessionData?.cartId !== undefined) {
-      try {
-        const cart = (await cartApi.getById(request.sessionData.cartId)) as Cart;
-        if (cartApi.assertCartOrganization(cart, request.sessionData.organization)) {
-          return cart;
-        }
-      } catch (error) {
-        throw new Error(`Error fetching the cart ${request.sessionData.cartId}, creating a new one. ${error}`);
+      const cart = await cartApi.getById(request.sessionData.cartId);
+      if (cartApi.assertCartOrganization(cart, request.sessionData.organization)) {
+        return cart;
       }
     }
 
