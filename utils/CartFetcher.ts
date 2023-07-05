@@ -5,29 +5,36 @@ import { getCurrency, getLocale } from './Request';
 import { BaseCartFetcher } from './BaseCartFetcher';
 
 export class CartFetcher extends BaseCartFetcher {
-  static async fetchCart(request: Request, actionContext: ActionContext): Promise<Cart> {
+  static async fetchCart(request: Request, actionContext: ActionContext): Promise<Cart> | undefined {
+    const businessUnitKey = request?.query?.['businessUnitKey'];
+    const storeKey = request?.query?.['storeKey'];
+
     const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 
     if (request.sessionData?.cartId !== undefined) {
-      try {
-        const cart = (await cartApi.getById(request.sessionData.cartId)) as Cart;
-        if (cartApi.assertCartOrganization(cart, request.sessionData.organization)) {
-          return cart;
-        }
-      } catch (error) {
-        console.info(`Error fetching the cart ${request.sessionData.cartId}, creating a new one. ${error}`);
+      const cart = (await cartApi.getById(request.sessionData.cartId)) as Cart;
+
+      if (
+        cartApi.assertCartForBusinessUnitAndStore(cart, request.sessionData.organization, businessUnitKey, storeKey)
+      ) {
+        return cart;
       }
     }
 
-    if (request.sessionData?.account !== undefined) {
-      return await cartApi.getForUser(request.sessionData?.account, request.sessionData?.organization);
+    if (businessUnitKey && storeKey && request.sessionData?.account !== undefined) {
+      return await cartApi.getForUser(
+        request.sessionData?.account,
+        request.sessionData?.organization,
+        businessUnitKey,
+        storeKey,
+      );
     }
-    // @ts-ignore
-    return {};
+
+    return undefined;
   }
 }
 
-// Override the BaseMapper with new Mapper functions
+// Override the BaseCartFetcher with new CartFetcher functions
 Object.getOwnPropertyNames(CartFetcher).forEach((key) => {
   if (typeof CartFetcher[key] === 'function') {
     BaseCartFetcher[key] = CartFetcher[key];

@@ -30,58 +30,73 @@ export class CartApi extends BaseCartApi {
   protected associateEndpoints: (
     account?: Account,
     organization?: Organization,
+    businessUnitKey?: string,
   ) =>
     | ByProjectKeyAsAssociateByAssociateIdInBusinessUnitKeyByBusinessUnitKeyRequestBuilder
-    | ByProjectKeyRequestBuilder = (account?: Account, organization?: Organization) => {
-    return account && organization
+    | ByProjectKeyRequestBuilder = (account?: Account, organization?: Organization, businessUnitKey?: string) => {
+    return account && (businessUnitKey || organization)
       ? this.requestBuilder()
           .asAssociate()
           .withAssociateIdValue({ associateId: account.accountId })
-          .inBusinessUnitKeyWithBusinessUnitKeyValue({ businessUnitKey: organization.businessUnit.key })
+          .inBusinessUnitKeyWithBusinessUnitKeyValue({
+            businessUnitKey: businessUnitKey ?? organization.businessUnit.key,
+          })
       : this.requestBuilder();
   };
 
-  getForUser: (account?: Account, organization?: Organization) => Promise<Cart> = async (
+  getForUser: (
     account?: Account,
     organization?: Organization,
+    businessUnitKey?: string,
+    storeKey?: string,
+  ) => Promise<Cart> = async (
+    account?: Account,
+    organization?: Organization,
+    businessUnitKey?: string,
+    storeKey?: string,
   ) => {
     try {
       const locale = await this.getCommercetoolsLocal();
-      const allCarts = await this.getAllCarts(account, organization);
-      if (allCarts.length >= 1) {
-        const cart = (await this.buildCartWithAvailableShippingMethods(allCarts[0], locale)) as Cart;
-        if (this.assertCartOrganization(cart, organization)) {
-          return cart;
+      if (organization || (businessUnitKey && storeKey)) {
+        const allCarts = await this.getAllCarts(account, organization, businessUnitKey, storeKey);
+        if (allCarts.length >= 1) {
+          const cart = (await this.buildCartWithAvailableShippingMethods(allCarts[0], locale)) as Cart;
+          if (this.assertCartForBusinessUnitAndStore(cart, organization, businessUnitKey, storeKey)) {
+            return cart;
+          }
         }
       }
 
-      return (await this.createCart(account, organization)) as Cart;
+      return (await this.createCart(account, organization, businessUnitKey, storeKey)) as Cart;
     } catch (error) {
       //TODO: better error, get status code etc...
       throw new Error(`getForUser failed. ${error}`);
     }
   };
 
-  getAllCarts: (account?: Account, organization?: Organization) => Promise<CommercetoolsCart[]> = async (
+  getAllCarts: (
     account?: Account,
     organization?: Organization,
+    businessUnitKey?: string,
+    storeKey?: string,
+  ) => Promise<CommercetoolsCart[]> = async (
+    account?: Account,
+    organization?: Organization,
+    businessUnitKey?: string,
+    storeKey?: string,
   ) => {
     try {
       const subscriptionConfig = this.frontasticContext?.project?.configuration?.subscriptions;
-      const preBuyConfig = this.frontasticContext?.project?.configuration?.preBuy;
 
       const where = [
-        `store(key="${organization.store?.key}")`,
+        `store(key="${storeKey ?? organization.store?.key}")`,
         `cartState="Active"`,
         `custom(fields(${subscriptionConfig.isSubscriptionCustomFieldNameOnCart} is not defined))`,
       ];
 
-      if (organization.store?.isPreBuyStore) {
-        where.push(`custom(fields(${preBuyConfig.orderCustomField} = true))`);
-        where.push(`inventoryMode="None"`);
-      }
+      where.push(`customerId="${account.accountId}"`);
 
-      const response = await this.associateEndpoints(account, organization)
+      const response = await this.associateEndpoints(account, organization, businessUnitKey)
         .carts()
         .get({
           queryArgs: {
@@ -119,40 +134,33 @@ export class CartApi extends BaseCartApi {
     return [];
   };
 
-  createCart: (account?: Account, organization?: Organization) => Promise<Cart> = async (
+  createCart: (
     account?: Account,
     organization?: Organization,
+    businessUnitKey?: string,
+    storeKey?: string,
+  ) => Promise<Cart> = async (
+    account?: Account,
+    organization?: Organization,
+    businessUnitKey?: string,
+    storeKey?: string,
   ) => {
     try {
       const locale = await this.getCommercetoolsLocal();
-      const config = this.frontasticContext?.project?.configuration?.preBuy;
 
       const cartDraft: Writeable<CartDraft> = {
         currency: locale.currency,
         country: locale.country,
         locale: locale.language,
         store: {
-          key: organization.store?.key,
+          key: storeKey ?? organization.store?.key,
           typeId: 'store',
         },
         inventoryMode: 'ReserveOnOrder',
-        origin: 'Merchant',
+        customerId: account.accountId,
       };
 
-      if (organization.store?.isPreBuyStore) {
-        cartDraft.custom = {
-          type: {
-            typeId: 'type',
-            key: config.orderCustomType,
-          },
-          fields: {
-            [config.orderCustomField]: true,
-          },
-        };
-        cartDraft.inventoryMode = 'None';
-      }
-
-      const commercetoolsCart = await this.associateEndpoints(account, organization)
+      const commercetoolsCart = await this.associateEndpoints(account, organization, businessUnitKey)
         .carts()
         .post({
           queryArgs: {
@@ -786,16 +794,17 @@ export class CartApi extends BaseCartApi {
     return CartMapper.commercetoolsCartToCart(commercetoolsCart, locale, config) as Cart;
   };
 
-  assertCartOrganization: (cart: Cart, organization: Organization) => boolean = (
+  assertCartForBusinessUnitAndStore: (
     cart: Cart,
     organization: Organization,
-  ) => {
+    businessUnitKey?: string,
+    storeKey?: string,
+  ) => boolean = (cart: Cart, organization: Organization, businessUnitKey?: string, storeKey?: string) => {
     return (
       !!cart.businessUnit &&
       !!cart.store &&
-      cart.businessUnit === organization.businessUnit?.key &&
-      cart.store === organization.store?.key &&
-      cart.isPreBuyCart === organization.store?.isPreBuyStore
+      (cart.businessUnit === businessUnitKey || cart.businessUnit === organization?.businessUnit?.key) &&
+      (cart.store === storeKey || cart.store === organization?.store?.key)
     );
   };
 
