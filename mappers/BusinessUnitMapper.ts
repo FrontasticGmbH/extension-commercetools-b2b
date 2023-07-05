@@ -42,6 +42,7 @@ export class BusinessUnitMapper {
       name: commercetoolsBusinessUnit.name,
       parentUnit: commercetoolsBusinessUnit.parentUnit,
       storeMode: commercetoolsBusinessUnit.storeMode,
+      stores: this.mapCommercetoolsStoreKeyReferencesToStoreKeyReferences(commercetoolsBusinessUnit.stores),
       contactEmail: commercetoolsBusinessUnit.contactEmail,
       unitType: commercetoolsBusinessUnit.unitType,
       custom: commercetoolsBusinessUnit.custom,
