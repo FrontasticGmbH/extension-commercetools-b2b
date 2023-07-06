@@ -411,6 +411,9 @@ export const update: ActionHook = async (request: Request, actionContext: Action
   return response;
 };
 
+/**
+ * @deprecated Use `getByKeyForAccount` instead
+ */
 export const getByKey: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const businessUnitApi = new BusinessUnitApi(
     actionContext.frontasticContext,
@@ -418,7 +421,7 @@ export const getByKey: ActionHook = async (request: Request, actionContext: Acti
     getCurrency(request),
   );
   try {
-    const businessUnit = await businessUnitApi.getByKey(request.query?.['key']);
+    const businessUnit = await businessUnitApi.getCommercetoolsBusinessUnitByKey(request.query?.['key']);
 
     const response: Response = {
       statusCode: 200,
@@ -436,6 +439,38 @@ export const getByKey: ActionHook = async (request: Request, actionContext: Acti
     };
 
     return response;
+  }
+};
+
+export const getByKeyForAccount: ActionHook = async (request: Request, actionContext: ActionContext) => {
+  const businessUnitApi = new BusinessUnitApi(
+    actionContext.frontasticContext,
+    getLocale(request),
+    getCurrency(request),
+  );
+  const key = request.query?.['key'];
+
+  const account = fetchAccountFromSession(request);
+
+  if (account === undefined) {
+    throw new AccountAuthenticationError({ message: 'Not logged in.' });
+  }
+
+  try {
+    const businessUnit = await businessUnitApi.get(key, account);
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify(businessUnit),
+      sessionData: request.sessionData,
+    };
+  } catch (error) {
+    const errorInfo = error as Error;
+    return {
+      statusCode: 400,
+      body: JSON.stringify(errorInfo.message),
+      sessionData: request.sessionData,
+    };
   }
 };
 

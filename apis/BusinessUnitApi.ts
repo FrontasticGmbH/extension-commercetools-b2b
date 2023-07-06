@@ -34,7 +34,7 @@ export class BusinessUnitApi extends BaseApi {
     organization: Organization,
     config: Record<string, string>,
   ): Promise<null | string> => {
-    const businessUnit = await this.getByKey(organization.businessUnit.key);
+    const businessUnit = await this.getCommercetoolsBusinessUnitByKey(organization.businessUnit.key);
     const workflowString = businessUnit.custom?.fields?.[config?.businessUnitCustomField];
     if (workflowString && config?.orderReviewStateID) {
       try {
@@ -87,7 +87,7 @@ export class BusinessUnitApi extends BaseApi {
 
   delete: (key: string) => Promise<any> = async (key: string) => {
     try {
-      return this.getByKey(key).then((bu) => {
+      return this.getCommercetoolsBusinessUnitByKey(key).then((bu) => {
         return this.requestBuilder()
           .businessUnits()
           .withKey({ key })
@@ -106,7 +106,7 @@ export class BusinessUnitApi extends BaseApi {
 
   update: (key: string, actions: any[]) => Promise<any> = async (key: string, actions: any[]) => {
     try {
-      return this.getByKey(key).then((res) => {
+      return this.getCommercetoolsBusinessUnitByKey(key).then((res) => {
         return this.requestBuilder()
           .businessUnits()
           .withKey({ key })
@@ -126,8 +126,8 @@ export class BusinessUnitApi extends BaseApi {
     }
   };
 
-  query: (where: string, expand?: string | string[]) => Promise<BusinessUnitPagedQueryResponse> = async (
-    where: string,
+  query: (where: string | string[], expand?: string | string[]) => Promise<BusinessUnitPagedQueryResponse> = async (
+    where: string | string[],
     expand?: string | string[],
   ) => {
     try {
@@ -322,32 +322,34 @@ export class BusinessUnitApi extends BaseApi {
   };
 
   get: (key: string, account?: Account) => Promise<BusinessUnit> = async (key: string, account?: Account) => {
-    const config = this.frontasticContext?.project?.configuration?.associateRoles;
-    if (!config?.defaultAdminRoleKey) {
-      throw new Error('Configuration error. No "defaultAdminRoleKey" exists');
-    }
     const storeApi = new StoreApi(this.frontasticContext, this.locale, this.currency);
     try {
-      const bu = await this.requestBuilder()
-        .businessUnits()
-        .withKey({ key })
-        .get()
-        .execute()
-        .then((res) => this.expandCommercetoolsBusinessUnitStores(res.body as CommercetoolsBusinessUnit));
-      const storeKeys = bu?.stores?.map((store) => `"${store.key}"`).join(' ,');
+      const businessUnit = await this.query(
+        [`associates(customer(id="${account.accountId}"))`, `key in ("${key}")`],
+        'associates[*].customer',
+      ).then((response) => {
+        if (response.count >= 1) {
+          return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(response.results[0]);
+        }
+
+        throw new Error(`Business unit "${key}" not found for this account`);
+      });
+
+      const storeKeys = businessUnit?.stores?.map((store) => `"${store.key}"`).join(' ,');
       const allStores = await storeApi.query(`key in (${storeKeys})`);
       return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(
-        bu as CommercetoolsBusinessUnit,
+        businessUnit as CommercetoolsBusinessUnit,
         allStores,
-        // account.accountId,
-        // config.defaultAdminRoleKey,
       );
     } catch (e) {
       throw e;
     }
   };
 
-  getByKey: (key: string) => Promise<CommercetoolsBusinessUnit> = async (key: string) => {
+  /**
+   * @deprecated use getByKey instead
+   */
+  getCommercetoolsBusinessUnitByKey: (key: string) => Promise<CommercetoolsBusinessUnit> = async (key: string) => {
     try {
       return this.requestBuilder()
         .businessUnits()
