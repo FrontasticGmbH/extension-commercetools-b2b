@@ -456,22 +456,26 @@ export const getByKeyForAccount: ActionHook = async (request: Request, actionCon
     throw new AccountAuthenticationError({ message: 'Not logged in.' });
   }
 
+  let response: Response;
+
   try {
     const businessUnit = await businessUnitApi.get(key, account);
 
-    return {
+    response = {
       statusCode: 200,
       body: JSON.stringify(businessUnit),
       sessionData: request.sessionData,
     };
   } catch (error) {
     const errorInfo = error as Error;
-    return {
+    response = {
       statusCode: 400,
       body: JSON.stringify(errorInfo.message),
       sessionData: request.sessionData,
     };
   }
+
+  return response;
 };
 
 export const remove: ActionHook = async (request: Request, actionContext: ActionContext) => {
@@ -491,37 +495,14 @@ export const remove: ActionHook = async (request: Request, actionContext: Action
       body: JSON.stringify(businessUnit),
       sessionData: request.sessionData,
     };
-  } catch (e) {
+  } catch (error) {
+    const errorInfo = error as Error;
     response = {
       statusCode: 400,
+      body: JSON.stringify(errorInfo.message),
       sessionData: request.sessionData,
-      // @ts-ignore
-      error: e?.body?.message,
-      errorCode: 500,
     };
   }
-
-  return response;
-};
-
-export const query: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const businessUnitApi = new BusinessUnitApi(
-    actionContext.frontasticContext,
-    getLocale(request),
-    getCurrency(request),
-  );
-
-  let where = '';
-  if ('where' in request.query) {
-    where += [request.query['where']];
-  }
-  const store = await businessUnitApi.query(where);
-
-  const response: Response = {
-    statusCode: 200,
-    body: JSON.stringify(store),
-    sessionData: request.sessionData,
-  };
 
   return response;
 };
