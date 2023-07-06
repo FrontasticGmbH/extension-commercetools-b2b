@@ -303,7 +303,7 @@ export const update: ActionHook = async (request: Request, actionContext: Action
 
   account = {
     ...account,
-    ...mapRequestToAccount(JSON.parse(request.body)),
+    ...mapRequestToAccount(request),
   };
 
   account = await accountApi.update(account);
