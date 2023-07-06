@@ -1,7 +1,6 @@
 import {
   BusinessUnit as CommercetoolsBusinessUnit,
   StoreKeyReference as CommercetoolsStoreKeyReference,
-  Store as CommercetoolsStore,
 } from '@commercetools/platform-sdk';
 import { BusinessUnit } from '@Types/business-unit/BusinessUnit';
 import { Store, StoreKeyReference } from '@Types/store/Store';
