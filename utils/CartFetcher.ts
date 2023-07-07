@@ -21,7 +21,10 @@ export class CartFetcher extends BaseCartFetcher {
       }
     }
 
-    if (businessUnitKey && storeKey && request.sessionData?.account !== undefined) {
+    if (
+      ((businessUnitKey && storeKey) || request.sessionData?.organization) &&
+      request.sessionData?.account !== undefined
+    ) {
       return await cartApi.getForUser(
         request.sessionData?.account,
         request.sessionData?.organization,
