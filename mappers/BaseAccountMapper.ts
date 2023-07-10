@@ -1,5 +1,5 @@
 import { Customer as commercetoolsCustomer, CustomerToken } from '@commercetools/platform-sdk';
-import { Locale } from '../interfaces/Locale';
+import { Locale } from '@Commerce-commercetools/interfaces/Locale';
 import { Account } from '@Types/account/Account';
 import { Address } from '@Types/account/Address';
 import { BaseAddress } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/common';

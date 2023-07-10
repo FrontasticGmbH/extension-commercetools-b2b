@@ -14,7 +14,7 @@ import {
 } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/cart';
 import { OrderFromCartDraft } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/order';
 import { isReadyForCheckout } from '../utils/Cart';
-import { Locale } from '../interfaces/Locale';
+import { Locale } from '@Commerce-commercetools/interfaces/Locale';
 import { Organization } from '../interfaces/Organization';
 import { CartMapper } from '../mappers/CartMapper';
 import { BaseCartApi } from '@Commerce-commercetools/apis/BaseCartApi';

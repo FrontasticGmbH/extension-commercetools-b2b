@@ -1,6 +1,6 @@
 import { Account } from '@Types/account/Account';
 import { Customer as commercetoolsCustomer } from '@commercetools/platform-sdk';
-import { Locale } from '../interfaces/Locale';
+import { Locale } from '@Commerce-commercetools/interfaces/Locale';
 import { BaseAccountMapper } from './BaseAccountMapper';
 
 export class AccountMapper extends BaseAccountMapper {

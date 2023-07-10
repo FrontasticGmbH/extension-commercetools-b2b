@@ -5,7 +5,7 @@ import {
   StateReference,
 } from '@commercetools/platform-sdk';
 import { BaseCartMapper } from './BaseCartMapper';
-import { Locale } from '../interfaces/Locale';
+import { Locale } from '@Commerce-commercetools/interfaces/Locale';
 import { ProductMapper } from './ProductMapper';
 import { ProductRouter } from '../utils/ProductRouter';
 import { LineItem } from '@Types/cart/LineItem';
