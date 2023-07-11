@@ -7,7 +7,6 @@ import { Cart } from '@Types/cart/Cart';
 import { Address } from '@Types/account/Address';
 import { CartFetcher } from '../utils/CartFetcher';
 import { CartApi } from '../apis/CartApi';
-import { SubscriptionApi } from '../apis/SubscriptionApi';
 import { BusinessUnitApi } from '../apis/BusinessUnitApi';
 import { EmailApiFactory } from '../utils/EmailApiFactory';
 import { ProductApi } from '../apis/ProductApi';
@@ -92,7 +91,6 @@ export const addToCart: ActionHook = async (request: Request, actionContext: Act
 
   const body: {
     variant?: LineItemVariant;
-    subscriptions?: Partial<LineItemVariant>[];
     configurableComponents?: Partial<LineItemVariant>[];
   } = JSON.parse(request.body);
 
@@ -149,11 +147,9 @@ export const addToCart: ActionHook = async (request: Request, actionContext: Act
 
 export const addItemsToCart: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-  const config = actionContext.frontasticContext?.project?.configuration?.subscriptions;
 
   const body: {
     list?: LineItemVariant[];
-    subscriptions?: Partial<LineItemVariant>[];
   } = JSON.parse(request.body);
 
   const lineItems: LineItem[] = body.list?.map((variant) => ({
@@ -436,14 +432,8 @@ export const checkout: ActionHook = async (request: Request, actionContext: Acti
   const locale = getLocale(request);
   const businessUnitApi = new BusinessUnitApi(actionContext.frontasticContext, locale, getCurrency(request));
   const cartApi = new CartApi(actionContext.frontasticContext, locale, getCurrency(request));
-  const subscriptionApi = new SubscriptionApi(
-    actionContext.frontasticContext,
-    getLocale(request),
-    getCurrency(request),
-  );
 
   const config = actionContext.frontasticContext?.project?.configuration?.workflows;
-  const clientHost = actionContext.frontasticContext?.project?.configuration?.smtp?.client_host;
 
   const cart = await updateCartFromRequest(request, actionContext);
   const body: { payload: any } = JSON.parse(request.body);
@@ -460,13 +450,6 @@ export const checkout: ActionHook = async (request: Request, actionContext: Acti
     const emailApi = EmailApiFactory.getDefaultApi(actionContext.frontasticContext, locale);
 
     emailApi.sendOrderConfirmationEmail({ ...order, email: order.email || cart.email });
-
-    const distributionChannel = request.sessionData.organization?.distributionChannel?.id;
-    try {
-      await subscriptionApi.handleSubscriptionsOnOrder(cart, order, distributionChannel);
-    } catch {
-      console.error('subscriptions failed');
-    }
 
     // Unset the cartId
     const cartId: string = undefined;
@@ -522,35 +505,3 @@ export const transitionOrderState: ActionHook = async (request: Request, actionC
 
   return response;
 };
-
-function getBundleLineItemsDraft(
-  body: {
-    variant?: LineItemVariant;
-    subscriptions?: Partial<LineItemVariant>[];
-    configurableComponents?: Partial<LineItemVariant>[];
-  },
-  customType: string,
-  fields: Record<string, string | boolean>,
-  bundleFieldName: 'subscriptions' | 'configurableComponents',
-) {
-  return body[bundleFieldName].map((field: Partial<LineItemVariant>) => ({
-    variant: {
-      sku: field.sku || undefined,
-      // @ts-ignore
-      price: undefined,
-    },
-    count: +field.count || 1,
-    custom: {
-      type: {
-        key: customType,
-        typeId: 'type',
-      },
-      fields,
-    },
-  }));
-}
-
-function findNewLineItem(cart: Cart, body: { variant?: LineItemVariant }) {
-  return cart.lineItems.find((item) => item.variant.sku === body.variant.sku && item.count === body.variant.count)
-    ?.lineItemId;
-}
