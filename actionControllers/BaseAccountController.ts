@@ -103,7 +103,7 @@ export const register: ActionHook = async (request: Request, actionContext: Acti
   const locale = getLocale(request);
 
   const accountApi = new AccountApi(actionContext.frontasticContext, locale, getCurrency(request));
-  const accountData = mapRequestToAccount(JSON.parse(request.body).account);
+  const accountData = mapRequestToAccount(request);
 
   const cart = await CartFetcher.fetchCart(request, actionContext);
 
@@ -113,7 +113,9 @@ export const register: ActionHook = async (request: Request, actionContext: Acti
 
   emailApi.sendWelcomeCustomerEmail(account);
 
-  emailApi.sendAccountVerificationEmail(account);
+  if (!account.confirmed) {
+    emailApi.sendAccountVerificationEmail(account);
+  }
 
   const response: Response = {
     statusCode: 200,
@@ -301,7 +303,7 @@ export const update: ActionHook = async (request: Request, actionContext: Action
 
   account = {
     ...account,
-    ...mapRequestToAccount(JSON.parse(request.body)),
+    ...mapRequestToAccount(request),
   };
 
   account = await accountApi.update(account);

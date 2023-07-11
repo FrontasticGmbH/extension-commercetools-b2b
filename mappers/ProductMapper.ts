@@ -6,7 +6,7 @@ import {
   ProductVariant as CommercetoolsProductVariant,
   ProductVariantAvailability,
 } from '@commercetools/platform-sdk';
-import { Locale } from '../interfaces/Locale';
+import { Locale } from '@Commerce-commercetools/interfaces/Locale';
 import { BaseProductMapper } from './BaseProductMapper';
 
 export class ProductMapper extends BaseProductMapper {

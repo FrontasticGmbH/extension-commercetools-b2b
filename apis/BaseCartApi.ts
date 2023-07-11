@@ -32,7 +32,7 @@ import { BaseApi } from './BaseApi';
 import { ShippingMethod } from '@Types/cart/ShippingMethod';
 import { LineItem } from '@Types/cart/LineItem';
 import { Discount } from '@Types/cart/Discount';
-import { Locale } from '../interfaces/Locale';
+import { Locale } from '@Commerce-commercetools/interfaces/Locale';
 import { Payment } from '@Types/cart/Payment';
 import {
   PaymentDraft,

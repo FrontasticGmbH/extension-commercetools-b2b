@@ -2,7 +2,7 @@ import { Wishlist, WishlistDraft } from '@Types/wishlist/Wishlist';
 import { CustomFields, ShoppingList } from '@commercetools/platform-sdk';
 import { ShoppingListDraft } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/shopping-list';
 import { Store, StoreKeyReference } from '@Types/store/Store';
-import { Locale } from '../interfaces/Locale';
+import { Locale } from '@Commerce-commercetools/interfaces/Locale';
 import { BaseWishlistMapper } from './BaseWishlistMapper';
 
 export class WishlistMapper extends BaseWishlistMapper {

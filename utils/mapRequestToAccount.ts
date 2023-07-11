@@ -1,14 +1,19 @@
 import { AccountExtended as Account } from '../interfaces/AccountExtended';
 import { parseBirthday } from './parseBirthday';
-import { AccountRegisterBody } from '../actionControllers/BaseAccountController';
+import { AccountRegisterBody } from '../actionControllers/AccountController';
+import { Request } from '@frontastic/extension-types';
 
-export function mapRequestToAccount(accountRegisterBody: AccountRegisterBody): Account {
+export function mapRequestToAccount(request: Request): Account {
+  const accountRegisterBody: AccountRegisterBody = JSON.parse(request.body);
+
   const account: Account = {
-    email: accountRegisterBody?.email ?? '',
+    email: accountRegisterBody?.email,
+    confirmed: accountRegisterBody?.confirmed,
     password: accountRegisterBody?.password,
     salutation: accountRegisterBody?.salutation,
     firstName: accountRegisterBody?.firstName,
     lastName: accountRegisterBody?.lastName,
+    company: accountRegisterBody?.company,
     birthday: parseBirthday(accountRegisterBody),
     isSubscribed: accountRegisterBody?.isSubscribed,
     addresses: [],
@@ -18,14 +23,14 @@ export function mapRequestToAccount(accountRegisterBody: AccountRegisterBody): A
     accountRegisterBody.billingAddress.isDefaultBillingAddress = true;
     accountRegisterBody.billingAddress.isDefaultShippingAddress = !(accountRegisterBody.shippingAddress !== undefined);
 
-    account.addresses && account.addresses.push(accountRegisterBody.billingAddress);
+    account.addresses.push(accountRegisterBody.billingAddress);
   }
 
   if (accountRegisterBody.shippingAddress) {
     accountRegisterBody.shippingAddress.isDefaultShippingAddress = true;
     accountRegisterBody.shippingAddress.isDefaultBillingAddress = !(accountRegisterBody.billingAddress !== undefined);
 
-    account.addresses && account.addresses.push(accountRegisterBody.shippingAddress);
+    account.addresses.push(accountRegisterBody.shippingAddress);
   }
 
   return account;

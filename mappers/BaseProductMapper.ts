@@ -18,7 +18,7 @@ import { Product } from '@Types/product/Product';
 import { Variant } from '@Types/product/Variant';
 import { Attributes } from '@Types/product/Attributes';
 import { ProductRouter } from '../utils/ProductRouter';
-import { Locale } from '../interfaces/Locale';
+import { Locale } from '@Commerce-commercetools/interfaces/Locale';
 import { Money } from '@Types/product/Money';
 import { FilterField, FilterFieldTypes, FilterFieldValue } from '@Types/product/FilterField';
 import {
