@@ -105,7 +105,7 @@ export const setMe: ActionHook = async (request: Request, actionContext: ActionC
   const storeApi = new StoreApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
   const data = JSON.parse(request.body);
 
-  const businessUnit = await businessUnitApi.get(data.key, request.sessionData?.account?.accountId);
+  const businessUnit = await businessUnitApi.get(data.key, request.sessionData?.account);
   const store = businessUnit.stores?.[0]?.key ? await storeApi.get(businessUnit.stores[0].key) : undefined;
   const organization = await businessUnitApi.getOrganizationByBusinessUnit(businessUnit);
   const response: Response = {
