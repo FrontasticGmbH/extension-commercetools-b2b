@@ -1,5 +1,5 @@
 import { ActionContext, Request, Response } from '@frontastic/extension-types';
-import { AccountExtended as Account } from '../interfaces/AccountExtended';
+import { AccountExtended as Account } from '@Commerce-commercetools/interfaces/AccountExtended';
 import { Address } from '@Types/account/Address';
 import { CartFetcher } from '../utils/CartFetcher';
 import { getCurrency, getLocale } from '../utils/Request';

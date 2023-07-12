@@ -1,5 +1,5 @@
 import { Project } from '@frontastic/extension-types';
-import { ClientConfig } from '../interfaces/ClientConfig';
+import { ClientConfig } from '@Commerce-commercetools/interfaces/ClientConfig';
 
 export const getConfig = (project: Project, engine: string, locale: string | null): ClientConfig => {
   if (!project.configuration[engine]) {
