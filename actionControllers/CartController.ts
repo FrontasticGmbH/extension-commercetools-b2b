@@ -1,4 +1,4 @@
-export * from './BaseCartController';
+import { ExternalError } from '@Commerce-commercetools/utils/Errors';
 import { AddressDraft } from '@commercetools/platform-sdk';
 import { ActionContext, Context, Request, Response } from '@frontastic/extension-types';
 import { LineItem, LineItemReturnItemDraft } from '@Types/cart/LineItem';
@@ -6,10 +6,12 @@ import { getCurrency, getLocale } from '../utils/Request';
 import { Cart } from '@Types/cart/Cart';
 import { Address } from '@Types/account/Address';
 import { CartFetcher } from '../utils/CartFetcher';
-import { CartApi } from '../apis/CartApi';
+import { CartApi, Payload } from '../apis/CartApi';
 import { BusinessUnitApi } from '../apis/BusinessUnitApi';
 import { EmailApiFactory } from '../utils/EmailApiFactory';
 import { ProductApi } from '../apis/ProductApi';
+
+export * from './BaseCartController';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
 
@@ -251,10 +253,24 @@ export const returnItems: ActionHook = async (request: Request, actionContext: A
   return response;
 };
 
+function errorHandler(error: ExternalError | Error | unknown, request?: Request) {
+  if (error instanceof ExternalError) {
+    return {
+      statusCode: error.status,
+      body: JSON.stringify(error.body),
+      sessionData: request?.sessionData,
+    };
+  }
+  const errorResponse = error as Error;
+  return {
+    statusCode: 400,
+    message: errorResponse.message,
+    sessionData: request?.sessionData,
+  };
+}
+
 export const updateOrderState: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-
-  let response: Response;
 
   try {
     const { orderNumber, orderState }: { orderNumber: string; orderState: string } = JSON.parse(request.body);
@@ -264,55 +280,39 @@ export const updateOrderState: ActionHook = async (request: Request, actionConte
       request.sessionData?.account,
       request.sessionData?.organization,
     );
-    response = {
+    return {
       statusCode: 200,
       body: JSON.stringify(res),
       sessionData: request.sessionData,
     };
-  } catch (e) {
-    response = {
-      statusCode: 400,
-      sessionData: request.sessionData,
-      // @ts-ignore
-      error: e?.message ? e.message : e,
-      errorCode: 500,
-    };
+  } catch (error) {
+    return errorHandler(error, request);
   }
-
-  return response;
 };
 
 export const replicateCart: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
   const orderId = request.query?.['orderId'];
-  try {
-    if (orderId) {
-      const cart = await cartApi.replicateCart(
-        orderId,
-        request.sessionData?.account,
-        request.sessionData?.organization,
-      );
-      const order = await cartApi.order(cart, request.sessionData?.account, request.sessionData?.organization);
-      const response: Response = {
-        statusCode: 200,
-        body: JSON.stringify(order),
-        sessionData: {
-          ...request.sessionData,
-        },
-      };
-      return response;
-    }
-    throw new Error('Order not found');
-  } catch (e) {
-    const response: Response = {
-      statusCode: 400,
-      sessionData: request.sessionData,
-      // @ts-ignore
-      error: e?.message,
-      errorCode: 500,
-    };
 
-    return response;
+  if (!orderId) {
+    return {
+      statusCode: 500,
+      sessionData: request.sessionData,
+      error: 'orderId is required',
+    };
+  }
+  try {
+    const cart = await cartApi.replicateCart(orderId, request.sessionData?.account, request.sessionData?.organization);
+    const order = await cartApi.order(cart, request.sessionData?.account, request.sessionData?.organization);
+    return {
+      statusCode: 200,
+      body: JSON.stringify(order),
+      sessionData: {
+        ...request.sessionData,
+      },
+    };
+  } catch (error) {
+    return errorHandler(error, request);
   }
 };
 
@@ -330,8 +330,7 @@ export const splitLineItem: ActionHook = async (request: Request, actionContext:
     .map((item) => item.address)
     .filter(
       (addressSplit) =>
-        // @ts-ignore
-        cartItemsShippingAddresses.findIndex((address: Address) => address.key === addressSplit.id) === -1,
+        cartItemsShippingAddresses.findIndex((address: Address) => address.id === addressSplit.id) === -1,
     );
 
   if (remainingAddresses.length) {
@@ -355,7 +354,7 @@ export const splitLineItem: ActionHook = async (request: Request, actionContext:
     request.sessionData?.organization,
   );
 
-  const response: Response = {
+  return {
     statusCode: 200,
     body: JSON.stringify(cartData),
     sessionData: {
@@ -364,7 +363,6 @@ export const splitLineItem: ActionHook = async (request: Request, actionContext:
     },
   };
 
-  return response;
 };
 
 export const reassignCart: ActionHook = async (request: Request, actionContext: ActionContext) => {
@@ -378,9 +376,9 @@ export const reassignCart: ActionHook = async (request: Request, actionContext: 
     request.sessionData?.account,
     request.sessionData?.organization,
   );
-  cart = (await cartApi.setEmail(cart, request.query?.email)) as Cart;
+  cart = await cartApi.setEmail(cart, request.query?.email);
 
-  const response: Response = {
+  return {
     statusCode: 200,
     body: JSON.stringify(cart),
     sessionData: {
@@ -389,7 +387,6 @@ export const reassignCart: ActionHook = async (request: Request, actionContext: 
     },
   };
 
-  return response;
 };
 
 export const removeLineItem: ActionHook = async (request: Request, actionContext: ActionContext) => {
@@ -407,16 +404,11 @@ export const removeLineItem: ActionHook = async (request: Request, actionContext
   };
 
   let cart = await CartFetcher.fetchCart(request, actionContext);
-  cart = (await cartApi.removeLineItem(
-    cart,
-    lineItem,
-    request.sessionData?.account,
-    request.sessionData?.organization,
-  )) as Cart;
+  cart = await cartApi.removeLineItem(cart, lineItem, request.sessionData?.account, request.sessionData?.organization);
 
   const cartId = cart.cartId;
 
-  const response: Response = {
+  return {
     statusCode: 200,
     body: JSON.stringify(cart),
     sessionData: {
@@ -425,7 +417,6 @@ export const removeLineItem: ActionHook = async (request: Request, actionContext
     },
   };
 
-  return response;
 };
 
 export const checkout: ActionHook = async (request: Request, actionContext: ActionContext) => {
@@ -436,9 +427,7 @@ export const checkout: ActionHook = async (request: Request, actionContext: Acti
   const config = actionContext.frontasticContext?.project?.configuration?.workflows;
 
   const cart = await updateCartFromRequest(request, actionContext);
-  const body: { payload: any } = JSON.parse(request.body);
-
-  let response: Response;
+  const body: { payload: Payload } = JSON.parse(request.body);
 
   const orderState = await businessUnitApi.getOrderStateFromWorkflows(cart, request.sessionData.organization, config);
 
@@ -454,7 +443,7 @@ export const checkout: ActionHook = async (request: Request, actionContext: Acti
     // Unset the cartId
     const cartId: string = undefined;
 
-    response = {
+    return {
       statusCode: 200,
       body: JSON.stringify(order),
       sessionData: {
@@ -462,23 +451,14 @@ export const checkout: ActionHook = async (request: Request, actionContext: Acti
         cartId,
       },
     };
-  } catch (e) {
-    console.debug(e);
-    response = {
-      statusCode: 500,
-      // @ts-ignore
-      error: e.message ? e.message : e,
-      errorCode: 500,
-    };
+  } catch (error) {
+    return errorHandler(error, request);
   }
-
-  return response;
 };
 
 export const transitionOrderState: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 
-  let response: Response;
 
   try {
     const { orderNumber, stateKey }: { orderNumber: string; stateKey: string } = JSON.parse(request.body);
@@ -488,20 +468,13 @@ export const transitionOrderState: ActionHook = async (request: Request, actionC
       request.sessionData?.account,
       request.sessionData?.organization,
     );
-    response = {
+    return {
       statusCode: 200,
       body: JSON.stringify(res),
       sessionData: request.sessionData,
     };
-  } catch (e) {
-    response = {
-      statusCode: 400,
-      sessionData: request.sessionData,
-      // @ts-ignore
-      error: e?.message,
-      errorCode: 500,
-    };
+  } catch (error) {
+    return errorHandler(error, request);
   }
 
-  return response;
 };

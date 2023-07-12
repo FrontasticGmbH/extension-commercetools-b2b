@@ -23,6 +23,12 @@ import { ExternalError } from '@Commerce-commercetools/utils/Errors';
 
 type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 
+export type Payload = { poNumber?: string; orderState?: string };
+
+type Fields = {
+  [key: string]: string | number | boolean;
+};
+
 export class CartApi extends BaseCartApi {
   protected organization?: Organization;
   protected account?: Account;
@@ -372,12 +378,7 @@ export class CartApi extends BaseCartApi {
       }
     };
 
-  order: (
-    cart: Cart,
-    account?: Account,
-    organization?: Organization,
-    payload?: { poNumber?: string; orderState?: string },
-  ) => Promise<Order> = async (
+  order: (cart: Cart, account?: Account, organization?: Organization, payload?: Payload) => Promise<Order> = async (
     cart: Cart,
     account?: Account,
     organization?: Organization,
@@ -654,13 +655,13 @@ export class CartApi extends BaseCartApi {
         actions: [
           {
             action: 'freezeCart',
-          } as any,
+          },
         ],
       };
 
       const commercetoolsCart = await this.updateCart(cart.cartId, cartUpdate, locale, account, organization);
 
-      return (await this.buildCartWithAvailableShippingMethods(commercetoolsCart, locale)) as Cart;
+      return await this.buildCartWithAvailableShippingMethods(commercetoolsCart, locale);
     } catch (error) {
       throw new ExternalError({ status: 400, message: `freeze error failed`, body: `freeze error failed. ${error}` });
     }
@@ -733,12 +734,12 @@ export class CartApi extends BaseCartApi {
         actions: [
           {
             action: 'unfreezeCart',
-          } as any,
+          },
         ],
       };
       const commercetoolsCart = await this.updateCart(cart.cartId, cartUpdate, locale, account, organization);
 
-      return (await this.buildCartWithAvailableShippingMethods(commercetoolsCart, locale)) as Cart;
+      return await this.buildCartWithAvailableShippingMethods(commercetoolsCart, locale);
     } catch (error) {
       throw new ExternalError({ status: 400, message: `freeze error failed`, body: `freeze error failed. ${error}` });
     }
@@ -764,12 +765,12 @@ export class CartApi extends BaseCartApi {
           {
             action: 'setDeleteDaysAfterLastModification',
             deleteDaysAfterLastModification,
-          } as any,
+          },
         ],
       };
       const commercetoolsCart = await this.updateCart(cart.cartId, cartUpdate, locale, account, organization);
 
-      return (await this.buildCartWithAvailableShippingMethods(commercetoolsCart, locale)) as Cart;
+      return await this.buildCartWithAvailableShippingMethods(commercetoolsCart, locale);
     } catch (error) {
       throw new ExternalError({ status: 400, message: `freeze error failed`, body: `freeze error failed. ${error}` });
     }
@@ -778,13 +779,13 @@ export class CartApi extends BaseCartApi {
   setCustomType: (
     cart: Cart,
     type: string,
-    fields: any,
+    fields: Fields,
     account?: Account,
     organization?: Organization,
   ) => Promise<Cart> = async (
     cart: Cart,
     type: string,
-    fields: any,
+    fields: Fields,
     account?: Account,
     organization?: Organization,
   ) => {
@@ -801,12 +802,12 @@ export class CartApi extends BaseCartApi {
               key: type,
             },
             fields,
-          } as any,
+          },
         ],
       };
       const commercetoolsCart = await this.updateCart(cart.cartId, cartUpdate, locale, account, organization);
 
-      return (await this.buildCartWithAvailableShippingMethods(commercetoolsCart, locale)) as Cart;
+      return await this.buildCartWithAvailableShippingMethods(commercetoolsCart, locale);
     } catch (error) {
       throw new ExternalError({ status: 400, message: `freeze error failed`, body: `freeze error failed. ${error}` });
     }
@@ -1000,7 +1001,7 @@ export class CartApi extends BaseCartApi {
     address: AddressDraft,
     account?: Account,
     organization?: Organization,
-  ) => Promise<any> = async (
+  ) => Promise<CommercetoolsCart> = async (
     originalCart: Cart,
     address: AddressDraft,
     account?: Account,
