@@ -11,6 +11,7 @@ export class AccountMapper extends BaseAccountMapper {
       salutation: commercetoolsCustomer?.salutation,
       firstName: commercetoolsCustomer?.firstName,
       lastName: commercetoolsCustomer?.lastName,
+      company: commercetoolsCustomer?.companyName,
       birthday: commercetoolsCustomer?.dateOfBirth ? new Date(commercetoolsCustomer.dateOfBirth) : undefined,
       confirmed: commercetoolsCustomer.isEmailVerified,
       addresses: this.commercetoolsCustomerToAddresses(commercetoolsCustomer, locale),

@@ -262,7 +262,7 @@ export const create: ActionHook = async (request: Request, actionContext: Action
   }
   const data = mapRequestToBusinessUnit(request, config);
 
-  const store = await businessUnitApi.create(data);
+  const store = await businessUnitApi.createFromData(data);
 
   const response: Response = {
     statusCode: 200,
