@@ -1,4 +1,4 @@
-import { AccountExtended as Account } from '../interfaces/AccountExtended';
+import { AccountExtended as Account } from '@Commerce-commercetools/interfaces/AccountExtended';
 import { parseBirthday } from './parseBirthday';
 import { AccountRegisterBody } from '../actionControllers/AccountController';
 import { Request } from '@frontastic/extension-types';

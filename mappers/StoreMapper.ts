@@ -5,8 +5,8 @@ export class StoreMapper {
   static mapCommercetoolsStoreToStore(
     store: CommercetoolsStore,
     locale: string,
-    preBuyConfig: Record<string, string>,
-    storeConfig: Record<string, string>,
+    preBuyConfig?: Record<string, string>,
+    storeConfig?: Record<string, string>,
   ): Store {
     return {
       name: store.name?.[locale],

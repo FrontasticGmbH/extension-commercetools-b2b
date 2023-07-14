@@ -7,7 +7,7 @@ import { ByProjectKeyRequestBuilder } from '@commercetools/platform-sdk/dist/dec
 import { LocaleError } from '../errors/LocaleError';
 import { ExternalError } from '../utils/Errors';
 import { TokenCache, TokenStore } from '@commercetools/sdk-client-v2';
-import { ClientConfig } from '../interfaces/ClientConfig';
+import { ClientConfig } from '@Commerce-commercetools/interfaces/ClientConfig';
 import { Token } from '@Types/Token';
 import { tokenHasExpired } from '../utils/Token';
 import * as crypto from 'crypto';

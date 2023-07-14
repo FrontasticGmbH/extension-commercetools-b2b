@@ -5,7 +5,7 @@ import { BusinessUnitApi } from '../apis/BusinessUnitApi';
 import { StoreDraft } from '@commercetools/platform-sdk';
 import { getCurrency, getLocale } from '../utils/Request';
 import { CartApi } from '../apis/CartApi';
-import { StoreApi } from '../apis/StoreApi';
+import { DEFAULT_CHANNEL_KEY, StoreApi } from '../apis/StoreApi';
 import { StoreMapper } from '../mappers/StoreMapper';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
@@ -20,15 +20,13 @@ type AccountRegisterBody = {
   parentBusinessUnit: string;
 };
 
-const DEFAULT_CHANNEL_KEY = 'default-channel';
-
 export const create: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const storeApi = new StoreApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 
-  const data = await mapRequestToStore(request, actionContext, storeApi);
+  const data = await mapRequestToCommercetoolsStoreDraft(request, actionContext, storeApi);
 
   try {
-    const store = await storeApi.create(data);
+    const store = await storeApi.createFromCommercetoolsStoreDraft(data);
 
     const response: Response = {
       statusCode: 200,
@@ -125,7 +123,7 @@ async function getParentSupplyChannels(parentStores: any): Promise<ChannelResour
   }, []);
 }
 
-async function mapRequestToStore(
+async function mapRequestToCommercetoolsStoreDraft(
   request: Request,
   actionContext: ActionContext,
   storeApi: StoreApi,

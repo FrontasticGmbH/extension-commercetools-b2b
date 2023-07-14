@@ -1,15 +1,18 @@
-import { BusinessUnit, StoreMode } from '@Types/business-unit/BusinessUnit';
+import { BusinessUnit, BusinessUnitStatus, BusinessUnitType, StoreMode } from '@Types/business-unit/BusinessUnit';
 import { StoreApi } from './StoreApi';
 import { Cart } from '@Types/cart/Cart';
-import { Organization } from '../interfaces/Organization';
+import { Organization } from '@Commerce-commercetools/interfaces/Organization';
 import { Workflow } from '@Types/workflow/Workflow';
 import jsonata from 'jsonata';
 import { StoreMapper } from '../mappers/StoreMapper';
 import { BusinessUnit as CommercetoolsBusinessUnit, BusinessUnitPagedQueryResponse } from '@commercetools/platform-sdk';
 import { BusinessUnitMapper } from '../mappers/BusinessUnitMapper';
 import { BaseApi } from '@Commerce-commercetools/apis/BaseApi';
-import { StoreKeyReference } from '@Types/store/Store';
+import { Store, StoreKeyReference } from '@Types/store/Store';
 import { Account } from '@Types/account/Account';
+import { BusinessUnitDraft } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/business-unit';
+import { ExternalError } from '@Commerce-commercetools/utils/Errors';
+import { businessUnitKeyFormatter } from '@Commerce-commercetools/utils/BussinessUnitFormatter';
 
 const MAX_LIMIT = 50;
 
@@ -71,7 +74,10 @@ export class BusinessUnitApi extends BaseApi {
     return organization;
   };
 
-  create: (data: any) => Promise<CommercetoolsBusinessUnit> = async (data: any) => {
+  /**
+   * @deprecated use create or createForAccountAndStore instead
+   */
+  createFromData: (data: any) => Promise<CommercetoolsBusinessUnit> = async (data: any) => {
     try {
       return this.requestBuilder()
         .businessUnits()
@@ -84,6 +90,61 @@ export class BusinessUnitApi extends BaseApi {
       throw e;
     }
   };
+
+  createForAccountAndStore: (account: Account, store: Store, config: Record<string, string>) => Promise<BusinessUnit> =
+    async (account: Account, store: Store, config: Record<string, string>) => {
+      const businessUnitKey = businessUnitKeyFormatter(account.company);
+
+      const businessUnitDraft: BusinessUnitDraft = {
+        key: businessUnitKey,
+        name: account.company,
+        status: BusinessUnitStatus.Active,
+        stores: [
+          {
+            typeId: 'store',
+            id: store.id,
+          },
+        ],
+        storeMode: StoreMode.Explicit,
+        unitType: BusinessUnitType.Company,
+        contactEmail: account.email,
+        associates: [
+          {
+            associateRoleAssignments: [
+              {
+                associateRole: {
+                  key: config.defaultBuyerRoleKey,
+                  typeId: 'associate-role',
+                },
+              },
+              {
+                associateRole: {
+                  key: config.defaultAdminRoleKey,
+                  typeId: 'associate-role',
+                },
+              },
+            ],
+            customer: {
+              id: account.accountId,
+              typeId: 'customer',
+            },
+          },
+        ],
+      };
+
+      return this.requestBuilder()
+        .businessUnits()
+        .post({
+          body: businessUnitDraft,
+        })
+        .execute()
+        .then((response) => {
+          return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(response.body, [store]);
+        })
+        .catch((error) => {
+          throw new ExternalError({ status: error.code, message: error.message, body: error.body });
+        });
+    };
 
   delete: (key: string) => Promise<any> = async (key: string) => {
     try {
@@ -357,6 +418,21 @@ export class BusinessUnitApi extends BaseApi {
         .get()
         .execute()
         .then((res) => res.body as CommercetoolsBusinessUnit);
+    } catch (e) {
+      throw e;
+    }
+  };
+
+  getByKey: (key: string) => Promise<BusinessUnit> = async (key: string) => {
+    try {
+      return this.requestBuilder()
+        .businessUnits()
+        .withKey({ key })
+        .get()
+        .execute()
+        .then((response) => {
+          return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(response.body);
+        });
     } catch (e) {
       throw e;
     }

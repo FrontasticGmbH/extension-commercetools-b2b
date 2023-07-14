@@ -8,7 +8,7 @@ import {
 } from '@commercetools/sdk-client-v2';
 // @ts-ignore
 import fetch from 'node-fetch';
-import { ClientConfig } from './interfaces/ClientConfig';
+import { ClientConfig } from '@Commerce-commercetools/interfaces/ClientConfig';
 
 export class ClientFactory {
   static factor: (
