@@ -10,6 +10,8 @@ import { BusinessUnitApi } from '../apis/BusinessUnitApi';
 import { EmailApiFactory } from '../utils/EmailApiFactory';
 import { ProductApi } from '../apis/ProductApi';
 import handleError from '@Commerce-commercetools/utils/handleError';
+import { fetchAccountFromSession } from '@Commerce-commercetools/utils/fetchAccountFromSession';
+import { AccountAuthenticationError } from '@Commerce-commercetools/errors/AccountAuthenticationError';
 
 export * from './BaseCartController';
 
@@ -90,9 +92,10 @@ async function updateCartFromRequest(request: Request, actionContext: ActionCont
 export const addToCart: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
   const compatibilityConfig = actionContext.frontasticContext?.project?.configuration?.compatibility;
-
   const body: {
     variant?: LineItemVariant;
+    distributionChannelId?: string;
+    businessUnitKey?: string;
     configurableComponents?: Partial<LineItemVariant>[];
   } = JSON.parse(request.body);
 
@@ -104,7 +107,13 @@ export const addToCart: ActionHook = async (request: Request, actionContext: Act
     count: +body.variant?.count || 1,
   };
 
-  const distributionChannel = request.sessionData.organization?.distributionChannel?.id;
+  const account = fetchAccountFromSession(request);
+
+  if (account === undefined) {
+    throw new AccountAuthenticationError({ message: 'Not logged in.' });
+  }
+
+  const distributionChannelId = body.distributionChannelId ?? request.sessionData.organization?.distributionChannel?.id;
 
   let cart = await CartFetcher.fetchCart(request, actionContext);
 
@@ -120,12 +129,14 @@ export const addToCart: ActionHook = async (request: Request, actionContext: Act
   } catch (error) {
     return handleError(error, request);
   }
+
   cart = await cartApi.addToCart(
     cart,
     lineItem,
-    distributionChannel,
-    request.sessionData?.account,
+    distributionChannelId,
+    account,
     request.sessionData?.organization,
+    body.businessUnitKey,
   );
 
   const cartId = cart.cartId;
@@ -138,7 +149,6 @@ export const addToCart: ActionHook = async (request: Request, actionContext: Act
       cartId,
     },
   };
-
 };
 
 export const addItemsToCart: ActionHook = async (request: Request, actionContext: ActionContext) => {
@@ -177,7 +187,6 @@ export const addItemsToCart: ActionHook = async (request: Request, actionContext
       cartId,
     },
   };
-
 };
 
 export const updateLineItem: ActionHook = async (request: Request, actionContext: ActionContext) => {
@@ -228,7 +237,6 @@ export const returnItems: ActionHook = async (request: Request, actionContext: A
     return handleError(error, request);
   }
 };
-
 
 export const updateOrderState: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
@@ -323,7 +331,6 @@ export const splitLineItem: ActionHook = async (request: Request, actionContext:
       cartId: cart.cartId,
     },
   };
-
 };
 
 export const reassignCart: ActionHook = async (request: Request, actionContext: ActionContext) => {
@@ -347,7 +354,6 @@ export const reassignCart: ActionHook = async (request: Request, actionContext: 
       cartId,
     },
   };
-
 };
 
 export const removeLineItem: ActionHook = async (request: Request, actionContext: ActionContext) => {
@@ -377,7 +383,6 @@ export const removeLineItem: ActionHook = async (request: Request, actionContext
       cartId,
     },
   };
-
 };
 
 export const checkout: ActionHook = async (request: Request, actionContext: ActionContext) => {
@@ -420,7 +425,6 @@ export const checkout: ActionHook = async (request: Request, actionContext: Acti
 export const transitionOrderState: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 
-
   try {
     const { orderNumber, stateKey }: { orderNumber: string; stateKey: string } = JSON.parse(request.body);
     const res = await cartApi.transitionOrderState(
@@ -437,5 +441,4 @@ export const transitionOrderState: ActionHook = async (request: Request, actionC
   } catch (error) {
     return handleError(error, request);
   }
-
 };

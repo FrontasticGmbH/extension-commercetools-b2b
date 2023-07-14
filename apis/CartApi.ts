@@ -171,15 +171,17 @@ export class CartApi extends BaseCartApi {
   addToCart: (
     cart: Cart,
     lineItem: LineItem,
-    distributionChannel?: string,
+    distributionChannelId?: string,
     account?: Account,
     organization?: Organization,
+    businessUnitKey?: string,
   ) => Promise<Cart> = async (
     cart: Cart,
     lineItem: LineItem,
-    distributionChannel: string,
+    distributionChannelId: string,
     account?: Account,
     organization?: Organization,
+    businessUnitKey?: string,
   ) => {
     try {
       const locale = await this.getCommercetoolsLocal();
@@ -191,7 +193,7 @@ export class CartApi extends BaseCartApi {
             action: 'addLineItem',
             sku: lineItem.variant.sku,
             quantity: +lineItem.count,
-            distributionChannel: { id: distributionChannel, typeId: 'channel' },
+            distributionChannel: { id: distributionChannelId, typeId: 'channel' },
           } as CartAddLineItemAction,
         ],
       };
@@ -205,7 +207,14 @@ export class CartApi extends BaseCartApi {
         });
       }
 
-      const commercetoolsCart = await this.updateCart(cart.cartId, cartUpdate, locale, account, organization);
+      const commercetoolsCart = await this.updateCart(
+        cart.cartId,
+        cartUpdate,
+        locale,
+        account,
+        organization,
+        businessUnitKey,
+      );
 
       return await this.buildCartWithAvailableShippingMethods(commercetoolsCart, locale);
     } catch (error) {
@@ -971,8 +980,9 @@ export class CartApi extends BaseCartApi {
     locale: Locale,
     account?: Account,
     organization?: Organization,
+    businessUnitKey?: string,
   ): Promise<CommercetoolsCart> {
-    return await this.associateEndpoints(account, organization)
+    return await this.associateEndpoints(account, organization, businessUnitKey)
       .carts()
       .withId({
         ID: cartId,
