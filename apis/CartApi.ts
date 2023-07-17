@@ -232,12 +232,14 @@ export class CartApi extends BaseCartApi {
     distributionChannel: string,
     account?: Account,
     organization?: Organization,
+    businessUnitKey?: string,
   ) => Promise<Cart> = async (
     cart: Cart,
     lineItems: LineItem[],
     distributionChannel: string,
     account?: Account,
     organization?: Organization,
+    businessUnitKey?: string,
   ) => {
     try {
       const locale = await this.getCommercetoolsLocal();
@@ -264,7 +266,14 @@ export class CartApi extends BaseCartApi {
         actions,
       };
 
-      const commercetoolsCart = await this.updateCart(cart.cartId, cartUpdate, locale, account, organization);
+      const commercetoolsCart = await this.updateCart(
+        cart.cartId,
+        cartUpdate,
+        locale,
+        account,
+        organization,
+        businessUnitKey,
+      );
 
       return this.buildCartWithAvailableShippingMethods(commercetoolsCart, locale);
     } catch (error) {
@@ -276,34 +285,52 @@ export class CartApi extends BaseCartApi {
     }
   };
 
-  updateLineItem: (cart: Cart, lineItem: LineItem, account?: Account, organization?: Organization) => Promise<Cart> =
-    async (cart: Cart, lineItem: LineItem, account?: Account, organization?: Organization) => {
-      const locale = await this.getCommercetoolsLocal();
+  updateLineItem: (
+    cart: Cart,
+    lineItem: LineItem,
+    account?: Account,
+    organization?: Organization,
+    businessUnitKey?: string,
+  ) => Promise<Cart> = async (
+    cart: Cart,
+    lineItem: LineItem,
+    account?: Account,
+    organization?: Organization,
+    businessUnitKey?: string,
+  ) => {
+    const locale = await this.getCommercetoolsLocal();
 
-      const cartUpdate: CartUpdate = {
-        version: +cart.cartVersion,
-        actions: [
-          {
-            action: 'changeLineItemQuantity',
-            lineItemId: lineItem.lineItemId,
-            quantity: +lineItem.count,
-          },
-        ],
-      };
-
-      const oldLineItem = cart.lineItems?.find((li) => li.lineItemId === lineItem.lineItemId);
-      if (oldLineItem) {
-        cartUpdate.actions.push({
-          action: 'setLineItemShippingDetails',
-          lineItemId: oldLineItem.lineItemId,
-          shippingDetails: null,
-        });
-      }
-
-      const commercetoolsCart = await this.updateCart(cart.cartId, cartUpdate, locale, account, organization);
-
-      return await this.buildCartWithAvailableShippingMethods(commercetoolsCart, locale);
+    const cartUpdate: CartUpdate = {
+      version: +cart.cartVersion,
+      actions: [
+        {
+          action: 'changeLineItemQuantity',
+          lineItemId: lineItem.lineItemId,
+          quantity: +lineItem.count,
+        },
+      ],
     };
+
+    const oldLineItem = cart.lineItems?.find((li) => li.lineItemId === lineItem.lineItemId);
+    if (oldLineItem) {
+      cartUpdate.actions.push({
+        action: 'setLineItemShippingDetails',
+        lineItemId: oldLineItem.lineItemId,
+        shippingDetails: null,
+      });
+    }
+
+    const commercetoolsCart = await this.updateCart(
+      cart.cartId,
+      cartUpdate,
+      locale,
+      account,
+      organization,
+      businessUnitKey,
+    );
+
+    return await this.buildCartWithAvailableShippingMethods(commercetoolsCart, locale);
+  };
 
   removeAllLineItems: (cart: Cart, account?: Account, organization?: Organization) => Promise<Cart> = async (
     cart: Cart,
@@ -333,64 +360,107 @@ export class CartApi extends BaseCartApi {
     }
   };
 
-  setCustomerId: (cart: Cart, customerId: string, account?: Account, organization?: Organization) => Promise<Cart> =
-    async (cart: Cart, customerId: string, account?: Account, organization?: Organization) => {
-      try {
-        const locale = await this.getCommercetoolsLocal();
+  setCustomerId: (
+    cart: Cart,
+    customerId: string,
+    account?: Account,
+    organization?: Organization,
+    businessUnitKey?: string,
+  ) => Promise<Cart> = async (
+    cart: Cart,
+    customerId: string,
+    account?: Account,
+    organization?: Organization,
+    businessUnitKey?: string,
+  ) => {
+    try {
+      const locale = await this.getCommercetoolsLocal();
 
-        const cartUpdate: CartUpdate = {
-          version: +cart.cartVersion,
-          actions: [
-            {
-              action: 'setCustomerId',
-              customerId,
-            } as CartSetCustomerIdAction,
-          ],
-        };
+      const cartUpdate: CartUpdate = {
+        version: +cart.cartVersion,
+        actions: [
+          {
+            action: 'setCustomerId',
+            customerId,
+          } as CartSetCustomerIdAction,
+        ],
+      };
 
-        const commercetoolsCart = await this.updateCart(cart.cartId, cartUpdate, locale, account, organization);
+      const commercetoolsCart = await this.updateCart(
+        cart.cartId,
+        cartUpdate,
+        locale,
+        account,
+        organization,
+        businessUnitKey,
+      );
 
-        return this.buildCartWithAvailableShippingMethods(commercetoolsCart, locale);
-      } catch (error) {
-        throw new ExternalError({
-          status: 400,
-          message: 'setCustomerId failed',
-          body: `setCustomerId failed. ${error}`,
-        });
-      }
-    };
+      return this.buildCartWithAvailableShippingMethods(commercetoolsCart, locale);
+    } catch (error) {
+      throw new ExternalError({
+        status: 400,
+        message: 'setCustomerId failed',
+        body: `setCustomerId failed. ${error}`,
+      });
+    }
+  };
 
-  removeLineItem: (cart: Cart, lineItem: LineItem, account?: Account, organization?: Organization) => Promise<Cart> =
-    async (cart: Cart, lineItem: LineItem, account?: Account, organization?: Organization) => {
-      try {
-        const locale = await this.getCommercetoolsLocal();
+  removeLineItem: (
+    cart: Cart,
+    lineItem: LineItem,
+    account?: Account,
+    organization?: Organization,
+    businessUnitKey?: string,
+  ) => Promise<Cart> = async (
+    cart: Cart,
+    lineItem: LineItem,
+    account?: Account,
+    organization?: Organization,
+    businessUnitKey?: string,
+  ) => {
+    try {
+      const locale = await this.getCommercetoolsLocal();
 
-        const cartUpdate: CartUpdate = {
-          version: +cart.cartVersion,
-          actions: [
-            {
-              action: 'removeLineItem',
-              lineItemId: lineItem.lineItemId,
-            } as CartRemoveLineItemAction,
-          ],
-        };
+      const cartUpdate: CartUpdate = {
+        version: +cart.cartVersion,
+        actions: [
+          {
+            action: 'removeLineItem',
+            lineItemId: lineItem.lineItemId,
+          } as CartRemoveLineItemAction,
+        ],
+      };
 
-        const commercetoolsCart = await this.updateCart(cart.cartId, cartUpdate, locale, account, organization);
+      const commercetoolsCart = await this.updateCart(
+        cart.cartId,
+        cartUpdate,
+        locale,
+        account,
+        organization,
+        businessUnitKey,
+      );
 
-        return await this.buildCartWithAvailableShippingMethods(commercetoolsCart, locale);
-      } catch (error) {
-        throw new ExternalError({
-          status: 400,
-          message: 'setCustomerId failed',
-          body: `setCustomerId failed. ${error}`,
-        });
-      }
-    };
+      return await this.buildCartWithAvailableShippingMethods(commercetoolsCart, locale);
+    } catch (error) {
+      throw new ExternalError({
+        status: 400,
+        message: 'setCustomerId failed',
+        body: `setCustomerId failed. ${error}`,
+      });
+    }
+  };
 
-  order: (cart: Cart, account?: Account, organization?: Organization, payload?: Payload) => Promise<Order> = async (
+  order: (
     cart: Cart,
     account?: Account,
     organization?: Organization,
+    businessUnitKey?: string,
+    payload?: Payload,
+  ) => Promise<Order> = async (
+    cart: Cart,
+    account?: Account,
+    organization?: Organization,
+    businessUnitKey?: string,
     payload?: { poNumber?: string; orderState?: string },
   ) => {
     const locale = await this.getCommercetoolsLocal();
@@ -417,7 +487,7 @@ export class CartApi extends BaseCartApi {
     }
     const config = this.frontasticContext?.project?.configuration?.preBuy;
 
-    return await this.associateEndpoints(account, organization)
+    return await this.associateEndpoints(account, organization, businessUnitKey)
       .orders()
       .post({
         queryArgs: {
@@ -499,11 +569,13 @@ export class CartApi extends BaseCartApi {
     orderState: string,
     account?: Account,
     organization?: Organization,
+    businessUnitKey?: string,
   ) => Promise<Order> = async (
     orderNumber: string,
     orderState: string,
     account?: Account,
     organization?: Organization,
+    businessUnitKey?: string,
   ) => {
     const locale = await this.getCommercetoolsLocal();
 
@@ -511,7 +583,7 @@ export class CartApi extends BaseCartApi {
       if (order.orderState === 'Complete') {
         throw 'Cannot cancel a Completed order.';
       }
-      return this.associateEndpoints(account, organization)
+      return this.associateEndpoints(account, organization, businessUnitKey)
         .orders()
         .withOrderNumber({ orderNumber })
         .post({
@@ -545,17 +617,19 @@ export class CartApi extends BaseCartApi {
     returnLineItems: LineItemReturnItemDraft[],
     account?: Account,
     organization?: Organization,
+    businessUnitKey?: string,
   ) => Promise<Order> = async (
     orderNumber: string,
     returnLineItems: LineItemReturnItemDraft[],
     account?: Account,
     organization?: Organization,
+    businessUnitKey?: string,
   ) => {
     const locale = await this.getCommercetoolsLocal();
     const config = this.frontasticContext?.project?.configuration?.preBuy;
 
     return await this.getOrder(orderNumber).then((order) => {
-      return this.associateEndpoints(account, organization)
+      return this.associateEndpoints(account, organization, businessUnitKey)
         .orders()
         .withOrderNumber({ orderNumber })
         .post({
@@ -584,17 +658,19 @@ export class CartApi extends BaseCartApi {
     stateKey: string,
     account?: Account,
     organization?: Organization,
+    businessUnitKey?: string,
   ) => Promise<Order> = async (
     orderNumber: string,
     stateKey: string,
     account?: Account,
     organization?: Organization,
+    businessUnitKey?: string,
   ) => {
     const locale = await this.getCommercetoolsLocal();
     const config = this.frontasticContext?.project?.configuration?.preBuy;
 
     return await this.getOrder(orderNumber).then((order) => {
-      return this.associateEndpoints(account, organization)
+      return this.associateEndpoints(account, organization, businessUnitKey)
         .orders()
         .withOrderNumber({ orderNumber })
         .post({
@@ -822,13 +898,19 @@ export class CartApi extends BaseCartApi {
     }
   };
 
-  replicateCart: (orderId: string, account?: Account, organization?: Organization) => Promise<Cart> = async (
+  replicateCart: (
     orderId: string,
     account?: Account,
     organization?: Organization,
+    businessUnitKey?: string,
+  ) => Promise<Cart> = async (
+    orderId: string,
+    account?: Account,
+    organization?: Organization,
+    businessUnitKey?: string,
   ) => {
     const locale = await this.getCommercetoolsLocal();
-    return await this.associateEndpoints(account, organization)
+    return await this.associateEndpoints(account, organization, businessUnitKey)
       .carts()
       .replicate()
       .post({
@@ -1011,11 +1093,13 @@ export class CartApi extends BaseCartApi {
     address: AddressDraft,
     account?: Account,
     organization?: Organization,
+    businessUnitKey?: string,
   ) => Promise<CommercetoolsCart> = async (
     originalCart: Cart,
     address: AddressDraft,
     account?: Account,
     organization?: Organization,
+    businessUnitKey?: string,
   ) => {
     const locale = await this.getCommercetoolsLocal();
 
@@ -1031,7 +1115,7 @@ export class CartApi extends BaseCartApi {
         },
       ],
     };
-    return this.updateCart(originalCart.cartId, cartUpdate, locale, account, organization);
+    return this.updateCart(originalCart.cartId, cartUpdate, locale, account, organization, businessUnitKey);
   };
 
   updateLineItemShippingDetails: (
@@ -1040,12 +1124,14 @@ export class CartApi extends BaseCartApi {
     targets?: { addressKey: string; quantity: number }[],
     account?: Account,
     organization?: Organization,
+    businessUnitKey?: string,
   ) => Promise<Cart> = async (
     cart: Cart,
     lineItemId: string,
     targets?: { addressKey: string; quantity: number }[],
     account?: Account,
     organization?: Organization,
+    businessUnitKey?: string,
   ) => {
     const locale = await this.getCommercetoolsLocal();
 
@@ -1059,7 +1145,14 @@ export class CartApi extends BaseCartApi {
         },
       ],
     };
-    const commercetoolsCart = await this.updateCart(cart.cartId, cartUpdate, locale, account, organization);
+    const commercetoolsCart = await this.updateCart(
+      cart.cartId,
+      cartUpdate,
+      locale,
+      account,
+      organization,
+      businessUnitKey,
+    );
     return (await this.buildCartWithAvailableShippingMethods(commercetoolsCart, locale)) as Cart;
   };
 }

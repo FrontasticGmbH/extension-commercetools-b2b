@@ -1,5 +1,5 @@
 import { AddressDraft } from '@commercetools/platform-sdk';
-import { ActionContext, Context, Request, Response } from '@frontastic/extension-types';
+import { ActionContext, Request, Response } from '@frontastic/extension-types';
 import { LineItem, LineItemReturnItemDraft } from '@Types/cart/LineItem';
 import { getCurrency, getLocale } from '../utils/Request';
 import { Cart } from '@Types/cart/Cart';
@@ -8,7 +8,6 @@ import { CartFetcher } from '../utils/CartFetcher';
 import { CartApi, Payload } from '../apis/CartApi';
 import { BusinessUnitApi } from '../apis/BusinessUnitApi';
 import { EmailApiFactory } from '../utils/EmailApiFactory';
-import { ProductApi } from '../apis/ProductApi';
 import handleError from '@Commerce-commercetools/utils/handleError';
 import { fetchAccountFromSession } from '@Commerce-commercetools/utils/fetchAccountFromSession';
 import { AccountAuthenticationError } from '@Commerce-commercetools/errors/AccountAuthenticationError';
@@ -21,45 +20,6 @@ interface LineItemVariant {
   sku?: string;
   count: number;
 }
-
-async function checkForCompatibility(
-  context: Context,
-  locale: string,
-  currency: string,
-  cart: Cart,
-  lineItem: LineItem,
-  compatibilityConfig: Record<string, string>,
-) {
-  const inCompatibilityAttributeKey = compatibilityConfig?.incompatibleProductsAttributeName;
-  if (!inCompatibilityAttributeKey) {
-    return;
-  }
-  const productApi = new ProductApi(context, locale, currency);
-  const currentProduct = await productApi.getProduct({ skus: [lineItem.variant.sku] });
-  const cartIncompatibles = cart?.lineItems
-    ?.reduce((prev, lineitem) => {
-      prev = prev.concat(lineitem.variant?.attributes?.[inCompatibilityAttributeKey]);
-      return prev;
-    }, [])
-    ?.map((item) => item?.id);
-  const cartProductIds = cart?.lineItems.map((lineitem) => lineitem.productId);
-
-  const currentProductIncompatibilities = currentProduct.variants
-    ?.reduce((prev, item) => {
-      prev = prev.concat(item.attributes?.[inCompatibilityAttributeKey]);
-      return prev;
-    }, [])
-    ?.map((item) => item?.id);
-  const currentProductId = currentProduct.productId;
-
-  if (
-    cartIncompatibles.includes(currentProductId) ||
-    currentProductIncompatibilities.some((incompatibleId) => cartProductIds.includes(incompatibleId))
-  ) {
-    throw new Error(`Product with SKU: ${lineItem.variant?.sku} is not compatible with the current items in the cart`);
-  }
-}
-
 async function updateCartFromRequest(request: Request, actionContext: ActionContext): Promise<Cart> {
   const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
   let cart = await CartFetcher.fetchCart(request, actionContext);
@@ -91,7 +51,6 @@ async function updateCartFromRequest(request: Request, actionContext: ActionCont
 
 export const addToCart: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-  const compatibilityConfig = actionContext.frontasticContext?.project?.configuration?.compatibility;
   const body: {
     variant?: LineItemVariant;
     distributionChannelId?: string;
@@ -117,18 +76,6 @@ export const addToCart: ActionHook = async (request: Request, actionContext: Act
 
   let cart = await CartFetcher.fetchCart(request, actionContext);
 
-  try {
-    await checkForCompatibility(
-      actionContext.frontasticContext,
-      getLocale(request),
-      getCurrency(request),
-      cart,
-      lineItem,
-      compatibilityConfig,
-    );
-  } catch (error) {
-    return handleError(error, request);
-  }
 
   cart = await cartApi.addToCart(
     cart,
@@ -156,6 +103,7 @@ export const addItemsToCart: ActionHook = async (request: Request, actionContext
 
   const body: {
     list?: LineItemVariant[];
+    businessUnitKey?: string;
   } = JSON.parse(request.body);
 
   const lineItems: LineItem[] = body.list?.map((variant) => ({
@@ -175,6 +123,7 @@ export const addItemsToCart: ActionHook = async (request: Request, actionContext
     distributionChannel,
     request.sessionData?.account,
     request.sessionData?.organization,
+    body.businessUnitKey,
   );
 
   const cartId = cart.cartId;
@@ -194,6 +143,7 @@ export const updateLineItem: ActionHook = async (request: Request, actionContext
 
   const body: {
     lineItem?: { id?: string; count: number };
+    businessUnitKey?: string;
   } = JSON.parse(request.body);
 
   const lineItem: LineItem = {
@@ -202,7 +152,13 @@ export const updateLineItem: ActionHook = async (request: Request, actionContext
   };
 
   let cart = await CartFetcher.fetchCart(request, actionContext);
-  cart = await cartApi.updateLineItem(cart, lineItem, request.sessionData?.account, request.sessionData?.organization);
+  cart = await cartApi.updateLineItem(
+    cart,
+    lineItem,
+    request.sessionData?.account,
+    request.sessionData?.organization,
+    body.businessUnitKey,
+  );
 
   const cartId = cart.cartId;
 
@@ -220,13 +176,18 @@ export const returnItems: ActionHook = async (request: Request, actionContext: A
   const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 
   try {
-    const { orderNumber, returnLineItems }: { orderNumber: string; returnLineItems: LineItemReturnItemDraft[] } =
-      JSON.parse(request.body);
+    const body: {
+      orderNumber: string;
+      returnLineItems: LineItemReturnItemDraft[];
+      businessUnitKey?: string;
+    } = JSON.parse(request.body);
+
     const res = await cartApi.returnItems(
-      orderNumber,
-      returnLineItems,
+      body.orderNumber,
+      body.returnLineItems,
       request.sessionData?.account,
       request.sessionData?.organization,
+      body.businessUnitKey,
     );
     return {
       statusCode: 200,
@@ -242,12 +203,18 @@ export const updateOrderState: ActionHook = async (request: Request, actionConte
   const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 
   try {
-    const { orderNumber, orderState }: { orderNumber: string; orderState: string } = JSON.parse(request.body);
+    const body: {
+      orderNumber: string;
+      orderState: string;
+      businessUnitKey?: string;
+    } = JSON.parse(request.body);
+
     const res = await cartApi.updateOrderState(
-      orderNumber,
-      orderState,
+      body.orderNumber,
+      body.orderState,
       request.sessionData?.account,
       request.sessionData?.organization,
+      body.businessUnitKey,
     );
     return {
       statusCode: 200,
@@ -262,6 +229,9 @@ export const updateOrderState: ActionHook = async (request: Request, actionConte
 export const replicateCart: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
   const orderId = request.query?.['orderId'];
+  const body: {
+    businessUnitKey?: string;
+  } = JSON.parse(request.body);
 
   if (!orderId) {
     return {
@@ -271,8 +241,18 @@ export const replicateCart: ActionHook = async (request: Request, actionContext:
     };
   }
   try {
-    const cart = await cartApi.replicateCart(orderId, request.sessionData?.account, request.sessionData?.organization);
-    const order = await cartApi.order(cart, request.sessionData?.account, request.sessionData?.organization);
+    const cart = await cartApi.replicateCart(
+      orderId,
+      request.sessionData?.account,
+      request.sessionData?.organization,
+      body.businessUnitKey,
+    );
+    const order = await cartApi.order(
+      cart,
+      request.sessionData?.account,
+      request.sessionData?.organization,
+      body?.businessUnitKey,
+    );
     return {
       statusCode: 200,
       body: JSON.stringify(order),
@@ -291,6 +271,7 @@ export const splitLineItem: ActionHook = async (request: Request, actionContext:
 
   const body: {
     lineItemId?: string;
+    businessUnitKey?: string;
     data: { address: AddressDraft; quantity: number }[];
   } = JSON.parse(request.body);
 
@@ -309,6 +290,7 @@ export const splitLineItem: ActionHook = async (request: Request, actionContext:
         address,
         request.sessionData?.account,
         request.sessionData?.organization,
+        body?.businessUnitKey,
       );
     }
   }
@@ -321,6 +303,7 @@ export const splitLineItem: ActionHook = async (request: Request, actionContext:
     target,
     request.sessionData?.account,
     request.sessionData?.organization,
+    body.businessUnitKey,
   );
 
   return {
@@ -336,6 +319,9 @@ export const splitLineItem: ActionHook = async (request: Request, actionContext:
 export const reassignCart: ActionHook = async (request: Request, actionContext: ActionContext) => {
   let cart = await CartFetcher.fetchCart(request, actionContext);
   const cartId = cart.cartId;
+  const body: {
+    businessUnitKey?: string;
+  } = JSON.parse(request.body);
 
   const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
   cart = await cartApi.setCustomerId(
@@ -343,6 +329,7 @@ export const reassignCart: ActionHook = async (request: Request, actionContext: 
     request.query?.customerId,
     request.sessionData?.account,
     request.sessionData?.organization,
+    body?.businessUnitKey,
   );
   cart = await cartApi.setEmail(cart, request.query?.email);
 
@@ -361,6 +348,7 @@ export const removeLineItem: ActionHook = async (request: Request, actionContext
 
   const body: {
     lineItem?: { id?: string };
+    businessUnitKey?: string;
   } = JSON.parse(request.body);
 
   const lineItem: LineItem = {
@@ -371,7 +359,13 @@ export const removeLineItem: ActionHook = async (request: Request, actionContext
   };
 
   let cart = await CartFetcher.fetchCart(request, actionContext);
-  cart = await cartApi.removeLineItem(cart, lineItem, request.sessionData?.account, request.sessionData?.organization);
+  cart = await cartApi.removeLineItem(
+    cart,
+    lineItem,
+    request.sessionData?.account,
+    request.sessionData?.organization,
+    body?.businessUnitKey,
+  );
 
   const cartId = cart.cartId;
 
@@ -393,15 +387,24 @@ export const checkout: ActionHook = async (request: Request, actionContext: Acti
   const config = actionContext.frontasticContext?.project?.configuration?.workflows;
 
   const cart = await updateCartFromRequest(request, actionContext);
-  const body: { payload: Payload } = JSON.parse(request.body);
+  const body: {
+    payload: Payload;
+    businessUnitKey?: string;
+  } = JSON.parse(request.body);
 
   const orderState = await businessUnitApi.getOrderStateFromWorkflows(cart, request.sessionData.organization, config);
 
   try {
-    const order = await cartApi.order(cart, request.sessionData?.account, request.sessionData?.organization, {
-      ...body.payload,
-      orderState,
-    });
+    const order = await cartApi.order(
+      cart,
+      request.sessionData?.account,
+      request.sessionData?.organization,
+      body.businessUnitKey,
+      {
+        ...body.payload,
+        orderState,
+      },
+    );
     const emailApi = EmailApiFactory.getDefaultApi(actionContext.frontasticContext, locale);
 
     emailApi.sendOrderConfirmationEmail({ ...order, email: order.email || cart.email });
@@ -426,12 +429,22 @@ export const transitionOrderState: ActionHook = async (request: Request, actionC
   const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 
   try {
-    const { orderNumber, stateKey }: { orderNumber: string; stateKey: string } = JSON.parse(request.body);
+    const {
+      orderNumber,
+      stateKey,
+      businessUnitKey,
+    }: {
+      orderNumber: string;
+      stateKey: string;
+      businessUnitKey?: string;
+    } = JSON.parse(request.body);
+
     const res = await cartApi.transitionOrderState(
       orderNumber,
       stateKey,
       request.sessionData?.account,
       request.sessionData?.organization,
+      businessUnitKey,
     );
     return {
       statusCode: 200,
