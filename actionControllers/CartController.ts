@@ -76,7 +76,6 @@ export const addToCart: ActionHook = async (request: Request, actionContext: Act
 
   let cart = await CartFetcher.fetchCart(request, actionContext);
 
-
   cart = await cartApi.addToCart(
     cart,
     lineItem,
