@@ -27,10 +27,6 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 
 export type Payload = { poNumber?: string; orderState?: string };
 
-type Fields = {
-  [key: string]: string | number | boolean;
-};
-
 export class CartApi extends BaseCartApi {
   protected organization?: Organization;
   protected account?: Account;
@@ -866,13 +862,13 @@ export class CartApi extends BaseCartApi {
   setCustomType: (
     cart: Cart,
     type: string,
-    fields: Fields,
+    fields: any,
     account?: Account,
     organization?: Organization,
   ) => Promise<Cart> = async (
     cart: Cart,
     type: string,
-    fields: Fields,
+    fields: any,
     account?: Account,
     organization?: Organization,
   ) => {
