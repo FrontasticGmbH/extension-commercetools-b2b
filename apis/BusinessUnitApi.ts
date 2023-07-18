@@ -77,18 +77,19 @@ export class BusinessUnitApi extends BaseApi {
   /**
    * @deprecated use create or createForAccountAndStore instead
    */
-  createFromData: (data: any) => Promise<CommercetoolsBusinessUnit> = async (data: any) => {
-    try {
-      return this.requestBuilder()
-        .businessUnits()
-        .post({
-          body: data,
-        })
-        .execute()
-        .then((res) => res.body as CommercetoolsBusinessUnit);
-    } catch (e) {
-      throw e;
-    }
+  createFromData: (data: any) => Promise<BusinessUnit> = async (data: any) => {
+    return this.requestBuilder()
+      .businessUnits()
+      .post({
+        body: data,
+      })
+      .execute()
+      .then((response) => {
+        return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(response.body);
+      })
+      .catch((error) => {
+        throw new ExternalError({ status: error.code, message: error.message, body: error.body });
+      });
   };
 
   createForAccountAndStore: (account: Account, store: Store, config: Record<string, string>) => Promise<BusinessUnit> =

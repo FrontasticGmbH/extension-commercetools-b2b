@@ -1,7 +1,6 @@
 import { AccountApi } from '@Commerce-commercetools/apis/AccountApi';
 
 import { ActionContext, Request, Response } from '@frontastic/extension-types';
-import { AccountRegisterBody } from './AccountController';
 import { Store, StoreKeyReference } from '@Types/store/Store';
 import { getCurrency, getLocale } from '../utils/Request';
 import { StoreApi } from '../apis/StoreApi';
@@ -11,13 +10,17 @@ import { BusinessUnitMapper } from '../mappers/BusinessUnitMapper';
 import { BusinessUnit, BusinessUnitStatus, BusinessUnitType, StoreMode } from '@Types/business-unit/BusinessUnit';
 import { fetchAccountFromSession } from '@Commerce-commercetools/utils/fetchAccountFromSession';
 import { AccountAuthenticationError } from '@Commerce-commercetools/errors/AccountAuthenticationError';
+import { Account } from '@Types/account/Account';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
 
 export interface BusinessUnitRequestBody {
-  account: AccountRegisterBody;
+  account: Account;
   store?: Store;
   parentBusinessUnit?: string;
+  /**
+   * @deprecated The accountId should be read from the account
+   */
   customer: {
     accountId: string;
   };
@@ -262,11 +265,11 @@ export const create: ActionHook = async (request: Request, actionContext: Action
   }
   const data = mapRequestToBusinessUnit(request, config);
 
-  const store = await businessUnitApi.createFromData(data);
+  const businessUnit = await businessUnitApi.createFromData(data);
 
   const response: Response = {
     statusCode: 200,
-    body: JSON.stringify(store),
+    body: JSON.stringify(businessUnit),
     sessionData: request.sessionData,
   };
 
@@ -527,39 +530,39 @@ export const query: ActionHook = async (request: Request, actionContext: ActionC
 };
 
 function mapRequestToBusinessUnit(request: Request, config: Record<string, string>): BusinessUnit {
-  const businessUnitBody: BusinessUnitRequestBody = JSON.parse(request.body);
-  const normalizedName = businessUnitBody.account.company.toLowerCase().replace(/ /g, '_');
-  const key = businessUnitBody.parentBusinessUnit
-    ? `${businessUnitBody.parentBusinessUnit}_div_${normalizedName}`
+  const businessUnitRequestBody: BusinessUnitRequestBody = JSON.parse(request.body);
+  const normalizedName = businessUnitRequestBody.account.company.toLowerCase().replace(/ /g, '_');
+  const key = businessUnitRequestBody.parentBusinessUnit
+    ? `${businessUnitRequestBody.parentBusinessUnit}_div_${normalizedName}`
     : `business_unit_${normalizedName}`;
 
   let storeMode = StoreMode.Explicit;
   let unitType = BusinessUnitType.Company;
   const stores: StoreKeyReference[] = [];
 
-  if (businessUnitBody.parentBusinessUnit && !businessUnitBody.store) {
+  if (businessUnitRequestBody.parentBusinessUnit && !businessUnitRequestBody.store) {
     storeMode = StoreMode.FromParent;
   }
 
-  if (businessUnitBody.parentBusinessUnit) {
+  if (businessUnitRequestBody.parentBusinessUnit) {
     unitType = BusinessUnitType.Division;
   }
 
-  if (businessUnitBody.store) {
+  if (businessUnitRequestBody.store) {
     stores.push({
       typeId: 'store',
-      id: businessUnitBody.store.id,
+      id: businessUnitRequestBody.store.id,
     });
   }
 
   const businessUnit: BusinessUnit = {
     key,
-    name: businessUnitBody.account.company,
+    name: businessUnitRequestBody.account.company,
     status: BusinessUnitStatus.Active,
     stores,
     storeMode,
     unitType,
-    contactEmail: businessUnitBody.account.email,
+    contactEmail: businessUnitRequestBody.account.email,
     associates: [
       {
         associateRoleAssignments: [
@@ -577,16 +580,16 @@ function mapRequestToBusinessUnit(request: Request, config: Record<string, strin
           },
         ],
         customer: {
-          id: businessUnitBody.customer.accountId,
+          id: businessUnitRequestBody.account.accountId ?? businessUnitRequestBody.customer.accountId,
           typeId: 'customer',
         },
       },
     ],
   };
 
-  if (businessUnitBody.parentBusinessUnit) {
+  if (businessUnitRequestBody.parentBusinessUnit) {
     businessUnit.parentUnit = {
-      key: businessUnitBody.parentBusinessUnit,
+      key: businessUnitRequestBody.parentBusinessUnit,
       typeId: 'business-unit',
     };
   }
