@@ -21,7 +21,6 @@ import { BaseCartApi } from '@Commerce-commercetools/apis/BaseCartApi';
 import { ByProjectKeyAsAssociateByAssociateIdInBusinessUnitKeyByBusinessUnitKeyRequestBuilder } from '@commercetools/platform-sdk/dist/declarations/src/generated/client/in-business-unit/by-project-key-as-associate-by-associate-id-in-business-unit-key-by-business-unit-key-request-builder';
 import { ByProjectKeyRequestBuilder } from '@commercetools/platform-sdk/dist/declarations/src/generated/client/by-project-key-request-builder';
 import { ExternalError } from '@Commerce-commercetools/utils/Errors';
-import { BaseAddress } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/common';
 import { AccountMapper } from '@Commerce-commercetools/mappers/AccountMapper';
 
 type Writeable<T> = { -readonly [P in keyof T]: T[P] };
