@@ -1,4 +1,3 @@
-import { AddressDraft } from '@commercetools/platform-sdk';
 import { ActionContext, Request, Response } from '@frontastic/extension-types';
 import { LineItem, LineItemReturnItemDraft } from '@Types/cart/LineItem';
 import { getCurrency, getLocale } from '../utils/Request';
@@ -271,11 +270,11 @@ export const splitLineItem: ActionHook = async (request: Request, actionContext:
   const body: {
     lineItemId?: string;
     businessUnitKey?: string;
-    data: { address: AddressDraft; quantity: number }[];
+    shippingAddresses: { address: Address; count: number }[];
   } = JSON.parse(request.body);
 
   const cartItemsShippingAddresses = cart.itemShippingAddresses || [];
-  const remainingAddresses = body.data
+  const remainingAddresses = body.shippingAddresses
     .map((item) => item.address)
     .filter(
       (addressSplit) =>
@@ -294,7 +293,8 @@ export const splitLineItem: ActionHook = async (request: Request, actionContext:
     }
   }
 
-  const target = body.data.map((item) => ({ addressKey: item.address.id, quantity: item.quantity }));
+  // TODO: move this logic to the API
+  const target = body.shippingAddresses.map((item) => ({ addressKey: item.address.id, quantity: item.count }));
 
   const cartData = await cartApi.updateLineItemShippingDetails(
     cart,

@@ -1,8 +1,9 @@
 import { Cart } from '@Types/cart/Cart';
 import { LineItem, LineItemReturnItemDraft } from '@Types/cart/LineItem';
+import { Address } from '@Types/account/Address';
 import { Order } from '@Types/cart/Order';
 import { Account } from '@Types/account/Account';
-import { AddressDraft, Cart as CommercetoolsCart, CartDraft, CartUpdateAction } from '@commercetools/platform-sdk';
+import { Cart as CommercetoolsCart, CartDraft, CartUpdateAction } from '@commercetools/platform-sdk';
 import {
   CartAddLineItemAction,
   CartRemoveLineItemAction,
@@ -20,6 +21,8 @@ import { BaseCartApi } from '@Commerce-commercetools/apis/BaseCartApi';
 import { ByProjectKeyAsAssociateByAssociateIdInBusinessUnitKeyByBusinessUnitKeyRequestBuilder } from '@commercetools/platform-sdk/dist/declarations/src/generated/client/in-business-unit/by-project-key-as-associate-by-associate-id-in-business-unit-key-by-business-unit-key-request-builder';
 import { ByProjectKeyRequestBuilder } from '@commercetools/platform-sdk/dist/declarations/src/generated/client/by-project-key-request-builder';
 import { ExternalError } from '@Commerce-commercetools/utils/Errors';
+import { BaseAddress } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/common';
+import { AccountMapper } from '@Commerce-commercetools/mappers/AccountMapper';
 
 type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 
@@ -1090,31 +1093,31 @@ export class CartApi extends BaseCartApi {
 
   addItemShippingAddress: (
     originalCart: Cart,
-    address: AddressDraft,
+    address: Address,
     account?: Account,
     organization?: Organization,
     businessUnitKey?: string,
   ) => Promise<CommercetoolsCart> = async (
     originalCart: Cart,
-    address: AddressDraft,
+    address: Address,
     account?: Account,
     organization?: Organization,
     businessUnitKey?: string,
   ) => {
     const locale = await this.getCommercetoolsLocal();
 
+    const commercetoolsAddress = AccountMapper.addressToCommercetoolsAddress(address);
+
     const cartUpdate: CartUpdate = {
       version: +originalCart.cartVersion,
       actions: [
         {
           action: 'addItemShippingAddress',
-          address: {
-            ...address,
-            key: address.id,
-          },
+          address: commercetoolsAddress,
         },
       ],
     };
+
     return this.updateCart(originalCart.cartId, cartUpdate, locale, account, organization, businessUnitKey);
   };
 
@@ -1145,6 +1148,7 @@ export class CartApi extends BaseCartApi {
         },
       ],
     };
+
     const commercetoolsCart = await this.updateCart(
       cart.cartId,
       cartUpdate,
