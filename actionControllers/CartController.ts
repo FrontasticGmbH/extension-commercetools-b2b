@@ -101,6 +101,7 @@ export const addItemsToCart: ActionHook = async (request: Request, actionContext
 
   const body: {
     list?: LineItemVariant[];
+    distributionChannelId?: string;
     businessUnitKey?: string;
   } = JSON.parse(request.body);
 
@@ -112,13 +113,13 @@ export const addItemsToCart: ActionHook = async (request: Request, actionContext
     count: +variant.count || 1,
   }));
 
-  const distributionChannel = request.sessionData.organization?.distributionChannel?.id;
+  const distributionChannelId = body.distributionChannelId ?? request.sessionData.organization?.distributionChannel?.id;
 
   let cart = await CartFetcher.fetchCart(request, actionContext);
   cart = await cartApi.addItemsToCart(
     cart,
     lineItems,
-    distributionChannel,
+    distributionChannelId,
     request.sessionData?.account,
     request.sessionData?.organization,
     body.businessUnitKey,

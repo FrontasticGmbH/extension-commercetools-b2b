@@ -227,14 +227,14 @@ export class CartApi extends BaseCartApi {
   addItemsToCart: (
     cart: Cart,
     lineItems: LineItem[],
-    distributionChannel: string,
+    distributionChannelId: string,
     account?: Account,
     organization?: Organization,
     businessUnitKey?: string,
   ) => Promise<Cart> = async (
     cart: Cart,
     lineItems: LineItem[],
-    distributionChannel: string,
+    distributionChannelId: string,
     account?: Account,
     organization?: Organization,
     businessUnitKey?: string,
@@ -248,7 +248,7 @@ export class CartApi extends BaseCartApi {
           action: 'addLineItem',
           sku: lineItem.variant.sku,
           quantity: +lineItem.count,
-          distributionChannel: { id: distributionChannel, typeId: 'channel' },
+          distributionChannel: { id: distributionChannelId, typeId: 'channel' },
         });
         const oldLineItem = cart.lineItems?.find((li) => li.variant?.sku === lineItem.variant.sku);
         if (oldLineItem) {
