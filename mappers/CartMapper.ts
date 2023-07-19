@@ -1,7 +1,7 @@
 import {
   Cart as CommercetoolsCart,
-  Order as CommercetoolsOrder,
   LineItem as CommercetoolsLineItem,
+  Order as CommercetoolsOrder,
   StateReference,
 } from '@commercetools/platform-sdk';
 import { BaseCartMapper } from './BaseCartMapper';
@@ -133,7 +133,7 @@ export class CartMapper extends BaseCartMapper {
         // @ts-ignore
         lineItemId: item.lineItemId,
         returnInfoId: item.id,
-        quantity: item.quantity,
+        count: item.quantity,
         shipmentState: item.shipmentState,
       })),
     }));

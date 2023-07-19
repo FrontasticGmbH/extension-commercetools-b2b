@@ -1,5 +1,5 @@
 import { ActionContext, Request, Response } from '@frontastic/extension-types';
-import { LineItem, LineItemReturnItemDraft } from '@Types/cart/LineItem';
+import { LineItem, ReturnItem } from '@Types/cart/LineItem';
 import { getCurrency, getLocale } from '../utils/Request';
 import { Cart } from '@Types/cart/Cart';
 import { Address } from '@Types/account/Address';
@@ -177,7 +177,7 @@ export const returnItems: ActionHook = async (request: Request, actionContext: A
   try {
     const body: {
       orderNumber: string;
-      returnLineItems: LineItemReturnItemDraft[];
+      returnLineItems: ReturnItem[];
       businessUnitKey?: string;
     } = JSON.parse(request.body);
 

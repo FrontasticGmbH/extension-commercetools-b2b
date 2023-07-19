@@ -1,5 +1,5 @@
 import { Cart } from '@Types/cart/Cart';
-import { LineItem, LineItemReturnItemDraft } from '@Types/cart/LineItem';
+import { LineItem, ReturnItem } from '@Types/cart/LineItem';
 import { Address } from '@Types/account/Address';
 import { Order } from '@Types/cart/Order';
 import { Account } from '@Types/account/Account';
@@ -612,13 +612,13 @@ export class CartApi extends BaseCartApi {
 
   returnItems: (
     orderNumber: string,
-    returnLineItems: LineItemReturnItemDraft[],
+    returnLineItems: ReturnItem[],
     account?: Account,
     organization?: Organization,
     businessUnitKey?: string,
   ) => Promise<Order> = async (
     orderNumber: string,
-    returnLineItems: LineItemReturnItemDraft[],
+    returnLineItems: ReturnItem[],
     account?: Account,
     organization?: Organization,
     businessUnitKey?: string,
