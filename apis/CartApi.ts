@@ -625,6 +625,7 @@ export class CartApi extends BaseCartApi {
   ) => {
     const locale = await this.getCommercetoolsLocal();
     const config = this.frontasticContext?.project?.configuration?.preBuy;
+    const returnItems = CartMapper.returnItemToCommercetoolsReturnItemDraft(returnLineItems);
 
     return await this.getOrder(orderNumber).then((order) => {
       return this.associateEndpoints(account, organization, businessUnitKey)
@@ -636,7 +637,7 @@ export class CartApi extends BaseCartApi {
             actions: [
               {
                 action: 'addReturnInfo',
-                items: returnLineItems,
+                items: returnItems,
                 returnDate: new Date().toISOString(),
                 returnTrackingId: new Date().getTime().toString(),
               },

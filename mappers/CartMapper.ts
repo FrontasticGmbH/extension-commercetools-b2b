@@ -2,13 +2,14 @@ import {
   Cart as CommercetoolsCart,
   LineItem as CommercetoolsLineItem,
   Order as CommercetoolsOrder,
+  ReturnItemDraft,
   StateReference,
 } from '@commercetools/platform-sdk';
 import { BaseCartMapper } from './BaseCartMapper';
 import { Locale } from '@Commerce-commercetools/interfaces/Locale';
 import { ProductMapper } from './ProductMapper';
 import { ProductRouter } from '../utils/ProductRouter';
-import { LineItem } from '@Types/cart/LineItem';
+import { LineItem, ReturnItem } from '@Types/cart/LineItem';
 import { Cart } from '@Types/cart/Cart';
 import { Order, ReturnInfo } from '@Types/cart/Order';
 import { ReturnInfo as CommercetoolsReturnInfo } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/order';
@@ -136,6 +137,15 @@ export class CartMapper extends BaseCartMapper {
         count: item.quantity,
         shipmentState: item.shipmentState,
       })),
+    }));
+  }
+
+  static returnItemToCommercetoolsReturnItemDraft(returnItem: ReturnItem[]): ReturnItemDraft[] {
+    return returnItem.map((item) => ({
+      quantity: item.count,
+      lineItemId: item.lineItemId,
+      shipmentState: 'Returned', //FIXME:: Find out how to get the shipmentState
+      comment: item?.comment,
     }));
   }
 }
