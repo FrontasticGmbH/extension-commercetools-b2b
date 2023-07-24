@@ -9,7 +9,7 @@ import { BaseCartMapper } from './BaseCartMapper';
 import { Locale } from '@Commerce-commercetools/interfaces/Locale';
 import { ProductMapper } from './ProductMapper';
 import { ProductRouter } from '../utils/ProductRouter';
-import { LineItem, ReturnItem } from '@Types/cart/LineItem';
+import { LineItem, ReturnLineItem } from '@Types/cart/LineItem';
 import { Cart } from '@Types/cart/Cart';
 import { Order, ReturnInfo } from '@Types/cart/Order';
 import { ReturnInfo as CommercetoolsReturnInfo } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/order';
@@ -140,7 +140,7 @@ export class CartMapper extends BaseCartMapper {
     }));
   }
 
-  static returnItemToCommercetoolsReturnItemDraft(returnItem: ReturnItem[]): ReturnItemDraft[] {
+  static returnLineItemToCommercetoolsReturnItemDraft(returnItem: ReturnLineItem[]): ReturnItemDraft[] {
     return returnItem.map((item) => ({
       quantity: item.count,
       lineItemId: item.lineItemId,

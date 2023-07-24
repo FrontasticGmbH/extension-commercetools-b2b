@@ -1,5 +1,5 @@
 import { Cart } from '@Types/cart/Cart';
-import { LineItem, ReturnItem } from '@Types/cart/LineItem';
+import { LineItem, ReturnLineItem } from '@Types/cart/LineItem';
 import { Address } from '@Types/account/Address';
 import { Order } from '@Types/cart/Order';
 import { Account } from '@Types/account/Account';
@@ -612,20 +612,20 @@ export class CartApi extends BaseCartApi {
 
   returnItems: (
     orderNumber: string,
-    returnLineItems: ReturnItem[],
+    returnLineItems: ReturnLineItem[],
     account?: Account,
     organization?: Organization,
     businessUnitKey?: string,
   ) => Promise<Order> = async (
     orderNumber: string,
-    returnLineItems: ReturnItem[],
+    returnLineItems: ReturnLineItem[],
     account?: Account,
     organization?: Organization,
     businessUnitKey?: string,
   ) => {
     const locale = await this.getCommercetoolsLocal();
     const config = this.frontasticContext?.project?.configuration?.preBuy;
-    const returnItems = CartMapper.returnItemToCommercetoolsReturnItemDraft(returnLineItems);
+    const returnItems = CartMapper.returnLineItemToCommercetoolsReturnItemDraft(returnLineItems);
 
     return await this.getOrder(orderNumber).then((order) => {
       return this.associateEndpoints(account, organization, businessUnitKey)
