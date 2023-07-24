@@ -176,13 +176,13 @@ export const returnItems: ActionHook = async (request: Request, actionContext: A
 
   try {
     const body: {
-      orderNumber: string;
+      orderId: string;
       returnLineItems: ReturnLineItem[];
       businessUnitKey?: string;
     } = JSON.parse(request.body);
 
     const res = await cartApi.returnItems(
-      body.orderNumber,
+      body.orderId,
       body.returnLineItems,
       request.sessionData?.account,
       request.sessionData?.organization,
