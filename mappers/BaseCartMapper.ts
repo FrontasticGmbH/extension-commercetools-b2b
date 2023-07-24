@@ -85,6 +85,7 @@ export class BaseCartMapper {
   static commercetoolsAddressToAddress(commercetoolsAddress: CommercetoolsAddress): Address {
     return {
       addressId: commercetoolsAddress?.id,
+      addressKey: commercetoolsAddress?.key,
       salutation: commercetoolsAddress?.salutation,
       firstName: commercetoolsAddress?.firstName,
       lastName: commercetoolsAddress?.lastName,
@@ -102,7 +103,7 @@ export class BaseCartMapper {
 
   static addressToCommercetoolsAddress(address: Address): CommercetoolsAddress {
     return {
-      id: address?.addressId,
+      addressId: address?.addressId,
       salutation: address?.salutation,
       firstName: address?.firstName,
       lastName: address?.lastName,

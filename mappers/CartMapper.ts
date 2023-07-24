@@ -75,7 +75,8 @@ export class CartMapper extends BaseCartMapper {
         ),
         isGift:
           commercetoolsLineItem?.lineItemMode !== undefined && commercetoolsLineItem.lineItemMode === 'GiftLineItem',
-        shippingDetails: commercetoolsLineItem.shippingDetails,
+        // shippingDetails: commercetoolsLineItem.shippingDetails,
+        shippingAddresses: commercetoolsLineItem.shippingDetails,
       };
       item._url = ProductRouter.generateUrlFor(item);
       lineItems.push(item);
