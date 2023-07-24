@@ -144,7 +144,7 @@ export class CartMapper extends BaseCartMapper {
     return returnItem.map((item) => ({
       quantity: item.count,
       lineItemId: item.lineItemId,
-      shipmentState: 'Returned', //FIXME:: Find out how to get the shipmentState
+      shipmentState: 'Returned', //Initial state for Return Items that are refundable.
       comment: item?.comment,
     }));
   }
