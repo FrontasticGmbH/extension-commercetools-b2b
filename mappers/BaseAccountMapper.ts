@@ -58,8 +58,6 @@ export class BaseAccountMapper {
 
   static addressToCommercetoolsAddress(address: Address): BaseAddress {
     return {
-      id: address.addressId,
-      // key: Guid.newGuid(),
       salutation: address.salutation,
       firstName: address.firstName,
       lastName: address.lastName,

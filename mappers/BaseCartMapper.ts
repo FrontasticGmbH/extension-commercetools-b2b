@@ -102,7 +102,6 @@ export class BaseCartMapper {
 
   static addressToCommercetoolsAddress(address: Address): CommercetoolsAddress {
     return {
-      id: address?.addressId,
       salutation: address?.salutation,
       firstName: address?.firstName,
       lastName: address?.lastName,
