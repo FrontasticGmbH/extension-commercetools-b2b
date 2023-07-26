@@ -1,15 +1,20 @@
 import {
   BusinessUnit as CommercetoolsBusinessUnit,
   StoreKeyReference as CommercetoolsStoreKeyReference,
+  Associate as CommercetoolsAssociate,
 } from '@commercetools/platform-sdk';
 import { BusinessUnit } from '@Types/business-unit/BusinessUnit';
 import { Store, StoreKeyReference } from '@Types/store/Store';
-import { Associate } from '@Types/associate/Associate';
+import { Associate, AssociateRole } from '@Types/account/Associate';
+import { AccountMapper } from '@Commerce-commercetools/mappers/AccountMapper';
+import { Locale } from '@Commerce-commercetools/interfaces/Locale';
+import { AssociateRoleAssignment as CommercetoolsAssociateRoleAssignment } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/business-unit';
 import { Account } from '@Types/account/Account';
 
 export class BusinessUnitMapper {
   static commercetoolsBusinessUnitToBusinessUnit(
     commercetoolsBusinessUnit: CommercetoolsBusinessUnit,
+    locale: Locale,
     allStores?: Store[],
   ): BusinessUnit {
     const businessUnit = {
@@ -19,7 +24,7 @@ export class BusinessUnitMapper {
       parentUnit: commercetoolsBusinessUnit.parentUnit,
       storeMode: commercetoolsBusinessUnit.storeMode,
       stores: this.mapCommercetoolsStoreKeyReferencesToStoreKeyReferences(commercetoolsBusinessUnit.stores),
-      associates: this.mapReferencedAssociatesToAssociate(commercetoolsBusinessUnit),
+      associates: this.mapReferencedAssociatesToAssociate(commercetoolsBusinessUnit.associates, locale),
       topLevelUnit: commercetoolsBusinessUnit.topLevelUnit,
       addresses: commercetoolsBusinessUnit.addresses,
     };
@@ -33,6 +38,7 @@ export class BusinessUnitMapper {
 
   static mapBusinessUnitToBusinessUnitTreeItem(
     commercetoolsBusinessUnit: CommercetoolsBusinessUnit,
+    locale: Locale,
     allStores: Store[],
   ): BusinessUnit {
     const businessUnit: BusinessUnit = {
@@ -52,7 +58,7 @@ export class BusinessUnitMapper {
     };
 
     businessUnit.stores = this.expandStores(businessUnit.stores, allStores);
-    businessUnit.associates = this.mapReferencedAssociatesToAssociate(commercetoolsBusinessUnit);
+    businessUnit.associates = this.mapReferencedAssociatesToAssociate(commercetoolsBusinessUnit.associates, locale);
 
     return businessUnit;
   }
@@ -64,13 +70,19 @@ export class BusinessUnitMapper {
       // @ts-ignore
       stores: businessUnit.stores.map((store) => ({ key: store.key, name: store.name })),
       associates: businessUnit.associates
-        ?.filter((associate) => associate.customer.id === accountId)
-        ?.map((associate) => ({
-          associateRoleAssignments: associate.associateRoleAssignments?.map((role) => ({
-            associateRole: { key: role.associateRole.key },
-          })),
-          customer: { id: associate.customer.id },
-        })),
+        ?.filter((associate) => associate.accountId === accountId)
+        ?.map((associate) => {
+          const trimmedAssociate: Associate = {
+            accountId: associate.accountId,
+            email: associate.email,
+            roles: associate.roles?.map((role) => {
+              const trimmedAssociateRole: AssociateRole = { key: role.key };
+              return trimmedAssociateRole;
+            }),
+          };
+
+          return trimmedAssociate;
+        }),
     };
   }
 
@@ -92,36 +104,29 @@ export class BusinessUnitMapper {
     associateRoleKey: string,
   ): boolean {
     const currentUserAssociate = businessUnit.associates?.find(
-      (associate) => associate.customer.id === account.accountId,
+      (associate) => associate.accountId === account.accountId,
     );
-    return currentUserAssociate?.associateRoleAssignments.some((role) => role.associateRole.key === associateRoleKey);
+    return currentUserAssociate?.roles.some((role) => role.key === associateRoleKey);
   }
 
-  static isUserRootAdminInBusinessUnit(
-    businessUnit: CommercetoolsBusinessUnit,
-    accountId: string,
-    adminRoleKey: string,
-  ): boolean {
-    if (this.isAssociateRoleKeyInCommercetoolsBusinessUnit(businessUnit, accountId, adminRoleKey)) {
-      return !businessUnit.parentUnit;
-    }
-    return false;
-  }
-
-  static mapReferencedAssociatesToAssociate(businessUnit: CommercetoolsBusinessUnit): Associate[] {
-    return businessUnit.associates?.map((associate) => {
-      if (associate.customer?.obj) {
-        return {
-          associateRoleAssignments: associate.associateRoleAssignments,
-          customer: {
-            id: associate.customer.id,
-            typeId: 'customer',
-            firstName: associate.customer?.obj?.firstName,
-            lastName: associate.customer?.obj?.lastName,
-            email: associate.customer?.obj?.email,
-          },
-        };
+  static mapReferencedAssociatesToAssociate(
+    commercetoolsAssociates: CommercetoolsAssociate[],
+    locale: Locale,
+  ): Associate[] {
+    return commercetoolsAssociates?.map((commercetoolsAssociate) => {
+      if (!commercetoolsAssociate.customer?.obj) {
+        return undefined;
       }
+
+      const associate: Associate = AccountMapper.commercetoolsCustomerToAccount(
+        commercetoolsAssociate.customer?.obj,
+        locale,
+      );
+
+      associate.roles = commercetoolsAssociate.associateRoleAssignments?.map((associateRoleAssigment) => {
+        return this.mapCommercetoolsAssociateRoleAssignmentToAssociateRole(associateRoleAssigment);
+      });
+
       return associate;
     });
   }
@@ -150,5 +155,14 @@ export class BusinessUnitMapper {
       };
       return storeKeyReference;
     });
+  }
+
+  static mapCommercetoolsAssociateRoleAssignmentToAssociateRole(
+    associateRoleAssigment: CommercetoolsAssociateRoleAssignment,
+  ): AssociateRole {
+    return {
+      associateRoleId: associateRoleAssigment.associateRole.id,
+      key: associateRoleAssigment.associateRole.key,
+    };
   }
 }

@@ -1,16 +1,16 @@
 import { AccountApi } from '@Commerce-commercetools/apis/AccountApi';
 
 import { ActionContext, Request, Response } from '@frontastic/extension-types';
-import { Store, StoreKeyReference } from '@Types/store/Store';
+import { Store } from '@Types/store/Store';
 import { getCurrency, getLocale } from '../utils/Request';
 import { StoreApi } from '../apis/StoreApi';
 import { BusinessUnitApi } from '../apis/BusinessUnitApi';
 import { CartApi } from '../apis/CartApi';
 import { BusinessUnitMapper } from '../mappers/BusinessUnitMapper';
-import { BusinessUnit, BusinessUnitStatus, BusinessUnitType, StoreMode } from '@Types/business-unit/BusinessUnit';
 import { fetchAccountFromSession } from '@Commerce-commercetools/utils/fetchAccountFromSession';
 import { AccountAuthenticationError } from '@Commerce-commercetools/errors/AccountAuthenticationError';
 import { Account } from '@Types/account/Account';
+import { AssociateApi } from '@Commerce-commercetools/apis/AssociateApi';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
 
@@ -263,9 +263,13 @@ export const create: ActionHook = async (request: Request, actionContext: Action
       errorCode: 400,
     };
   }
-  const data = mapRequestToBusinessUnit(request, config);
+  const businessUnitRequestBody: BusinessUnitRequestBody = JSON.parse(request.body);
 
-  const businessUnit = await businessUnitApi.createFromData(data);
+  const businessUnit = await businessUnitApi.createForAccountAndStore(
+    businessUnitRequestBody.account,
+    businessUnitRequestBody.store,
+    config,
+  );
 
   const response: Response = {
     statusCode: 200,
@@ -529,70 +533,15 @@ export const query: ActionHook = async (request: Request, actionContext: ActionC
   return response;
 };
 
-function mapRequestToBusinessUnit(request: Request, config: Record<string, string>): BusinessUnit {
-  const businessUnitRequestBody: BusinessUnitRequestBody = JSON.parse(request.body);
-  const normalizedName = businessUnitRequestBody.account.company.toLowerCase().replace(/ /g, '_');
-  const key = businessUnitRequestBody.parentBusinessUnit
-    ? `${businessUnitRequestBody.parentBusinessUnit}_div_${normalizedName}`
-    : `business_unit_${normalizedName}`;
+export const getAssociateRoles: ActionHook = async (request: Request, actionContext: ActionContext) => {
+  const associateApi = new AssociateApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
+  const associateRoles = await associateApi.getAssociateRoles();
 
-  let storeMode = StoreMode.Explicit;
-  let unitType = BusinessUnitType.Company;
-  const stores: StoreKeyReference[] = [];
-
-  if (businessUnitRequestBody.parentBusinessUnit && !businessUnitRequestBody.store) {
-    storeMode = StoreMode.FromParent;
-  }
-
-  if (businessUnitRequestBody.parentBusinessUnit) {
-    unitType = BusinessUnitType.Division;
-  }
-
-  if (businessUnitRequestBody.store) {
-    stores.push({
-      typeId: 'store',
-      id: businessUnitRequestBody.store.id,
-    });
-  }
-
-  const businessUnit: BusinessUnit = {
-    key,
-    name: businessUnitRequestBody.account.company,
-    status: BusinessUnitStatus.Active,
-    stores,
-    storeMode,
-    unitType,
-    contactEmail: businessUnitRequestBody.account.email,
-    associates: [
-      {
-        associateRoleAssignments: [
-          {
-            associateRole: {
-              key: config.defaultBuyerRoleKey,
-              typeId: 'associate-role',
-            },
-          },
-          {
-            associateRole: {
-              key: config.defaultAdminRoleKey,
-              typeId: 'associate-role',
-            },
-          },
-        ],
-        customer: {
-          id: businessUnitRequestBody.account.accountId ?? businessUnitRequestBody.customer.accountId,
-          typeId: 'customer',
-        },
-      },
-    ],
+  const response: Response = {
+    statusCode: 200,
+    body: JSON.stringify(associateRoles),
+    sessionData: request.sessionData,
   };
 
-  if (businessUnitRequestBody.parentBusinessUnit) {
-    businessUnit.parentUnit = {
-      key: businessUnitRequestBody.parentBusinessUnit,
-      typeId: 'business-unit',
-    };
-  }
-
-  return businessUnit;
-}
+  return response;
+};

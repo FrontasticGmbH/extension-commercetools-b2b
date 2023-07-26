@@ -3,6 +3,7 @@ import { getCurrency, getLocale } from './utils/Request';
 import { ProductApi } from './apis/ProductApi';
 import { ProductQueryFactory } from './utils/ProductQueryFactory';
 import { BusinessUnitApi } from './apis/BusinessUnitApi';
+import { fetchAccountFromSession } from '@Commerce-commercetools/utils/fetchAccountFromSession';
 
 function productQueryFromContext(context: DataSourceContext, config: DataSourceConfiguration) {
   const productApi = new ProductApi(
@@ -101,6 +102,16 @@ export default {
     };
   },
   'b2b/associations': async (config: DataSourceConfiguration, context: DataSourceContext) => {
+    const account = fetchAccountFromSession(context.request);
+
+    if (account === undefined) {
+      return {
+        dataSourcePayload: {
+          associations: [],
+        },
+      };
+    }
+
     const businessUnitApi = new BusinessUnitApi(
       context.frontasticContext,
       context.request ? getLocale(context.request) : null,
@@ -124,6 +135,15 @@ export default {
     };
   },
   'b2b/organization-tree': async (config: DataSourceConfiguration, context: DataSourceContext) => {
+    const account = fetchAccountFromSession(context.request);
+    if (account === undefined) {
+      return {
+        dataSourcePayload: {
+          tree: [],
+        },
+      };
+    }
+
     const businessUnitApi = new BusinessUnitApi(
       context.frontasticContext,
       context.request ? getLocale(context.request) : null,

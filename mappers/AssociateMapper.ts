@@ -1,13 +1,12 @@
 import { AssociateRole as CommercetoolsAssociateRole } from '@commercetools/platform-sdk';
-import { AssociateRole } from '@Types/associate/Associate';
+import { AssociateRole } from '@Types/account/Associate';
 
 export class AssociateMapper {
   static mapCommercetoolsAssociateRoleToAssociateRole(associateRole: CommercetoolsAssociateRole): AssociateRole {
     return {
-      name: associateRole.name,
-      id: associateRole.id,
+      associateRoleId: associateRole.id,
       key: associateRole.key,
-      buyerAssignable: associateRole.buyerAssignable,
+      name: associateRole.name,
     };
   }
 }

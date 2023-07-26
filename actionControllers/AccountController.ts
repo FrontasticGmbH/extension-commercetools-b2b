@@ -5,29 +5,33 @@ export * from './BaseAccountController';
 import { AccountRegisterBody as BaseAccountRegisterBody } from './BaseAccountController';
 import { getCurrency, getLocale } from '@Commerce-commercetools/utils/Request';
 import { AccountApi } from '@Commerce-commercetools/apis/AccountApi';
-import { mapRequestToAccount } from '@Commerce-commercetools/utils/mapRequestToAccount';
 import { CartFetcher } from '@Commerce-commercetools/utils/CartFetcher';
 import { EmailApiFactory } from '@Commerce-commercetools/utils/EmailApiFactory';
 import { BusinessUnitApi } from '@Commerce-commercetools/apis/BusinessUnitApi';
 import { StoreApi } from '@Commerce-commercetools/apis/StoreApi';
 import { ValidationError } from '../utils/Errors';
 import { Store } from '@Types/store/Store';
-import { businessUnitKeyFormatter, companyNameNormalizer } from '@Commerce-commercetools/utils/BussinessUnitFormatter';
+import {
+  businessUnitKeyFormatter,
+  businessUnitNameNormalizer,
+} from '@Commerce-commercetools/utils/BussinessUnitFormatter';
+import { AccountMapper } from '@Commerce-commercetools/mappers/AccountMapper';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
 
 export interface AccountRegisterBody extends BaseAccountRegisterBody {
-  company?: string;
+  companyName?: string;
   confirmed?: boolean;
 }
 
 export const register: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const locale = getLocale(request);
 
-  const accountApi = new AccountApi(actionContext.frontasticContext, locale, getCurrency(request));
-  const accountData = mapRequestToAccount(request);
+  const accountData = AccountMapper.requestToAccount(request);
 
-  if (accountData.company === undefined) {
+  const accountApi = new AccountApi(actionContext.frontasticContext, locale, getCurrency(request));
+
+  if (accountData.companyName === undefined) {
     throw new ValidationError({ message: `The account passed doesn't contain a company.` });
   }
 
@@ -47,14 +51,14 @@ export const register: ActionHook = async (request: Request, actionContext: Acti
     getCurrency(request),
   );
 
-  const businessUnitKey = businessUnitKeyFormatter(accountData.company);
+  const businessUnitKey = businessUnitKeyFormatter(accountData.companyName);
   try {
     const businessUnit = await businessUnitApi.getByKey(businessUnitKey);
 
     if (!!businessUnit) {
       return {
         statusCode: 400,
-        body: `An account for the company ${accountData.company} already exists`,
+        body: `An account for the company ${accountData.companyName} already exists`,
         sessionData: request.sessionData,
       };
     }
@@ -74,8 +78,8 @@ export const register: ActionHook = async (request: Request, actionContext: Acti
   });
 
   const storeData: Store = {
-    key: `store_${companyNameNormalizer(accountData.company)}`,
-    name: accountData.company,
+    key: `store_${businessUnitNameNormalizer(accountData.companyName)}`,
+    name: accountData.companyName,
   };
 
   const store = await storeApi.create(storeData);

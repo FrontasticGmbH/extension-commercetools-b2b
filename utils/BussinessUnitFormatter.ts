@@ -1,8 +1,8 @@
-export function businessUnitKeyFormatter(companyName: string): string {
-  const normalizedCompanyName = companyNameNormalizer(companyName);
-  return `business_unit_${normalizedCompanyName}`;
+export function businessUnitKeyFormatter(businessUnitName: string): string {
+  const normalizedBusinessUnitName = businessUnitNameNormalizer(businessUnitName);
+  return `business_unit_${normalizedBusinessUnitName}`;
 }
 
-export function companyNameNormalizer(companyName: string): string {
-  return companyName.toLowerCase().replace(/ /g, '_');
+export function businessUnitNameNormalizer(businessUnitName: string): string {
+  return businessUnitName.toLowerCase().replace(/ /g, '_');
 }

@@ -74,31 +74,15 @@ export class BusinessUnitApi extends BaseApi {
     return organization;
   };
 
-  /**
-   * @deprecated use create or createForAccountAndStore instead
-   */
-  createFromData: (data: any) => Promise<BusinessUnit> = async (data: any) => {
-    return this.requestBuilder()
-      .businessUnits()
-      .post({
-        body: data,
-      })
-      .execute()
-      .then((response) => {
-        return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(response.body);
-      })
-      .catch((error) => {
-        throw new ExternalError({ status: error.code, message: error.message, body: error.body });
-      });
-  };
-
   createForAccountAndStore: (account: Account, store: Store, config: Record<string, string>) => Promise<BusinessUnit> =
     async (account: Account, store: Store, config: Record<string, string>) => {
-      const businessUnitKey = businessUnitKeyFormatter(account.company);
+      const locale = await this.getCommercetoolsLocal();
+
+      const businessUnitKey = businessUnitKeyFormatter(account.companyName);
 
       const businessUnitDraft: BusinessUnitDraft = {
         key: businessUnitKey,
-        name: account.company,
+        name: account.companyName,
         status: BusinessUnitStatus.Active,
         stores: [
           {
@@ -140,7 +124,7 @@ export class BusinessUnitApi extends BaseApi {
         })
         .execute()
         .then((response) => {
-          return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(response.body, [store]);
+          return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(response.body, locale, [store]);
         })
         .catch((error) => {
           throw new ExternalError({ status: error.code, message: error.message, body: error.body });
@@ -321,6 +305,8 @@ export class BusinessUnitApi extends BaseApi {
    */
   getFirstRootForAssociate: (account: Account) => Promise<BusinessUnit> = async (account: Account) => {
     try {
+      const locale = await this.getCommercetoolsLocal();
+
       const config = this.frontasticContext?.project?.configuration?.associateRoles;
       if (!config?.defaultAdminRoleKey || !config?.defaultSuperUserRoleKey) {
         throw new Error('Configuration error. No "defaultAdminRoleKey" exists');
@@ -362,6 +348,7 @@ export class BusinessUnitApi extends BaseApi {
 
         return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(
           commercetoolsBusinessUnit,
+          locale,
           allStores,
           // account.accountId,
           // config.defaultAdminRoleKey,
@@ -377,21 +364,24 @@ export class BusinessUnitApi extends BaseApi {
       const storeApi = new StoreApi(this.frontasticContext, this.locale, this.currency);
       const allStores = await storeApi.query(`key in (${storeKeys})`);
 
-      return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(commercetoolsBusinessUnit, allStores);
+      return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(commercetoolsBusinessUnit, locale, allStores);
     } catch (error) {
       throw error;
     }
   };
 
   get: (key: string, account?: Account) => Promise<BusinessUnit> = async (key: string, account?: Account) => {
+    const locale = await this.getCommercetoolsLocal();
+
     const storeApi = new StoreApi(this.frontasticContext, this.locale, this.currency);
+
     try {
       const businessUnit = await this.query(
         [`associates(customer(id="${account.accountId}"))`, `key in ("${key}")`],
         'associates[*].customer',
       ).then((response) => {
         if (response.count >= 1) {
-          return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(response.results[0]);
+          return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(response.results[0], locale);
         }
 
         throw new Error(`Business unit "${key}" not found for this account`);
@@ -399,10 +389,10 @@ export class BusinessUnitApi extends BaseApi {
 
       const storeKeys = businessUnit?.stores?.map((store) => `"${store.key}"`).join(' ,');
       const allStores = await storeApi.query(`key in (${storeKeys})`);
-      return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(
-        businessUnit as CommercetoolsBusinessUnit,
-        allStores,
-      );
+
+      businessUnit.stores = BusinessUnitMapper.expandStores(businessUnit.stores, allStores);
+
+      return businessUnit;
     } catch (e) {
       throw e;
     }
@@ -425,6 +415,8 @@ export class BusinessUnitApi extends BaseApi {
   };
 
   getByKey: (key: string) => Promise<BusinessUnit> = async (key: string) => {
+    const locale = await this.getCommercetoolsLocal();
+
     try {
       return this.requestBuilder()
         .businessUnits()
@@ -432,7 +424,7 @@ export class BusinessUnitApi extends BaseApi {
         .get()
         .execute()
         .then((response) => {
-          return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(response.body);
+          return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(response.body, locale);
         });
     } catch (e) {
       throw e;
@@ -509,6 +501,8 @@ export class BusinessUnitApi extends BaseApi {
     account: Account,
     expandStores?: boolean,
   ) => {
+    const locale = await this.getCommercetoolsLocal();
+
     const storeApi = new StoreApi(this.frontasticContext, this.locale, this.currency);
 
     const businessUnits = await this.query(
@@ -516,7 +510,7 @@ export class BusinessUnitApi extends BaseApi {
       'associates[*].customer',
     ).then((response) => {
       return response.results.map((commercetoolsBusinessUnit) => {
-        return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(commercetoolsBusinessUnit);
+        return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(commercetoolsBusinessUnit, locale);
       });
     });
 
@@ -540,6 +534,8 @@ export class BusinessUnitApi extends BaseApi {
   };
 
   getCompaniesForUser: (account: Account) => Promise<BusinessUnit[]> = async (account: Account) => {
+    const locale = await this.getCommercetoolsLocal();
+
     let tree: CommercetoolsBusinessUnit[] = [];
     const storeApi = new StoreApi(this.frontasticContext, this.locale, this.currency);
     const config = this.frontasticContext?.project?.configuration?.associateRoles;
@@ -581,6 +577,6 @@ export class BusinessUnitApi extends BaseApi {
       ?.map((store) => `"${store.key}"`)
       .join(' ,');
     const allStores = storeKeys ? await storeApi.query(`key in (${storeKeys})`) : [];
-    return tree.map((bu) => BusinessUnitMapper.mapBusinessUnitToBusinessUnitTreeItem(bu, allStores));
+    return tree.map((bu) => BusinessUnitMapper.mapBusinessUnitToBusinessUnitTreeItem(bu, locale, allStores));
   };
 }

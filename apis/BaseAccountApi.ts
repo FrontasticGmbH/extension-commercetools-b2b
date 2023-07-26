@@ -1,9 +1,7 @@
 import { BaseApi } from './BaseApi';
-import { AccountExtended as Account } from '@Commerce-commercetools/interfaces/AccountExtended';
 import { AccountToken } from '@Types/account/AccountToken';
 import {
   CustomerDraft,
-  CustomerSetCustomFieldAction,
   CustomerUpdate,
   CustomerUpdateAction,
 } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/customer';
@@ -16,6 +14,7 @@ import { Guid } from '../utils/Guid';
 import { ExternalError, ValidationError } from '../utils/Errors';
 import { AccountEmailDuplicatedError } from '../errors/AccountEmailDuplicatedError';
 import { AccountAuthenticationError } from '../errors/AccountAuthenticationError';
+import { Account } from '@Types/account/Account';
 
 export class BaseAccountApi extends BaseApi {
   create: (account: Account, cart: Cart | undefined) => Promise<Account> = async (
@@ -266,41 +265,6 @@ export class BaseAccountApi extends BaseApi {
     // TODO: should we also update addresses in this method?
 
     return await this.updateAccount(account, customerUpdateActions);
-  };
-
-  updateSubscription: (account: Account, isSubscribed: Account['isSubscribed']) => Promise<Account> = async (
-    account: Account,
-    isSubscribed: Account['isSubscribed'],
-  ) => {
-    const locale = await this.getCommercetoolsLocal();
-    const accountVersion = await this.fetchAccountVersion(account);
-
-    const customerUpdateActions: CustomerSetCustomFieldAction[] = [
-      {
-        action: 'setCustomField',
-        name: 'isSubscribed',
-        value: isSubscribed,
-      },
-    ];
-
-    const customerUpdate: CustomerUpdate = {
-      version: accountVersion,
-      actions: customerUpdateActions,
-    };
-
-    return this.requestBuilder()
-      .customers()
-      .withId({ ID: account.accountId })
-      .post({
-        body: customerUpdate,
-      })
-      .execute()
-      .then((response) => {
-        return BaseAccountMapper.commercetoolsCustomerToAccount(response.body, locale);
-      })
-      .catch((error) => {
-        throw new ExternalError({ status: error.code, message: error.message, body: error.body });
-      });
   };
 
   addAddress: (account: Account, address: Address) => Promise<Account> = async (account: Account, address: Address) => {
