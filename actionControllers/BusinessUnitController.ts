@@ -418,38 +418,7 @@ export const update: ActionHook = async (request: Request, actionContext: Action
   return response;
 };
 
-/**
- * @deprecated Use `getByKeyForAccount` instead
- */
 export const getByKey: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const businessUnitApi = new BusinessUnitApi(
-    actionContext.frontasticContext,
-    getLocale(request),
-    getCurrency(request),
-  );
-  try {
-    const businessUnit = await businessUnitApi.getCommercetoolsBusinessUnitByKey(request.query?.['key']);
-
-    const response: Response = {
-      statusCode: 200,
-      body: JSON.stringify(businessUnit),
-      sessionData: request.sessionData,
-    };
-
-    return response;
-  } catch {
-    const response: Response = {
-      statusCode: 400,
-      // @ts-ignore
-      error: new Error('Business unit not found'),
-      errorCode: 400,
-    };
-
-    return response;
-  }
-};
-
-export const getByKeyForAccount: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const businessUnitApi = new BusinessUnitApi(
     actionContext.frontasticContext,
     getLocale(request),

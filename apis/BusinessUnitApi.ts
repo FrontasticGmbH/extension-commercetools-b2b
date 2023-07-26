@@ -8,7 +8,7 @@ import { StoreMapper } from '../mappers/StoreMapper';
 import { BusinessUnit as CommercetoolsBusinessUnit, BusinessUnitPagedQueryResponse } from '@commercetools/platform-sdk';
 import { BusinessUnitMapper } from '../mappers/BusinessUnitMapper';
 import { BaseApi } from '@Commerce-commercetools/apis/BaseApi';
-import { Store, StoreKeyReference } from '@Types/store/Store';
+import { Store } from '@Types/store/Store';
 import { Account } from '@Types/account/Account';
 import { BusinessUnitDraft } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/business-unit';
 import { ExternalError } from '@Commerce-commercetools/utils/Errors';
@@ -432,33 +432,6 @@ export class BusinessUnitApi extends BaseApi {
     }
   };
 
-  /**
-   * @deprecated Use `expandBusinessUnitStores` instead
-   */
-  expandCommercetoolsBusinessUnitStores: (
-    businessUnit: CommercetoolsBusinessUnit,
-  ) => Promise<CommercetoolsBusinessUnit> = async (businessUnit: CommercetoolsBusinessUnit) => {
-    if (businessUnit.storeMode === StoreMode.Explicit) {
-      return businessUnit;
-    }
-    let parentBU: CommercetoolsBusinessUnit = { ...businessUnit };
-    while (parentBU.storeMode === StoreMode.FromParent && !!parentBU.parentUnit) {
-      const { body } = await this.requestBuilder()
-        .businessUnits()
-        .withKey({ key: parentBU.parentUnit.key })
-        .get()
-        .execute();
-      parentBU = body as CommercetoolsBusinessUnit;
-    }
-    if (parentBU.storeMode === StoreMode.Explicit) {
-      return {
-        ...businessUnit,
-        stores: parentBU.stores,
-      };
-    }
-    return businessUnit;
-  };
-
   getBusinessUnitWithExplicitStores: (
     commercetoolsBusinessUnit: CommercetoolsBusinessUnit,
   ) => Promise<CommercetoolsBusinessUnit> = async (commercetoolsBusinessUnit: CommercetoolsBusinessUnit) => {
@@ -517,7 +490,7 @@ export class BusinessUnitApi extends BaseApi {
 
     if (expandStores) {
       const storeKeys = businessUnits
-        .reduce((prev: StoreKeyReference[], curr) => {
+        .reduce((prev: Store[], curr) => {
           prev = prev.concat(curr.stores || []);
           return prev;
         }, [])
@@ -543,42 +516,46 @@ export class BusinessUnitApi extends BaseApi {
     if (!config?.defaultAdminRoleKey) {
       throw new Error('Configuration error. No "defaultAdminRoleKey" exists');
     }
-    if (account) {
-      const results = await this.getCommercetoolsBusinessUnitsForUser(account);
-      tree = this.getRootCommercetoolsBusinessUnitsForAssociate(results, account, false).map((bu) => ({
-        ...bu,
-        parentUnit: null,
-      }));
-      if (tree.length) {
-        // get the whole organization nodes
-        const { results } = await this.query(
-          `topLevelUnit(key="${tree[0].topLevelUnit.key}")`,
-          'associates[*].customer',
-        );
-        const tempParents = [...tree];
 
-        // filter results and add nodes to tree if they are descendents of tree nodes
-        while (tempParents.length) {
-          const [item] = tempParents.splice(0, 1);
-          const children = results.filter((bu) => bu.parentUnit?.key === item.key);
-          if (children.length) {
-            children.forEach((child) => {
-              tempParents.push(child);
-              tree.push(child);
-            });
-          }
+    const results = await this.getCommercetoolsBusinessUnitsForUser(account);
+    tree = this.getRootCommercetoolsBusinessUnitsForAssociate(results, account, false).map(
+      (commercetoolsBusinessUnit) => ({
+        ...commercetoolsBusinessUnit,
+        parentUnit: null,
+      }),
+    );
+
+    if (tree.length) {
+      // get the whole organization nodes
+      const { results } = await this.query(`topLevelUnit(key="${tree[0].topLevelUnit.key}")`, 'associates[*].customer');
+      const tempParents = [...tree];
+
+      // filter results and add nodes to tree if they are descendents of tree nodes
+      while (tempParents.length) {
+        const [item] = tempParents.splice(0, 1);
+        const children = results.filter((bu) => bu.parentUnit?.key === item.key);
+        if (children.length) {
+          children.forEach((child) => {
+            tempParents.push(child);
+            tree.push(child);
+          });
         }
       }
     }
+
     const storeKeys = tree
-      .reduce((prev: StoreKeyReference[], curr) => {
+      .reduce((prev: Store[], curr) => {
         prev = prev.concat(curr.stores || []);
         return prev;
       }, [])
       ?.map((store) => `"${store.key}"`)
       .join(' ,');
+
     const allStores = storeKeys ? await storeApi.query(`key in (${storeKeys})`) : [];
-    return tree.map((bu) => BusinessUnitMapper.mapBusinessUnitToBusinessUnitTreeItem(bu, locale, allStores));
+
+    return tree.map((commercetoolsBusinessUnit) =>
+      BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(commercetoolsBusinessUnit, locale, allStores),
+    );
   };
 
   getAssociateRoles: () => Promise<AssociateRole[]> = async () => {

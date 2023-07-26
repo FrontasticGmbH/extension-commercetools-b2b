@@ -1,4 +1,8 @@
-import { Customer as commercetoolsCustomer, CustomerToken } from '@commercetools/platform-sdk';
+import {
+  Customer as commercetoolsCustomer,
+  CustomerToken,
+  Address as CommercetoolsAddress,
+} from '@commercetools/platform-sdk';
 import { Locale } from '@Commerce-commercetools/interfaces/Locale';
 import { Account } from '@Types/account/Account';
 import { Address } from '@Types/account/Address';
@@ -35,19 +39,7 @@ export class BaseAccountMapper {
 
     commercetoolsCustomer.addresses.forEach((commercetoolsAddress) => {
       addresses.push({
-        addressId: commercetoolsAddress.id,
-        salutation: commercetoolsAddress.salutation ?? undefined,
-        firstName: commercetoolsAddress.firstName ?? undefined,
-        lastName: commercetoolsAddress.lastName ?? undefined,
-        streetName: commercetoolsAddress.streetName ?? undefined,
-        streetNumber: commercetoolsAddress.streetNumber ?? undefined,
-        additionalStreetInfo: commercetoolsAddress.additionalStreetInfo ?? undefined,
-        additionalAddressInfo: commercetoolsAddress.additionalAddressInfo ?? undefined,
-        postalCode: commercetoolsAddress.postalCode ?? undefined,
-        city: commercetoolsAddress.city ?? undefined,
-        country: commercetoolsAddress.country ?? undefined,
-        state: commercetoolsAddress.state ?? undefined,
-        phone: commercetoolsAddress.phone ?? undefined,
+        ...this.commercetoolsAddressToAddresses(commercetoolsAddress),
         isDefaultBillingAddress: commercetoolsAddress.id === commercetoolsCustomer.defaultBillingAddressId,
         isBillingAddress: commercetoolsCustomer.billingAddressIds.includes(commercetoolsAddress.id),
         isDefaultShippingAddress: commercetoolsAddress.id === commercetoolsCustomer.defaultShippingAddressId,
@@ -56,6 +48,24 @@ export class BaseAccountMapper {
     });
 
     return addresses;
+  }
+
+  static commercetoolsAddressToAddresses(commercetoolsAddress: CommercetoolsAddress): Address {
+    return {
+      addressId: commercetoolsAddress.id,
+      salutation: commercetoolsAddress.salutation ?? undefined,
+      firstName: commercetoolsAddress.firstName ?? undefined,
+      lastName: commercetoolsAddress.lastName ?? undefined,
+      streetName: commercetoolsAddress.streetName ?? undefined,
+      streetNumber: commercetoolsAddress.streetNumber ?? undefined,
+      additionalStreetInfo: commercetoolsAddress.additionalStreetInfo ?? undefined,
+      additionalAddressInfo: commercetoolsAddress.additionalAddressInfo ?? undefined,
+      postalCode: commercetoolsAddress.postalCode ?? undefined,
+      city: commercetoolsAddress.city ?? undefined,
+      country: commercetoolsAddress.country ?? undefined,
+      state: commercetoolsAddress.state ?? undefined,
+      phone: commercetoolsAddress.phone ?? undefined,
+    };
   }
 
   static addressToCommercetoolsAddress(address: Address): BaseAddress {

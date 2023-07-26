@@ -4,11 +4,14 @@ import {
   Associate as CommercetoolsAssociate,
 } from '@commercetools/platform-sdk';
 import { BusinessUnit } from '@Types/business-unit/BusinessUnit';
-import { Store, StoreKeyReference } from '@Types/store/Store';
+import { Store } from '@Types/store/Store';
 import { Associate, AssociateRole } from '@Types/business-unit/Associate';
 import { AccountMapper } from '@Commerce-commercetools/mappers/AccountMapper';
 import { Locale } from '@Commerce-commercetools/interfaces/Locale';
-import { AssociateRoleAssignment as CommercetoolsAssociateRoleAssignment } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/business-unit';
+import {
+  AssociateRoleAssignment as CommercetoolsAssociateRoleAssignment,
+  BusinessUnitKeyReference as CommercetoolsBusinessUnitKeyReference,
+} from '@commercetools/platform-sdk/dist/declarations/src/generated/models/business-unit';
 import { Account } from '@Types/account/Account';
 import { AssociateRole as CommercetoolsAssociateRole } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/associate-role';
 
@@ -18,16 +21,29 @@ export class BusinessUnitMapper {
     locale: Locale,
     allStores?: Store[],
   ): BusinessUnit {
-    const businessUnit = {
+    const businessUnit: BusinessUnit = {
       businessUnitId: commercetoolsBusinessUnit.id,
       key: commercetoolsBusinessUnit.key,
       name: commercetoolsBusinessUnit.name,
-      parentUnit: commercetoolsBusinessUnit.parentUnit,
+      status: commercetoolsBusinessUnit.status,
+      stores: commercetoolsBusinessUnit.stores.map((commercetoolsStoreKeyReference) => {
+        return this.mapCommercetoolsStoreKeyReferencesToStore(commercetoolsStoreKeyReference);
+      }),
       storeMode: commercetoolsBusinessUnit.storeMode,
-      stores: this.mapCommercetoolsStoreKeyReferencesToStoreKeyReferences(commercetoolsBusinessUnit.stores),
+      unitType: commercetoolsBusinessUnit.unitType,
+      contactEmail: commercetoolsBusinessUnit.contactEmail,
+      addresses: commercetoolsBusinessUnit.addresses.map((commercetoolsAddress) => {
+        return AccountMapper.commercetoolsAddressToAddresses(commercetoolsAddress);
+      }),
+      defaultShippingAddressId: commercetoolsBusinessUnit.defaultShippingAddressId,
+      defaultBillingAddressId: commercetoolsBusinessUnit.defaultBillingAddressId,
       associates: this.mapReferencedAssociatesToAssociate(commercetoolsBusinessUnit.associates, locale),
-      topLevelUnit: commercetoolsBusinessUnit.topLevelUnit,
-      addresses: commercetoolsBusinessUnit.addresses,
+      parentUnit: commercetoolsBusinessUnit.parentUnit
+        ? this.commercetoolsBusinessUnitKeyReferenceToBusinessUnit(commercetoolsBusinessUnit.parentUnit)
+        : undefined,
+      topLevelUnit: commercetoolsBusinessUnit.topLevelUnit
+        ? this.commercetoolsBusinessUnitKeyReferenceToBusinessUnit(commercetoolsBusinessUnit.topLevelUnit)
+        : undefined,
     };
 
     if (allStores) {
@@ -37,31 +53,12 @@ export class BusinessUnitMapper {
     return businessUnit;
   }
 
-  static mapBusinessUnitToBusinessUnitTreeItem(
-    commercetoolsBusinessUnit: CommercetoolsBusinessUnit,
-    locale: Locale,
-    allStores: Store[],
+  static commercetoolsBusinessUnitKeyReferenceToBusinessUnit(
+    commercetoolsBusinessUnitKeyReference: CommercetoolsBusinessUnitKeyReference,
   ): BusinessUnit {
-    const businessUnit: BusinessUnit = {
-      topLevelUnit: commercetoolsBusinessUnit.topLevelUnit,
-      key: commercetoolsBusinessUnit.key,
-      name: commercetoolsBusinessUnit.name,
-      parentUnit: commercetoolsBusinessUnit.parentUnit,
-      storeMode: commercetoolsBusinessUnit.storeMode,
-      stores: this.mapCommercetoolsStoreKeyReferencesToStoreKeyReferences(commercetoolsBusinessUnit.stores),
-      contactEmail: commercetoolsBusinessUnit.contactEmail,
-      unitType: commercetoolsBusinessUnit.unitType,
-      custom: commercetoolsBusinessUnit.custom,
-      status: commercetoolsBusinessUnit.status,
-      addresses: commercetoolsBusinessUnit.addresses,
-      defaultShippingAddressId: commercetoolsBusinessUnit.defaultShippingAddressId,
-      defaultBillingAddressId: commercetoolsBusinessUnit.defaultBillingAddressId,
+    return {
+      key: commercetoolsBusinessUnitKeyReference.key,
     };
-
-    businessUnit.stores = this.expandStores(businessUnit.stores, allStores);
-    businessUnit.associates = this.mapReferencedAssociatesToAssociate(commercetoolsBusinessUnit.associates, locale);
-
-    return businessUnit;
   }
 
   static trimBusinessUnit(businessUnit: BusinessUnit, accountId: string): BusinessUnit {
@@ -132,7 +129,7 @@ export class BusinessUnitMapper {
     });
   }
 
-  static expandStores(stores: StoreKeyReference[], allStores: Store[]): StoreKeyReference[] {
+  static expandStores(stores: Store[], allStores: Store[]): Store[] {
     return stores?.map((store) => {
       const storeObj = allStores.find((s) => s.key === store.key);
       return storeObj
@@ -142,20 +139,16 @@ export class BusinessUnitMapper {
             typeId: 'store',
             id: storeObj.id,
           }
-        : (store as StoreKeyReference);
+        : (store as Store);
     });
   }
 
-  static mapCommercetoolsStoreKeyReferencesToStoreKeyReferences(
-    commercetoolsStoreKeyReferences: CommercetoolsStoreKeyReference[],
-  ): StoreKeyReference[] {
-    return commercetoolsStoreKeyReferences.map((commercetoolsStoreKeyReference) => {
-      const storeKeyReference: StoreKeyReference = {
-        key: commercetoolsStoreKeyReference.key,
-        typeId: 'store',
-      };
-      return storeKeyReference;
-    });
+  static mapCommercetoolsStoreKeyReferencesToStore(
+    commercetoolsStoreKeyReference: CommercetoolsStoreKeyReference,
+  ): Store {
+    return {
+      key: commercetoolsStoreKeyReference.key,
+    };
   }
 
   static mapCommercetoolsAssociateRoleAssignmentToAssociateRole(
