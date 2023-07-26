@@ -279,7 +279,7 @@ export const splitLineItem: ActionHook = async (request: Request, actionContext:
     .map((item) => item.address)
     .filter(
       (addressSplit) =>
-        cartItemsShippingAddresses.findIndex((address: Address) => address.id === addressSplit.id) === -1,
+        cartItemsShippingAddresses.findIndex((address: Address) => address.addressId === addressSplit.addressId) === -1,
     );
 
   if (remainingAddresses.length) {
@@ -295,7 +295,7 @@ export const splitLineItem: ActionHook = async (request: Request, actionContext:
   }
 
   // TODO: move this logic to the API
-  const target = body.shippingAddresses.map((item) => ({ addressKey: item.address.id, quantity: item.count }));
+  const target = body.shippingAddresses.map((item) => ({ addressKey: item.address.addressId, quantity: item.count }));
 
   const cartData = await cartApi.updateLineItemShippingDetails(
     cart,
