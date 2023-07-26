@@ -10,6 +10,7 @@ import { BusinessUnitMapper } from '../mappers/BusinessUnitMapper';
 import { fetchAccountFromSession } from '@Commerce-commercetools/utils/fetchAccountFromSession';
 import { AccountAuthenticationError } from '@Commerce-commercetools/errors/AccountAuthenticationError';
 import { Account } from '@Types/account/Account';
+import handleError from '@Commerce-commercetools/utils/handleError';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
 
@@ -286,7 +287,7 @@ export const addAssociate: ActionHook = async (request: Request, actionContext: 
     getCurrency(request),
   );
   const accountApi = new AccountApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-  const addUserBody: { email: string; roles: string[] } = JSON.parse(request.body);
+  const addUserBody: { email: string; roleKeys: string[] } = JSON.parse(request.body);
 
   const account = await accountApi.getCustomerByEmail(addUserBody.email);
   if (!account) {
@@ -305,10 +306,10 @@ export const addAssociate: ActionHook = async (request: Request, actionContext: 
           typeId: 'customer',
           id: account.id,
         },
-        associateRoleAssignments: addUserBody.roles.map((role) => ({
+        associateRoleAssignments: addUserBody.roleKeys.map((roleKey) => ({
           associateRole: {
             typeId: 'associate-role',
-            key: role,
+            key: roleKey,
           },
         })),
       },
@@ -331,14 +332,14 @@ export const removeAssociate: ActionHook = async (request: Request, actionContex
     getCurrency(request),
   );
 
-  const { id } = JSON.parse(request.body);
+  const { accountId } = JSON.parse(request.body);
 
   const businessUnit = await businessUnitApi.update(request.query['key'], [
     {
       action: 'removeAssociate',
       customer: {
         typeId: 'customer',
-        id,
+        accountId,
       },
     },
   ]);
@@ -359,7 +360,7 @@ export const updateAssociate: ActionHook = async (request: Request, actionContex
     getCurrency(request),
   );
 
-  const { id, roles }: { id: string; roles: string[] } = JSON.parse(request.body);
+  const { accountId, roleKeys }: { accountId: string; roleKeys: string[] } = JSON.parse(request.body);
 
   const businessUnit = await businessUnitApi.update(request.query['key'], [
     {
@@ -367,12 +368,12 @@ export const updateAssociate: ActionHook = async (request: Request, actionContex
       associate: {
         customer: {
           typeId: 'customer',
-          id,
+          accountId: accountId,
         },
-        associateRoleAssignments: roles.map((role) => ({
+        associateRoleAssignments: roleKeys.map((roleKey) => ({
           associateRole: {
             typeId: 'associate-role',
-            key: role,
+            key: roleKey,
           },
         })),
       },
@@ -497,37 +498,9 @@ export const remove: ActionHook = async (request: Request, actionContext: Action
       body: JSON.stringify(businessUnit),
       sessionData: request.sessionData,
     };
-  } catch (e) {
-    response = {
-      statusCode: 400,
-      sessionData: request.sessionData,
-      // @ts-ignore
-      error: e?.body?.message,
-      errorCode: 500,
-    };
+  } catch (error) {
+    return handleError(error, request);
   }
-
-  return response;
-};
-
-export const query: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const businessUnitApi = new BusinessUnitApi(
-    actionContext.frontasticContext,
-    getLocale(request),
-    getCurrency(request),
-  );
-
-  let where = '';
-  if ('where' in request.query) {
-    where += [request.query['where']];
-  }
-  const store = await businessUnitApi.query(where);
-
-  const response: Response = {
-    statusCode: 200,
-    body: JSON.stringify(store),
-    sessionData: request.sessionData,
-  };
 
   return response;
 };
