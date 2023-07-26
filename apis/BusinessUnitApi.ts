@@ -1,9 +1,6 @@
 import { BusinessUnit, BusinessUnitStatus, BusinessUnitType, StoreMode } from '@Types/business-unit/BusinessUnit';
 import { StoreApi } from './StoreApi';
-import { Cart } from '@Types/cart/Cart';
 import { Organization } from '@Commerce-commercetools/interfaces/Organization';
-import { Workflow } from '@Types/workflow/Workflow';
-import jsonata from 'jsonata';
 import { StoreMapper } from '../mappers/StoreMapper';
 import { BusinessUnit as CommercetoolsBusinessUnit, BusinessUnitPagedQueryResponse } from '@commercetools/platform-sdk';
 import { BusinessUnitMapper } from '../mappers/BusinessUnitMapper';
@@ -31,27 +28,6 @@ export class BusinessUnitApi extends BaseApi {
     }
 
     return organization;
-  };
-
-  getOrderStateFromWorkflows = async (
-    cart: Cart,
-    organization: Organization,
-    config: Record<string, string>,
-  ): Promise<null | string> => {
-    const businessUnit = await this.getCommercetoolsBusinessUnitByKey(organization.businessUnit.key);
-    const workflowString = businessUnit.custom?.fields?.[config?.businessUnitCustomField];
-    if (workflowString && config?.orderReviewStateID) {
-      try {
-        const workflows: Workflow[] = JSON.parse(workflowString);
-        const promises = workflows.map((workflow) => jsonata(workflow.ast.expression).evaluate({ cart }));
-        if ((await Promise.all(promises)).some((res) => res)) {
-          return config?.orderReviewStateID;
-        }
-      } catch {
-        return null;
-      }
-    }
-    return null;
   };
 
   getOrganization: (account: Account, businessUnitKey?: string) => Promise<Organization> = async (

@@ -473,12 +473,12 @@ export class CartApi extends BaseCartApi {
     if (typeof payload === 'object' && payload?.poNumber) {
       orderFromCartDraft.purchaseOrderNumber = payload.poNumber;
     }
-    if (typeof payload === 'object' && payload?.orderState) {
-      orderFromCartDraft.state = {
-        typeId: 'state',
-        id: payload?.orderState,
-      };
-    }
+    // if (typeof payload === 'object' && payload?.orderState) {
+    //   orderFromCartDraft.state = {
+    //     typeId: 'state',
+    //     id: payload?.orderState,
+    //   };
+    // }
 
     if (!isReadyForCheckout(cart)) {
       throw new Error('Cart not complete yet.');

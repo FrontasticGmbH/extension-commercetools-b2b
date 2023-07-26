@@ -5,7 +5,6 @@ import { Cart } from '@Types/cart/Cart';
 import { Address } from '@Types/account/Address';
 import { CartFetcher } from '../utils/CartFetcher';
 import { CartApi, Payload } from '../apis/CartApi';
-import { BusinessUnitApi } from '../apis/BusinessUnitApi';
 import { EmailApiFactory } from '../utils/EmailApiFactory';
 import handleError from '@Commerce-commercetools/utils/handleError';
 import { fetchAccountFromSession } from '@Commerce-commercetools/utils/fetchAccountFromSession';
@@ -381,18 +380,13 @@ export const removeLineItem: ActionHook = async (request: Request, actionContext
 
 export const checkout: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const locale = getLocale(request);
-  const businessUnitApi = new BusinessUnitApi(actionContext.frontasticContext, locale, getCurrency(request));
   const cartApi = new CartApi(actionContext.frontasticContext, locale, getCurrency(request));
-
-  const config = actionContext.frontasticContext?.project?.configuration?.workflows;
 
   const cart = await updateCartFromRequest(request, actionContext);
   const body: {
     payload: Payload;
     businessUnitKey?: string;
   } = JSON.parse(request.body);
-
-  const orderState = await businessUnitApi.getOrderStateFromWorkflows(cart, request.sessionData.organization, config);
 
   try {
     const order = await cartApi.order(
@@ -402,7 +396,6 @@ export const checkout: ActionHook = async (request: Request, actionContext: Acti
       body.businessUnitKey,
       {
         ...body.payload,
-        orderState,
       },
     );
     const emailApi = EmailApiFactory.getDefaultApi(actionContext.frontasticContext, locale);
