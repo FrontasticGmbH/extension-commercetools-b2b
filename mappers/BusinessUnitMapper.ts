@@ -5,11 +5,12 @@ import {
 } from '@commercetools/platform-sdk';
 import { BusinessUnit } from '@Types/business-unit/BusinessUnit';
 import { Store, StoreKeyReference } from '@Types/store/Store';
-import { Associate, AssociateRole } from '@Types/account/Associate';
+import { Associate, AssociateRole } from '@Types/business-unit/Associate';
 import { AccountMapper } from '@Commerce-commercetools/mappers/AccountMapper';
 import { Locale } from '@Commerce-commercetools/interfaces/Locale';
 import { AssociateRoleAssignment as CommercetoolsAssociateRoleAssignment } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/business-unit';
 import { Account } from '@Types/account/Account';
+import { AssociateRole as CommercetoolsAssociateRole } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/associate-role';
 
 export class BusinessUnitMapper {
   static commercetoolsBusinessUnitToBusinessUnit(
@@ -163,6 +164,14 @@ export class BusinessUnitMapper {
     return {
       associateRoleId: associateRoleAssigment.associateRole.id,
       key: associateRoleAssigment.associateRole.key,
+    };
+  }
+
+  static mapCommercetoolsAssociateRoleToAssociateRole(associateRole: CommercetoolsAssociateRole): AssociateRole {
+    return {
+      associateRoleId: associateRole.id,
+      key: associateRole.key,
+      name: associateRole.name,
     };
   }
 }

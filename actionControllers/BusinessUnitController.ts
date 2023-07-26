@@ -10,7 +10,6 @@ import { BusinessUnitMapper } from '../mappers/BusinessUnitMapper';
 import { fetchAccountFromSession } from '@Commerce-commercetools/utils/fetchAccountFromSession';
 import { AccountAuthenticationError } from '@Commerce-commercetools/errors/AccountAuthenticationError';
 import { Account } from '@Types/account/Account';
-import { AssociateApi } from '@Commerce-commercetools/apis/AssociateApi';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
 
@@ -534,8 +533,13 @@ export const query: ActionHook = async (request: Request, actionContext: ActionC
 };
 
 export const getAssociateRoles: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const associateApi = new AssociateApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-  const associateRoles = await associateApi.getAssociateRoles();
+  const businessUnitApi = new BusinessUnitApi(
+    actionContext.frontasticContext,
+    getLocale(request),
+    getCurrency(request),
+  );
+
+  const associateRoles = await businessUnitApi.getAssociateRoles();
 
   const response: Response = {
     statusCode: 200,

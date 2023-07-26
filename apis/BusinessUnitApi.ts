@@ -13,6 +13,7 @@ import { Account } from '@Types/account/Account';
 import { BusinessUnitDraft } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/business-unit';
 import { ExternalError } from '@Commerce-commercetools/utils/Errors';
 import { businessUnitKeyFormatter } from '@Commerce-commercetools/utils/BussinessUnitFormatter';
+import { AssociateRole } from '@Types/business-unit/Associate';
 
 const MAX_LIMIT = 50;
 
@@ -578,5 +579,27 @@ export class BusinessUnitApi extends BaseApi {
       .join(' ,');
     const allStores = storeKeys ? await storeApi.query(`key in (${storeKeys})`) : [];
     return tree.map((bu) => BusinessUnitMapper.mapBusinessUnitToBusinessUnitTreeItem(bu, locale, allStores));
+  };
+
+  getAssociateRoles: () => Promise<AssociateRole[]> = async () => {
+    try {
+      return this.requestBuilder()
+        .associateRoles()
+        .get()
+        .execute()
+        .then((response) => {
+          return (
+            response.body.results
+              // Filter out roles that can't be assigned by another associates.
+              .filter((associateRole) => associateRole.buyerAssignable)
+              .map((associateRole) => BusinessUnitMapper.mapCommercetoolsAssociateRoleToAssociateRole(associateRole))
+          );
+        })
+        .catch((error) => {
+          throw error;
+        });
+    } catch {
+      throw '';
+    }
   };
 }
