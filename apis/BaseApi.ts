@@ -403,6 +403,8 @@ export abstract class BaseApi {
   protected projectKey: string;
   protected productIdField: string;
   protected categoryIdField: string;
+  protected associateRoleAdminKey: string;
+  protected associateRoleBuyerKey: string;
   protected locale: string;
   protected defaultLocale: string;
   protected defaultCurrency: string;
@@ -425,6 +427,8 @@ export abstract class BaseApi {
     this.projectKey = this.clientSettings.projectKey;
     this.productIdField = this.clientSettings?.productIdField || 'key';
     this.categoryIdField = this.clientSettings?.categoryIdField || 'key';
+    this.associateRoleAdminKey = this.clientSettings?.associateRoleAdminKey || 'admin';
+    this.associateRoleBuyerKey = this.clientSettings?.associateRoleBuyerKey || 'buyer';
 
     this.token = clientTokensStored.get(this.getClientHashKey());
 

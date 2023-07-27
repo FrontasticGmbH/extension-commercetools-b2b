@@ -35,15 +35,6 @@ export const register: ActionHook = async (request: Request, actionContext: Acti
     throw new ValidationError({ message: `The account passed doesn't contain a company.` });
   }
 
-  const config = actionContext.frontasticContext?.project?.configuration?.associateRoles;
-  if (!config?.defaultBuyerRoleKey || !config?.defaultAdminRoleKey) {
-    return {
-      statusCode: 400,
-      error: 'No associateRoles context defined',
-      errorCode: 400,
-    };
-  }
-
   // Validate if the business unit name exists using accountData.company
   const businessUnitApi = new BusinessUnitApi(
     actionContext.frontasticContext,
@@ -86,7 +77,7 @@ export const register: ActionHook = async (request: Request, actionContext: Acti
 
   // Create the business unit for the account
   try {
-    await businessUnitApi.createForAccountAndStore(account, store, config);
+    await businessUnitApi.createForAccountAndStore(account, store);
   } catch (error) {
     const errorInfo = error as Error;
     return {

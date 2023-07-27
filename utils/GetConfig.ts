@@ -14,5 +14,7 @@ export const getConfig = (project: Project, engine: string, locale: string | nul
     projectKey: project.configuration?.[engine].projectKey,
     productIdField: project.configuration?.[engine]?.productIdField,
     categoryIdField: project.configuration?.[engine]?.categoryIdField,
+    associateRoleAdminKey: project.configuration?.[engine]?.associateRoleAdminKey,
+    associateRoleBuyerKey: project.configuration?.[engine]?.associateRoleBuyerKey,
   } as ClientConfig;
 };

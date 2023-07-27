@@ -188,10 +188,6 @@ export const getOrganization: ActionHook = async (request: Request, actionContex
  * @deprecated
  */
 export const getSuperUserBusinessUnits: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const config = actionContext.frontasticContext?.project?.configuration?.associateRoles;
-  if (!config?.defaultSuperUserRoleKey) {
-    throw new Error('Configuration error. No "defaultSuperUserRoleKey" exists');
-  }
   const accountApi = new AccountApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
   const customerAccount = await accountApi.getCustomerByEmail(request.query.email);
   if (customerAccount) {
@@ -204,11 +200,7 @@ export const getSuperUserBusinessUnits: ActionHook = async (request: Request, ac
     const highestNodes = businessUnitApi.getRootCommercetoolsBusinessUnitsForAssociate(results, customerAccount);
 
     const businessUnitsWithSuperUser = highestNodes.filter((bu) =>
-      BusinessUnitMapper.isAssociateRoleKeyInCommercetoolsBusinessUnit(
-        bu,
-        customerAccount.id,
-        config.defaultSuperUserRoleKey,
-      ),
+      BusinessUnitMapper.isAssociateRoleKeyInCommercetoolsBusinessUnit(bu, customerAccount.id, 'super-user'),
     );
 
     return {
@@ -255,20 +247,11 @@ export const create: ActionHook = async (request: Request, actionContext: Action
     getLocale(request),
     getCurrency(request),
   );
-  const config = actionContext.frontasticContext?.project?.configuration?.associateRoles;
-  if (!config?.defaultBuyerRoleKey || !config?.defaultAdminRoleKey) {
-    return {
-      statusCode: 400,
-      error: 'No associateRoles context defined',
-      errorCode: 400,
-    };
-  }
   const businessUnitRequestBody: BusinessUnitRequestBody = JSON.parse(request.body);
 
   const businessUnit = await businessUnitApi.createForAccountAndStore(
     businessUnitRequestBody.account,
     businessUnitRequestBody.store,
-    config,
   );
 
   const response: Response = {
