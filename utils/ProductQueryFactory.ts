@@ -162,6 +162,11 @@ export class ProductQueryFactory {
      */
     productQuery.cursor = queryParams?.cursor || undefined;
 
+    /**
+     * Map store
+     */
+    productQuery.storeKey = queryParams?.storeKey || undefined;
+
     return productQuery;
   };
 
