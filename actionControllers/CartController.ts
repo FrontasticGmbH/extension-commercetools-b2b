@@ -18,6 +18,7 @@ interface LineItemVariant {
   sku?: string;
   count: number;
 }
+
 async function updateCartFromRequest(request: Request, actionContext: ActionContext): Promise<Cart> {
   const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
   let cart = await CartFetcher.fetchCart(request, actionContext);
@@ -51,9 +52,7 @@ export const addToCart: ActionHook = async (request: Request, actionContext: Act
   const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
   const body: {
     variant?: LineItemVariant;
-    distributionChannelId?: string;
     businessUnitKey?: string;
-    configurableComponents?: Partial<LineItemVariant>[];
   } = JSON.parse(request.body);
 
   const lineItem: LineItem = {
@@ -70,18 +69,9 @@ export const addToCart: ActionHook = async (request: Request, actionContext: Act
     throw new AccountAuthenticationError({ message: 'Not logged in.' });
   }
 
-  const distributionChannelId = body.distributionChannelId ?? request.sessionData.organization?.distributionChannel?.id;
-
   let cart = await CartFetcher.fetchCart(request, actionContext);
 
-  cart = await cartApi.addToCart(
-    cart,
-    lineItem,
-    distributionChannelId,
-    account,
-    request.sessionData?.organization,
-    body.businessUnitKey,
-  );
+  cart = await cartApi.addToCart(cart, lineItem, account, request.sessionData?.organization, body.businessUnitKey);
 
   const cartId = cart.cartId;
 

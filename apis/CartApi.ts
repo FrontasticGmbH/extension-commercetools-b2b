@@ -169,14 +169,12 @@ export class CartApi extends BaseCartApi {
   addToCart: (
     cart: Cart,
     lineItem: LineItem,
-    distributionChannelId?: string,
     account?: Account,
     organization?: Organization,
     businessUnitKey?: string,
   ) => Promise<Cart> = async (
     cart: Cart,
     lineItem: LineItem,
-    distributionChannelId: string,
     account?: Account,
     organization?: Organization,
     businessUnitKey?: string,
@@ -191,7 +189,6 @@ export class CartApi extends BaseCartApi {
             action: 'addLineItem',
             sku: lineItem.variant.sku,
             quantity: +lineItem.count,
-            distributionChannel: { id: distributionChannelId, typeId: 'channel' },
           } as CartAddLineItemAction,
         ],
       };
