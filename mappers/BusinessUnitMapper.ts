@@ -137,7 +137,7 @@ export class BusinessUnitMapper {
             name: storeObj.name,
             key: storeObj.key,
             typeId: 'store',
-            id: storeObj.id,
+            storeId: storeObj.storeId,
           }
         : (store as Store);
     });

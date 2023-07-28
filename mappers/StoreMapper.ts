@@ -6,7 +6,7 @@ export class StoreMapper {
   static mapCommercetoolsStoreToStore(store: CommercetoolsStore, locale: string): Store {
     return {
       name: store.name?.[locale],
-      id: store.id,
+      storeId: store.id,
       key: store.key,
       distributionChannels: store.distributionChannels.map((commercetoolsChannel) => {
         const channel: Channel = {
@@ -26,7 +26,7 @@ export class StoreMapper {
   static mapStoreToSmallerStore(store: Store): Store {
     return {
       name: store.name,
-      id: store.id,
+      storeId: store.storeId,
       key: store.key,
     };
   }

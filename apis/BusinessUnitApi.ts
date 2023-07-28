@@ -66,7 +66,7 @@ export class BusinessUnitApi extends BaseApi {
       stores: [
         {
           typeId: 'store',
-          id: store.id,
+          id: store.storeId,
         },
       ],
       storeMode: StoreMode.Explicit,
