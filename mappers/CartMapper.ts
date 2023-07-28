@@ -9,7 +9,7 @@ import { BaseCartMapper } from './BaseCartMapper';
 import { Locale } from '@Commerce-commercetools/interfaces/Locale';
 import { ProductMapper } from './ProductMapper';
 import { ProductRouter } from '../utils/ProductRouter';
-import { LineItem, ReturnLineItem } from '@Types/cart/LineItem';
+import { LineItem, LineItemShippingAddress, ReturnLineItem } from '@Types/cart/LineItem';
 import { Cart } from '@Types/cart/Cart';
 import { Order, ReturnInfo } from '@Types/cart/Order';
 import { ReturnInfo as CommercetoolsReturnInfo } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/order';
@@ -75,8 +75,16 @@ export class CartMapper extends BaseCartMapper {
         ),
         isGift:
           commercetoolsLineItem?.lineItemMode !== undefined && commercetoolsLineItem.lineItemMode === 'GiftLineItem',
-        // shippingDetails: commercetoolsLineItem.shippingDetails,
-        shippingAddresses: commercetoolsLineItem.shippingDetails,
+        shippingDetails: {
+          shippingAddresses: commercetoolsLineItem.shippingDetails?.targets?.map((commercetoolsItemShippingTarget) => {
+            const lineItemShippingAddress: LineItemShippingAddress = {
+              count: commercetoolsItemShippingTarget.quantity,
+              addressKey: commercetoolsItemShippingTarget.addressKey,
+            };
+            return lineItemShippingAddress;
+          }),
+          valid: commercetoolsLineItem.shippingDetails?.valid,
+        },
       };
       item._url = ProductRouter.generateUrlFor(item);
       lineItems.push(item);

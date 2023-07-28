@@ -1104,6 +1104,9 @@ export class CartApi extends BaseCartApi {
 
     const commercetoolsAddress = AccountMapper.addressToCommercetoolsAddress(address);
 
+    console.debug('commercetoolsAddress:: ', commercetoolsAddress);
+    console.debug('address:: ', address);
+
     const cartUpdate: CartUpdate = {
       version: +originalCart.cartVersion,
       actions: [
