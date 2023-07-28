@@ -1,5 +1,4 @@
 import {
-  CustomerReference,
   LineItem as CommercetoolsLineItem,
   QuoteRequest as CommercetoolsQuoteRequest,
   StagedQuote as CommercetoolsStagedQuote,

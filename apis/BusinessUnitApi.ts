@@ -307,7 +307,7 @@ export class BusinessUnitApi extends BaseApi {
     }
   };
 
-  get: (key: string, account?: Account) => Promise<BusinessUnit> = async (key: string, account?: Account) => {
+  get: (key: string, account: Account) => Promise<BusinessUnit> = async (key: string, account: Account) => {
     const locale = await this.getCommercetoolsLocal();
 
     const storeApi = new StoreApi(this.frontasticContext, this.locale, this.currency);

@@ -80,8 +80,6 @@ export class StoreApi extends BaseApi {
 
   get: (key: string) => Promise<Store> = async (key: string): Promise<Store> => {
     const locale = await this.getCommercetoolsLocal();
-    const preBuyConfig = this.frontasticContext?.project?.configuration?.preBuy;
-    const sotreConfig = this.frontasticContext?.project?.configuration?.storeContext;
 
     try {
       return this.requestBuilder()
@@ -90,7 +88,7 @@ export class StoreApi extends BaseApi {
         .get()
         .execute()
         .then((response) => {
-          return StoreMapper.mapCommercetoolsStoreToStore(response.body, locale.language, preBuyConfig, sotreConfig);
+          return StoreMapper.mapCommercetoolsStoreToStore(response.body, locale.language);
         });
     } catch (e) {
       console.log(e);
@@ -104,8 +102,6 @@ export class StoreApi extends BaseApi {
     expand?: string | string[],
   ): Promise<Store[]> => {
     const locale = await this.getCommercetoolsLocal();
-    const preBuyConfig = this.frontasticContext?.project?.configuration?.preBuy;
-    const storeConfig = this.frontasticContext?.project?.configuration?.storeContext;
 
     try {
       return this.requestBuilder()
@@ -118,9 +114,7 @@ export class StoreApi extends BaseApi {
         })
         .execute()
         .then((response) => {
-          return response.body.results.map((store) =>
-            StoreMapper.mapCommercetoolsStoreToStore(store, locale.language, preBuyConfig, storeConfig),
-          );
+          return response.body.results.map((store) => StoreMapper.mapCommercetoolsStoreToStore(store, locale.language));
         });
     } catch (e) {
       console.log(e);

@@ -11,6 +11,9 @@ import * as SubscriptionActions from './SubscriptionController';
 export const actions = {
   account: AccountActions,
   cart: CartActions,
+  /**
+   * @deprecated
+   */
   store: StoreActions,
   'business-unit': BusinessUnitActions,
   product: ProductAction,

@@ -123,7 +123,7 @@ export const setMe: ActionHook = async (request: Request, actionContext: ActionC
           request.sessionData?.account?.accountId,
         ),
       },
-      rootCategoryId: (store as Store)?.storeRootCategoryId,
+      // rootCategoryId: (store as Store)?.storeRootCategoryId,
     },
   };
 
@@ -177,7 +177,7 @@ export const getOrganization: ActionHook = async (request: Request, actionContex
         ...organization,
         businessUnit: BusinessUnitMapper.trimBusinessUnit(organization.businessUnit, account.accountId),
       },
-      rootCategoryId: organization.store?.storeRootCategoryId,
+      // rootCategoryId: organization.store?.storeRootCategoryId,
     },
   };
 
