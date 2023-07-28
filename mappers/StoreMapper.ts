@@ -1,31 +1,33 @@
 import { Store as CommercetoolsStore } from '@commercetools/platform-sdk';
 import { Store } from '@Types/store/Store';
+import { Channel } from '@Types/store/Channel';
 
 export class StoreMapper {
-  static mapCommercetoolsStoreToStore(
-    store: CommercetoolsStore,
-    locale: string,
-    preBuyConfig?: Record<string, string>,
-    storeConfig?: Record<string, string>,
-  ): Store {
+  static mapCommercetoolsStoreToStore(store: CommercetoolsStore, locale: string): Store {
     return {
       name: store.name?.[locale],
-      id: store.id,
+      storeId: store.id,
       key: store.key,
-      distributionChannels: store.distributionChannels,
-      supplyChannels: store.supplyChannels,
-      isPreBuyStore: !!preBuyConfig ? store.custom?.fields?.[preBuyConfig.storeCustomField] : false,
-      storeRootCategoryId: !!preBuyConfig ? store.custom?.fields?.[storeConfig.rootCategoryCustomField]?.id : '',
+      distributionChannels: store.distributionChannels.map((commercetoolsChannel) => {
+        const channel: Channel = {
+          channelId: commercetoolsChannel.id,
+        };
+        return channel;
+      }),
+      supplyChannels: store.supplyChannels.map((commercetoolsChannel) => {
+        const channel: Channel = {
+          channelId: commercetoolsChannel.id,
+        };
+        return channel;
+      }),
     };
   }
 
   static mapStoreToSmallerStore(store: Store): Store {
     return {
       name: store.name,
-      id: store.id,
+      storeId: store.storeId,
       key: store.key,
-      isPreBuyStore: store.isPreBuyStore,
-      storeRootCategoryId: store.storeRootCategoryId,
     };
   }
 }

@@ -1,5 +1,5 @@
 import { Request } from '@frontastic/extension-types';
-import { AccountExtended as Account } from '@Commerce-commercetools/interfaces/AccountExtended';
+import { Account } from '@Types/account/Account';
 
 export function fetchAccountFromSession(request: Request): Account | undefined {
   if (request.sessionData?.account !== undefined) {

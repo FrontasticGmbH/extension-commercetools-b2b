@@ -103,7 +103,7 @@ export class CartMapper extends BaseCartMapper {
       billingAddress: this.commercetoolsAddressToAddress(commercetoolsOrder.billingAddress),
       sum: ProductMapper.commercetoolsMoneyToMoney(commercetoolsOrder.totalPrice),
       businessUnit: commercetoolsOrder.businessUnit?.key,
-      createdAt: commercetoolsOrder.createdAt,
+      createdAt: new Date(commercetoolsOrder.createdAt),
       shippingInfo: this.commercetoolsShippingInfoToShippingInfo(commercetoolsOrder.shippingInfo, locale),
       returnInfo: this.commercetoolsReturnInfoToReturnInfo(commercetoolsOrder.returnInfo),
       isPreBuyCart: !!config ? commercetoolsOrder.custom?.fields?.[config.orderCustomField] : false,

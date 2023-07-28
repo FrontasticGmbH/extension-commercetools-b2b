@@ -1,18 +1,16 @@
 import { BusinessUnit, BusinessUnitStatus, BusinessUnitType, StoreMode } from '@Types/business-unit/BusinessUnit';
 import { StoreApi } from './StoreApi';
-import { Cart } from '@Types/cart/Cart';
 import { Organization } from '@Commerce-commercetools/interfaces/Organization';
-import { Workflow } from '@Types/workflow/Workflow';
-import jsonata from 'jsonata';
 import { StoreMapper } from '../mappers/StoreMapper';
 import { BusinessUnit as CommercetoolsBusinessUnit, BusinessUnitPagedQueryResponse } from '@commercetools/platform-sdk';
 import { BusinessUnitMapper } from '../mappers/BusinessUnitMapper';
 import { BaseApi } from '@Commerce-commercetools/apis/BaseApi';
-import { Store, StoreKeyReference } from '@Types/store/Store';
+import { Store } from '@Types/store/Store';
 import { Account } from '@Types/account/Account';
 import { BusinessUnitDraft } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/business-unit';
 import { ExternalError } from '@Commerce-commercetools/utils/Errors';
 import { businessUnitKeyFormatter } from '@Commerce-commercetools/utils/BussinessUnitFormatter';
+import { AssociateRole } from '@Types/business-unit/Associate';
 
 const MAX_LIMIT = 50;
 
@@ -30,27 +28,6 @@ export class BusinessUnitApi extends BaseApi {
     }
 
     return organization;
-  };
-
-  getOrderStateFromWorkflows = async (
-    cart: Cart,
-    organization: Organization,
-    config: Record<string, string>,
-  ): Promise<null | string> => {
-    const businessUnit = await this.getCommercetoolsBusinessUnitByKey(organization.businessUnit.key);
-    const workflowString = businessUnit.custom?.fields?.[config?.businessUnitCustomField];
-    if (workflowString && config?.orderReviewStateID) {
-      try {
-        const workflows: Workflow[] = JSON.parse(workflowString);
-        const promises = workflows.map((workflow) => jsonata(workflow.ast.expression).evaluate({ cart }));
-        if ((await Promise.all(promises)).some((res) => res)) {
-          return config?.orderReviewStateID;
-        }
-      } catch {
-        return null;
-      }
-    }
-    return null;
   };
 
   getOrganization: (account: Account, businessUnitKey?: string) => Promise<Organization> = async (
@@ -74,78 +51,64 @@ export class BusinessUnitApi extends BaseApi {
     return organization;
   };
 
-  /**
-   * @deprecated use create or createForAccountAndStore instead
-   */
-  createFromData: (data: any) => Promise<BusinessUnit> = async (data: any) => {
+  createForAccountAndStore: (account: Account, store: Store) => Promise<BusinessUnit> = async (
+    account: Account,
+    store: Store,
+  ) => {
+    const locale = await this.getCommercetoolsLocal();
+
+    const businessUnitKey = businessUnitKeyFormatter(account.companyName);
+
+    const businessUnitDraft: BusinessUnitDraft = {
+      key: businessUnitKey,
+      name: account.companyName,
+      status: BusinessUnitStatus.Active,
+      stores: [
+        {
+          typeId: 'store',
+          id: store.storeId,
+        },
+      ],
+      storeMode: StoreMode.Explicit,
+      unitType: BusinessUnitType.Company,
+      contactEmail: account.email,
+      associates: [
+        {
+          associateRoleAssignments: [
+            {
+              associateRole: {
+                key: this.associateRoleAdminKey,
+                typeId: 'associate-role',
+              },
+            },
+            {
+              associateRole: {
+                key: this.associateRoleBuyerKey,
+                typeId: 'associate-role',
+              },
+            },
+          ],
+          customer: {
+            id: account.accountId,
+            typeId: 'customer',
+          },
+        },
+      ],
+    };
+
     return this.requestBuilder()
       .businessUnits()
       .post({
-        body: data,
+        body: businessUnitDraft,
       })
       .execute()
       .then((response) => {
-        return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(response.body);
+        return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(response.body, locale, [store]);
       })
       .catch((error) => {
         throw new ExternalError({ status: error.code, message: error.message, body: error.body });
       });
   };
-
-  createForAccountAndStore: (account: Account, store: Store, config: Record<string, string>) => Promise<BusinessUnit> =
-    async (account: Account, store: Store, config: Record<string, string>) => {
-      const businessUnitKey = businessUnitKeyFormatter(account.company);
-
-      const businessUnitDraft: BusinessUnitDraft = {
-        key: businessUnitKey,
-        name: account.company,
-        status: BusinessUnitStatus.Active,
-        stores: [
-          {
-            typeId: 'store',
-            id: store.id,
-          },
-        ],
-        storeMode: StoreMode.Explicit,
-        unitType: BusinessUnitType.Company,
-        contactEmail: account.email,
-        associates: [
-          {
-            associateRoleAssignments: [
-              {
-                associateRole: {
-                  key: config.defaultBuyerRoleKey,
-                  typeId: 'associate-role',
-                },
-              },
-              {
-                associateRole: {
-                  key: config.defaultAdminRoleKey,
-                  typeId: 'associate-role',
-                },
-              },
-            ],
-            customer: {
-              id: account.accountId,
-              typeId: 'customer',
-            },
-          },
-        ],
-      };
-
-      return this.requestBuilder()
-        .businessUnits()
-        .post({
-          body: businessUnitDraft,
-        })
-        .execute()
-        .then((response) => {
-          return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(response.body, [store]);
-        })
-        .catch((error) => {
-          throw new ExternalError({ status: error.code, message: error.message, body: error.body });
-        });
-    };
 
   delete: (key: string) => Promise<any> = async (key: string) => {
     try {
@@ -226,11 +189,6 @@ export class BusinessUnitApi extends BaseApi {
       return [];
     }
 
-    const config = this.frontasticContext?.project?.configuration?.associateRoles;
-    if (!config?.defaultAdminRoleKey) {
-      throw new Error('Configuration error. No "defaultAdminRoleKey" exists');
-    }
-
     const rootNodes = commercetoolsBusinessUnits.filter((bu) => !bu.parentUnit);
 
     if (rootNodes.length) {
@@ -248,7 +206,7 @@ export class BusinessUnitApi extends BaseApi {
           BusinessUnitMapper.isAssociateRoleKeyInCommercetoolsBusinessUnit(
             bu,
             account.accountId,
-            config.defaultAdminRoleKey,
+            this.associateRoleAdminKey,
           ),
         )
       : justParents
@@ -257,13 +215,13 @@ export class BusinessUnitApi extends BaseApi {
             BusinessUnitMapper.isAssociateRoleKeyInCommercetoolsBusinessUnit(
               a,
               account.accountId,
-              config.defaultAdminRoleKey,
+              this.associateRoleAdminKey,
             )
               ? -1
               : BusinessUnitMapper.isAssociateRoleKeyInCommercetoolsBusinessUnit(
                   b,
                   account.accountId,
-                  config.defaultAdminRoleKey,
+                  this.associateRoleAdminKey,
                 )
               ? 1
               : 0,
@@ -277,11 +235,6 @@ export class BusinessUnitApi extends BaseApi {
   ) => BusinessUnit[] = (businessUnits: BusinessUnit[], account: Account, filterAdmin?: boolean) => {
     if (!businessUnits.length) {
       return [];
-    }
-
-    const config = this.frontasticContext?.project?.configuration?.associateRoles;
-    if (!config?.defaultAdminRoleKey) {
-      throw new Error('Configuration error. No "defaultAdminRoleKey" exists');
     }
 
     const rootBusinessUnits = businessUnits.filter((businessUnit) => !businessUnit.parentUnit);
@@ -299,7 +252,7 @@ export class BusinessUnitApi extends BaseApi {
 
     if (filterAdmin) {
       return businessUnitsWithNoAncestors.filter((businessUnit) =>
-        BusinessUnitMapper.isAssociateRoleKeyInBusinessUnit(businessUnit, account, config.defaultAdminRoleKey),
+        BusinessUnitMapper.isAssociateRoleKeyInBusinessUnit(businessUnit, account, this.associateRoleAdminKey),
       );
     }
 
@@ -307,9 +260,9 @@ export class BusinessUnitApi extends BaseApi {
       businessUnitsWithNoAncestors
         // sort by Admin first
         .sort((a, b) =>
-          BusinessUnitMapper.isAssociateRoleKeyInBusinessUnit(a, account, config.defaultAdminRoleKey)
+          BusinessUnitMapper.isAssociateRoleKeyInBusinessUnit(a, account, this.associateRoleAdminKey)
             ? -1
-            : BusinessUnitMapper.isAssociateRoleKeyInBusinessUnit(b, account, config.defaultAdminRoleKey)
+            : BusinessUnitMapper.isAssociateRoleKeyInBusinessUnit(b, account, this.associateRoleAdminKey)
             ? 1
             : 0,
         )
@@ -321,32 +274,13 @@ export class BusinessUnitApi extends BaseApi {
    */
   getFirstRootForAssociate: (account: Account) => Promise<BusinessUnit> = async (account: Account) => {
     try {
-      const config = this.frontasticContext?.project?.configuration?.associateRoles;
-      if (!config?.defaultAdminRoleKey || !config?.defaultSuperUserRoleKey) {
-        throw new Error('Configuration error. No "defaultAdminRoleKey" exists');
-      }
+      const locale = await this.getCommercetoolsLocal();
 
       const commercetoolsBusinessUnits = await this.getCommercetoolsBusinessUnitsForUser(account);
       const rootCommercetoolsBusinessUnits = this.getRootCommercetoolsBusinessUnitsForAssociate(
         commercetoolsBusinessUnits,
         account,
       );
-
-      const superUserList = rootCommercetoolsBusinessUnits.filter((bu) =>
-        BusinessUnitMapper.isAssociateRoleKeyInCommercetoolsBusinessUnit(
-          bu,
-          account.accountId,
-          config.defaultSuperUserRoleKey,
-        ),
-      );
-
-      if (superUserList.length >= 1) {
-        // If this is a superuser, we don't return any business unit. The FE will handle this and show all the
-        // business units instead
-
-        // TODO: return specific error
-        throw new Error('superuser');
-      }
 
       if (rootCommercetoolsBusinessUnits.length) {
         const commercetoolsBusinessUnit = await this.getBusinessUnitWithExplicitStores(
@@ -358,17 +292,7 @@ export class BusinessUnitApi extends BaseApi {
         const storeApi = new StoreApi(this.frontasticContext, this.locale, this.currency);
         const allStores = await storeApi.query(`key in (${storeKeys})`);
 
-        // TODO: expand the stores info in businessUnit with allStores;
-
-        return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(
-          commercetoolsBusinessUnit,
-          allStores,
-          // account.accountId,
-          // config.defaultAdminRoleKey,
-        );
-
-        // businessUnit.stores = BusinessUnitMapper.expandStores(businessUnit.stores, allStores);
-        // return businessUnit;
+        return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(commercetoolsBusinessUnit, locale, allStores);
       }
 
       const commercetoolsBusinessUnit = commercetoolsBusinessUnits?.[0];
@@ -377,21 +301,24 @@ export class BusinessUnitApi extends BaseApi {
       const storeApi = new StoreApi(this.frontasticContext, this.locale, this.currency);
       const allStores = await storeApi.query(`key in (${storeKeys})`);
 
-      return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(commercetoolsBusinessUnit, allStores);
+      return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(commercetoolsBusinessUnit, locale, allStores);
     } catch (error) {
       throw error;
     }
   };
 
-  get: (key: string, account?: Account) => Promise<BusinessUnit> = async (key: string, account?: Account) => {
+  get: (key: string, account: Account) => Promise<BusinessUnit> = async (key: string, account: Account) => {
+    const locale = await this.getCommercetoolsLocal();
+
     const storeApi = new StoreApi(this.frontasticContext, this.locale, this.currency);
+
     try {
       const businessUnit = await this.query(
         [`associates(customer(id="${account.accountId}"))`, `key in ("${key}")`],
         'associates[*].customer',
       ).then((response) => {
         if (response.count >= 1) {
-          return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(response.results[0]);
+          return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(response.results[0], locale);
         }
 
         throw new Error(`Business unit "${key}" not found for this account`);
@@ -399,10 +326,10 @@ export class BusinessUnitApi extends BaseApi {
 
       const storeKeys = businessUnit?.stores?.map((store) => `"${store.key}"`).join(' ,');
       const allStores = await storeApi.query(`key in (${storeKeys})`);
-      return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(
-        businessUnit as CommercetoolsBusinessUnit,
-        allStores,
-      );
+
+      businessUnit.stores = BusinessUnitMapper.expandStores(businessUnit.stores, allStores);
+
+      return businessUnit;
     } catch (e) {
       throw e;
     }
@@ -425,6 +352,8 @@ export class BusinessUnitApi extends BaseApi {
   };
 
   getByKey: (key: string) => Promise<BusinessUnit> = async (key: string) => {
+    const locale = await this.getCommercetoolsLocal();
+
     try {
       return this.requestBuilder()
         .businessUnits()
@@ -432,38 +361,11 @@ export class BusinessUnitApi extends BaseApi {
         .get()
         .execute()
         .then((response) => {
-          return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(response.body);
+          return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(response.body, locale);
         });
     } catch (e) {
       throw e;
     }
-  };
-
-  /**
-   * @deprecated Use `expandBusinessUnitStores` instead
-   */
-  expandCommercetoolsBusinessUnitStores: (
-    businessUnit: CommercetoolsBusinessUnit,
-  ) => Promise<CommercetoolsBusinessUnit> = async (businessUnit: CommercetoolsBusinessUnit) => {
-    if (businessUnit.storeMode === StoreMode.Explicit) {
-      return businessUnit;
-    }
-    let parentBU: CommercetoolsBusinessUnit = { ...businessUnit };
-    while (parentBU.storeMode === StoreMode.FromParent && !!parentBU.parentUnit) {
-      const { body } = await this.requestBuilder()
-        .businessUnits()
-        .withKey({ key: parentBU.parentUnit.key })
-        .get()
-        .execute();
-      parentBU = body as CommercetoolsBusinessUnit;
-    }
-    if (parentBU.storeMode === StoreMode.Explicit) {
-      return {
-        ...businessUnit,
-        stores: parentBU.stores,
-      };
-    }
-    return businessUnit;
   };
 
   getBusinessUnitWithExplicitStores: (
@@ -509,6 +411,8 @@ export class BusinessUnitApi extends BaseApi {
     account: Account,
     expandStores?: boolean,
   ) => {
+    const locale = await this.getCommercetoolsLocal();
+
     const storeApi = new StoreApi(this.frontasticContext, this.locale, this.currency);
 
     const businessUnits = await this.query(
@@ -516,13 +420,13 @@ export class BusinessUnitApi extends BaseApi {
       'associates[*].customer',
     ).then((response) => {
       return response.results.map((commercetoolsBusinessUnit) => {
-        return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(commercetoolsBusinessUnit);
+        return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(commercetoolsBusinessUnit, locale);
       });
     });
 
     if (expandStores) {
       const storeKeys = businessUnits
-        .reduce((prev: StoreKeyReference[], curr) => {
+        .reduce((prev: Store[], curr) => {
           prev = prev.concat(curr.stores || []);
           return prev;
         }, [])
@@ -540,47 +444,71 @@ export class BusinessUnitApi extends BaseApi {
   };
 
   getCompaniesForUser: (account: Account) => Promise<BusinessUnit[]> = async (account: Account) => {
+    const locale = await this.getCommercetoolsLocal();
+
     let tree: CommercetoolsBusinessUnit[] = [];
     const storeApi = new StoreApi(this.frontasticContext, this.locale, this.currency);
-    const config = this.frontasticContext?.project?.configuration?.associateRoles;
-    if (!config?.defaultAdminRoleKey) {
-      throw new Error('Configuration error. No "defaultAdminRoleKey" exists');
-    }
-    if (account) {
-      const results = await this.getCommercetoolsBusinessUnitsForUser(account);
-      tree = this.getRootCommercetoolsBusinessUnitsForAssociate(results, account, false).map((bu) => ({
-        ...bu,
-        parentUnit: null,
-      }));
-      if (tree.length) {
-        // get the whole organization nodes
-        const { results } = await this.query(
-          `topLevelUnit(key="${tree[0].topLevelUnit.key}")`,
-          'associates[*].customer',
-        );
-        const tempParents = [...tree];
 
-        // filter results and add nodes to tree if they are descendents of tree nodes
-        while (tempParents.length) {
-          const [item] = tempParents.splice(0, 1);
-          const children = results.filter((bu) => bu.parentUnit?.key === item.key);
-          if (children.length) {
-            children.forEach((child) => {
-              tempParents.push(child);
-              tree.push(child);
-            });
-          }
+    const results = await this.getCommercetoolsBusinessUnitsForUser(account);
+    tree = this.getRootCommercetoolsBusinessUnitsForAssociate(results, account, false).map(
+      (commercetoolsBusinessUnit) => ({
+        ...commercetoolsBusinessUnit,
+        parentUnit: null,
+      }),
+    );
+
+    if (tree.length) {
+      // get the whole organization nodes
+      const { results } = await this.query(`topLevelUnit(key="${tree[0].topLevelUnit.key}")`, 'associates[*].customer');
+      const tempParents = [...tree];
+
+      // filter results and add nodes to tree if they are descendents of tree nodes
+      while (tempParents.length) {
+        const [item] = tempParents.splice(0, 1);
+        const children = results.filter((bu) => bu.parentUnit?.key === item.key);
+        if (children.length) {
+          children.forEach((child) => {
+            tempParents.push(child);
+            tree.push(child);
+          });
         }
       }
     }
+
     const storeKeys = tree
-      .reduce((prev: StoreKeyReference[], curr) => {
+      .reduce((prev: Store[], curr) => {
         prev = prev.concat(curr.stores || []);
         return prev;
       }, [])
       ?.map((store) => `"${store.key}"`)
       .join(' ,');
+
     const allStores = storeKeys ? await storeApi.query(`key in (${storeKeys})`) : [];
-    return tree.map((bu) => BusinessUnitMapper.mapBusinessUnitToBusinessUnitTreeItem(bu, allStores));
+
+    return tree.map((commercetoolsBusinessUnit) =>
+      BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(commercetoolsBusinessUnit, locale, allStores),
+    );
+  };
+
+  getAssociateRoles: () => Promise<AssociateRole[]> = async () => {
+    try {
+      return this.requestBuilder()
+        .associateRoles()
+        .get()
+        .execute()
+        .then((response) => {
+          return (
+            response.body.results
+              // Filter out roles that can't be assigned by another associates.
+              .filter((associateRole) => associateRole.buyerAssignable)
+              .map((associateRole) => BusinessUnitMapper.mapCommercetoolsAssociateRoleToAssociateRole(associateRole))
+          );
+        })
+        .catch((error) => {
+          throw error;
+        });
+    } catch {
+      throw '';
+    }
   };
 }

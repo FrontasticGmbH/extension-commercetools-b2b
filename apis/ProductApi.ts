@@ -111,6 +111,7 @@ export class ProductApi extends BaseProductApi {
           'filter.facets': filterFacets.length > 0 ? filterFacets : undefined,
           'filter.query': filterQuery.length > 0 ? filterQuery : undefined,
           [`text.${locale.language}`]: productQuery.query,
+          storeProjection: productQuery.storeKey ?? undefined,
           ...additionalQueryArgs,
         },
       };

@@ -2,7 +2,6 @@ import * as AccountActions from './AccountController';
 import * as ProductAction from './ProductController';
 import * as WishlistAction from './WishlistController';
 import * as QuoteAction from './QuoteController';
-import * as AssociateAction from './AssociateController';
 import * as ProjectActions from './ProjectController';
 import * as BusinessUnitActions from './BusinessUnitController';
 import * as StoreActions from './StoreController';
@@ -12,6 +11,9 @@ import * as SubscriptionActions from './SubscriptionController';
 export const actions = {
   account: AccountActions,
   cart: CartActions,
+  /**
+   * @deprecated
+   */
   store: StoreActions,
   'business-unit': BusinessUnitActions,
   product: ProductAction,
@@ -19,5 +21,4 @@ export const actions = {
   quote: QuoteAction,
   project: ProjectActions,
   subscription: SubscriptionActions,
-  associate: AssociateAction,
 };

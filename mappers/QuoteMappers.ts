@@ -1,5 +1,4 @@
 import {
-  CustomerReference,
   LineItem as CommercetoolsLineItem,
   QuoteRequest as CommercetoolsQuoteRequest,
   StagedQuote as CommercetoolsStagedQuote,
@@ -11,12 +10,16 @@ import { CartMapper } from './CartMapper';
 import { QuoteRequest } from '@Types/quotes/QuoteRequest';
 import { Cart } from '@Types/cart/Cart';
 import { LineItem } from '@Types/cart/LineItem';
+import { AccountMapper } from '@Commerce-commercetools/mappers/AccountMapper';
 
 export class QuoteMappers {
   static mapCommercetoolsQuoteRequest(results: CommercetoolsQuoteRequest[], locale: Locale): QuoteRequest[] {
     return results?.map((quote) => ({
       ...quote,
-      customer: this.mapCustomerReferences(quote.customer),
+      customer: {
+        accountId: quote.customer.id,
+        ...(quote.customer?.obj ? AccountMapper.commercetoolsCustomerToAccount(quote.customer.obj, locale) : undefined),
+      },
       lineItems: this.mapCommercetoolsLineitems(quote.lineItems, locale),
     }));
   }
@@ -24,7 +27,10 @@ export class QuoteMappers {
   static mapCommercetoolsQuote(results: CommercetoolsQuote[], locale: Locale): any[] {
     return results?.map((quote) => ({
       ...quote,
-      customer: this.mapCustomerReferences(quote.customer),
+      customer: {
+        accountId: quote.customer.id,
+        ...(quote.customer?.obj ?? AccountMapper.commercetoolsCustomerToAccount(quote.customer.obj, locale)),
+      },
       lineItems: this.mapCommercetoolsLineitems(quote.lineItems, locale),
     }));
   }
@@ -34,14 +40,6 @@ export class QuoteMappers {
       ...stagedQuote,
       quotationCart: this.mapQuotationCartReference(stagedQuote.quotationCart, locale),
     }));
-  }
-
-  static mapCustomerReferences(customer: CustomerReference): CustomerReference {
-    return {
-      id: customer.id,
-      typeId: 'customer',
-      ...customer.obj,
-    };
   }
 
   static mapQuotationCartReference(cartReference: CartReference, locale: Locale): Cart | CartReference {

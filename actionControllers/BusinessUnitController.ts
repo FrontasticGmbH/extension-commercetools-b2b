@@ -1,16 +1,16 @@
 import { AccountApi } from '@Commerce-commercetools/apis/AccountApi';
 
 import { ActionContext, Request, Response } from '@frontastic/extension-types';
-import { Store, StoreKeyReference } from '@Types/store/Store';
+import { Store } from '@Types/store/Store';
 import { getCurrency, getLocale } from '../utils/Request';
 import { StoreApi } from '../apis/StoreApi';
 import { BusinessUnitApi } from '../apis/BusinessUnitApi';
 import { CartApi } from '../apis/CartApi';
 import { BusinessUnitMapper } from '../mappers/BusinessUnitMapper';
-import { BusinessUnit, BusinessUnitStatus, BusinessUnitType, StoreMode } from '@Types/business-unit/BusinessUnit';
 import { fetchAccountFromSession } from '@Commerce-commercetools/utils/fetchAccountFromSession';
 import { AccountAuthenticationError } from '@Commerce-commercetools/errors/AccountAuthenticationError';
 import { Account } from '@Types/account/Account';
+import handleError from '@Commerce-commercetools/utils/handleError';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
 
@@ -123,7 +123,7 @@ export const setMe: ActionHook = async (request: Request, actionContext: ActionC
           request.sessionData?.account?.accountId,
         ),
       },
-      rootCategoryId: (store as Store)?.storeRootCategoryId,
+      // rootCategoryId: (store as Store)?.storeRootCategoryId,
     },
   };
 
@@ -177,7 +177,7 @@ export const getOrganization: ActionHook = async (request: Request, actionContex
         ...organization,
         businessUnit: BusinessUnitMapper.trimBusinessUnit(organization.businessUnit, account.accountId),
       },
-      rootCategoryId: organization.store?.storeRootCategoryId,
+      // rootCategoryId: organization.store?.storeRootCategoryId,
     },
   };
 
@@ -188,10 +188,6 @@ export const getOrganization: ActionHook = async (request: Request, actionContex
  * @deprecated
  */
 export const getSuperUserBusinessUnits: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const config = actionContext.frontasticContext?.project?.configuration?.associateRoles;
-  if (!config?.defaultSuperUserRoleKey) {
-    throw new Error('Configuration error. No "defaultSuperUserRoleKey" exists');
-  }
   const accountApi = new AccountApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
   const customerAccount = await accountApi.getCustomerByEmail(request.query.email);
   if (customerAccount) {
@@ -204,11 +200,7 @@ export const getSuperUserBusinessUnits: ActionHook = async (request: Request, ac
     const highestNodes = businessUnitApi.getRootCommercetoolsBusinessUnitsForAssociate(results, customerAccount);
 
     const businessUnitsWithSuperUser = highestNodes.filter((bu) =>
-      BusinessUnitMapper.isAssociateRoleKeyInCommercetoolsBusinessUnit(
-        bu,
-        customerAccount.id,
-        config.defaultSuperUserRoleKey,
-      ),
+      BusinessUnitMapper.isAssociateRoleKeyInCommercetoolsBusinessUnit(bu, customerAccount.id, 'super-user'),
     );
 
     return {
@@ -255,17 +247,12 @@ export const create: ActionHook = async (request: Request, actionContext: Action
     getLocale(request),
     getCurrency(request),
   );
-  const config = actionContext.frontasticContext?.project?.configuration?.associateRoles;
-  if (!config?.defaultBuyerRoleKey || !config?.defaultAdminRoleKey) {
-    return {
-      statusCode: 400,
-      error: 'No associateRoles context defined',
-      errorCode: 400,
-    };
-  }
-  const data = mapRequestToBusinessUnit(request, config);
+  const businessUnitRequestBody: BusinessUnitRequestBody = JSON.parse(request.body);
 
-  const businessUnit = await businessUnitApi.createFromData(data);
+  const businessUnit = await businessUnitApi.createForAccountAndStore(
+    businessUnitRequestBody.account,
+    businessUnitRequestBody.store,
+  );
 
   const response: Response = {
     statusCode: 200,
@@ -283,7 +270,7 @@ export const addAssociate: ActionHook = async (request: Request, actionContext: 
     getCurrency(request),
   );
   const accountApi = new AccountApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-  const addUserBody: { email: string; roles: string[] } = JSON.parse(request.body);
+  const addUserBody: { email: string; roleKeys: string[] } = JSON.parse(request.body);
 
   const account = await accountApi.getCustomerByEmail(addUserBody.email);
   if (!account) {
@@ -302,10 +289,10 @@ export const addAssociate: ActionHook = async (request: Request, actionContext: 
           typeId: 'customer',
           id: account.id,
         },
-        associateRoleAssignments: addUserBody.roles.map((role) => ({
+        associateRoleAssignments: addUserBody.roleKeys.map((roleKey) => ({
           associateRole: {
             typeId: 'associate-role',
-            key: role,
+            key: roleKey,
           },
         })),
       },
@@ -328,14 +315,14 @@ export const removeAssociate: ActionHook = async (request: Request, actionContex
     getCurrency(request),
   );
 
-  const { id } = JSON.parse(request.body);
+  const { accountId } = JSON.parse(request.body);
 
   const businessUnit = await businessUnitApi.update(request.query['key'], [
     {
       action: 'removeAssociate',
       customer: {
         typeId: 'customer',
-        id,
+        accountId,
       },
     },
   ]);
@@ -356,7 +343,7 @@ export const updateAssociate: ActionHook = async (request: Request, actionContex
     getCurrency(request),
   );
 
-  const { id, roles }: { id: string; roles: string[] } = JSON.parse(request.body);
+  const { accountId, roleKeys }: { accountId: string; roleKeys: string[] } = JSON.parse(request.body);
 
   const businessUnit = await businessUnitApi.update(request.query['key'], [
     {
@@ -364,12 +351,12 @@ export const updateAssociate: ActionHook = async (request: Request, actionContex
       associate: {
         customer: {
           typeId: 'customer',
-          id,
+          accountId: accountId,
         },
-        associateRoleAssignments: roles.map((role) => ({
+        associateRoleAssignments: roleKeys.map((roleKey) => ({
           associateRole: {
             typeId: 'associate-role',
-            key: role,
+            key: roleKey,
           },
         })),
       },
@@ -414,38 +401,7 @@ export const update: ActionHook = async (request: Request, actionContext: Action
   return response;
 };
 
-/**
- * @deprecated Use `getByKeyForAccount` instead
- */
 export const getByKey: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const businessUnitApi = new BusinessUnitApi(
-    actionContext.frontasticContext,
-    getLocale(request),
-    getCurrency(request),
-  );
-  try {
-    const businessUnit = await businessUnitApi.getCommercetoolsBusinessUnitByKey(request.query?.['key']);
-
-    const response: Response = {
-      statusCode: 200,
-      body: JSON.stringify(businessUnit),
-      sessionData: request.sessionData,
-    };
-
-    return response;
-  } catch {
-    const response: Response = {
-      statusCode: 400,
-      // @ts-ignore
-      error: new Error('Business unit not found'),
-      errorCode: 400,
-    };
-
-    return response;
-  }
-};
-
-export const getByKeyForAccount: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const businessUnitApi = new BusinessUnitApi(
     actionContext.frontasticContext,
     getLocale(request),
@@ -494,105 +450,27 @@ export const remove: ActionHook = async (request: Request, actionContext: Action
       body: JSON.stringify(businessUnit),
       sessionData: request.sessionData,
     };
-  } catch (e) {
-    response = {
-      statusCode: 400,
-      sessionData: request.sessionData,
-      // @ts-ignore
-      error: e?.body?.message,
-      errorCode: 500,
-    };
+  } catch (error) {
+    return handleError(error, request);
   }
 
   return response;
 };
 
-export const query: ActionHook = async (request: Request, actionContext: ActionContext) => {
+export const getAssociateRoles: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const businessUnitApi = new BusinessUnitApi(
     actionContext.frontasticContext,
     getLocale(request),
     getCurrency(request),
   );
 
-  let where = '';
-  if ('where' in request.query) {
-    where += [request.query['where']];
-  }
-  const store = await businessUnitApi.query(where);
+  const associateRoles = await businessUnitApi.getAssociateRoles();
 
   const response: Response = {
     statusCode: 200,
-    body: JSON.stringify(store),
+    body: JSON.stringify(associateRoles),
     sessionData: request.sessionData,
   };
 
   return response;
 };
-
-function mapRequestToBusinessUnit(request: Request, config: Record<string, string>): BusinessUnit {
-  const businessUnitRequestBody: BusinessUnitRequestBody = JSON.parse(request.body);
-  const normalizedName = businessUnitRequestBody.account.company.toLowerCase().replace(/ /g, '_');
-  const key = businessUnitRequestBody.parentBusinessUnit
-    ? `${businessUnitRequestBody.parentBusinessUnit}_div_${normalizedName}`
-    : `business_unit_${normalizedName}`;
-
-  let storeMode = StoreMode.Explicit;
-  let unitType = BusinessUnitType.Company;
-  const stores: StoreKeyReference[] = [];
-
-  if (businessUnitRequestBody.parentBusinessUnit && !businessUnitRequestBody.store) {
-    storeMode = StoreMode.FromParent;
-  }
-
-  if (businessUnitRequestBody.parentBusinessUnit) {
-    unitType = BusinessUnitType.Division;
-  }
-
-  if (businessUnitRequestBody.store) {
-    stores.push({
-      typeId: 'store',
-      id: businessUnitRequestBody.store.id,
-    });
-  }
-
-  const businessUnit: BusinessUnit = {
-    key,
-    name: businessUnitRequestBody.account.company,
-    status: BusinessUnitStatus.Active,
-    stores,
-    storeMode,
-    unitType,
-    contactEmail: businessUnitRequestBody.account.email,
-    associates: [
-      {
-        associateRoleAssignments: [
-          {
-            associateRole: {
-              key: config.defaultBuyerRoleKey,
-              typeId: 'associate-role',
-            },
-          },
-          {
-            associateRole: {
-              key: config.defaultAdminRoleKey,
-              typeId: 'associate-role',
-            },
-          },
-        ],
-        customer: {
-          id: businessUnitRequestBody.account.accountId ?? businessUnitRequestBody.customer.accountId,
-          typeId: 'customer',
-        },
-      },
-    ],
-  };
-
-  if (businessUnitRequestBody.parentBusinessUnit) {
-    businessUnit.parentUnit = {
-      key: businessUnitRequestBody.parentBusinessUnit,
-      typeId: 'business-unit',
-    };
-  }
-
-  return businessUnit;
-}

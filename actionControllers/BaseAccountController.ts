@@ -1,14 +1,14 @@
 import { ActionContext, Request, Response } from '@frontastic/extension-types';
-import { AccountExtended as Account } from '@Commerce-commercetools/interfaces/AccountExtended';
 import { Address } from '@Types/account/Address';
 import { CartFetcher } from '../utils/CartFetcher';
 import { getCurrency, getLocale } from '../utils/Request';
 import { AccountAuthenticationError } from '../errors/AccountAuthenticationError';
 import { assertIsAuthenticated } from '../utils/assertIsAuthenticated';
-import { mapRequestToAccount } from '../utils/mapRequestToAccount';
 import { fetchAccountFromSession } from '../utils/fetchAccountFromSession';
 import { AccountApi } from '../apis/AccountApi';
 import { EmailApiFactory } from '../utils/EmailApiFactory';
+import { AccountMapper } from '@Commerce-commercetools/mappers/AccountMapper';
+import { Account } from '@Types/account/Account';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
 
@@ -23,7 +23,6 @@ export type AccountRegisterBody = {
   birthdayDay?: string;
   billingAddress?: Address;
   shippingAddress?: Address;
-  isSubscribed?: boolean;
 };
 
 export type AccountLoginBody = {
@@ -102,8 +101,9 @@ export const getAccount: ActionHook = async (request: Request) => {
 export const register: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const locale = getLocale(request);
 
+  const accountData = AccountMapper.requestToAccount(request);
+
   const accountApi = new AccountApi(actionContext.frontasticContext, locale, getCurrency(request));
-  const accountData = mapRequestToAccount(request);
 
   const cart = await CartFetcher.fetchCart(request, actionContext);
 
@@ -303,35 +303,10 @@ export const update: ActionHook = async (request: Request, actionContext: Action
 
   account = {
     ...account,
-    ...mapRequestToAccount(request),
+    ...AccountMapper.requestToAccount(request),
   };
 
   account = await accountApi.update(account);
-
-  return {
-    statusCode: 200,
-    body: JSON.stringify(account),
-    sessionData: {
-      ...request.sessionData,
-      account,
-    },
-  } as Response;
-};
-
-export const updateSubscription: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  assertIsAuthenticated(request);
-
-  let account = fetchAccountFromSession(request);
-
-  const isSubscribed: Account['isSubscribed'] = JSON.parse(request.body).isSubscribed;
-
-  const accountApi = new AccountApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-
-  account = await accountApi.updateSubscription(account, isSubscribed);
-
-  // TODO: implement subscribe email
-  // const emailApi = EmailApiFactory.getDefaultApi(actionContext.frontasticContext, locale);
-  // await (isSubscribed ? emailApi.subscribe(account, ['newsletter']) : emailApi.unsubscribe(account));
 
   return {
     statusCode: 200,
