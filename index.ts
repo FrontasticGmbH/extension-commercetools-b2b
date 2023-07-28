@@ -68,23 +68,15 @@ export default {
     if (ProductRouter.identifyPreviewFrom(request)) {
       return ProductRouter.loadPreviewFor(request, context.frontasticContext).then((product: Product) => {
         if (product) {
-          return ProductRouter.getBundles(request, context.frontasticContext, product).then(
-            ({ subscriptions, configurableComponents }) => {
-              return {
-                dynamicPageType: 'frontastic/product-detail-page',
-                dataSourcePayload: {
-                  product: product,
-                  subscriptions,
-                  configurableComponents,
-                },
-                pageMatchingPayload: {
-                  product: product,
-                  subscriptions,
-                  configurableComponents,
-                },
-              };
+          return {
+            dynamicPageType: 'frontastic/product-detail-page',
+            dataSourcePayload: {
+              product: product,
             },
-          );
+            pageMatchingPayload: {
+              product: product,
+            },
+          };
         }
 
         // FIXME: Return proper error result
@@ -96,23 +88,15 @@ export default {
     if (ProductRouter.identifyFrom(request)) {
       return ProductRouter.loadFor(request, context.frontasticContext).then((product: Product) => {
         if (product) {
-          return ProductRouter.getBundles(request, context.frontasticContext, product).then(
-            ({ configurableComponents, subscriptions }) => {
-              return {
-                dynamicPageType: 'frontastic/product-detail-page',
-                dataSourcePayload: {
-                  product: product,
-                  subscriptions,
-                  configurableComponents,
-                },
-                pageMatchingPayload: {
-                  product: product,
-                  subscriptions,
-                  configurableComponents,
-                },
-              };
+          return {
+            dynamicPageType: 'frontastic/product-detail-page',
+            dataSourcePayload: {
+              product: product,
             },
-          );
+            pageMatchingPayload: {
+              product: product,
+            },
+          };
         }
 
         // FIXME: Return proper error result
