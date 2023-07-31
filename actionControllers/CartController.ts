@@ -51,17 +51,16 @@ async function updateCartFromRequest(request: Request, actionContext: ActionCont
 export const addToCart: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
   const body: {
-    variant?: LineItemVariant;
+    variants?: LineItemVariant[];
     businessUnitKey?: string;
   } = JSON.parse(request.body);
 
-  const lineItem: LineItem = {
+  const lineItems: LineItem[] = body.variants?.map((lineItemVariant) => ({
     variant: {
-      sku: body.variant?.sku || undefined,
-      price: undefined,
+      sku: lineItemVariant?.sku || undefined,
     },
-    count: +body.variant?.count || 1,
-  };
+    count: lineItemVariant?.count || 1,
+  }));
 
   const account = fetchAccountFromSession(request);
 
@@ -71,48 +70,7 @@ export const addToCart: ActionHook = async (request: Request, actionContext: Act
 
   let cart = await CartFetcher.fetchCart(request, actionContext);
 
-  cart = await cartApi.addToCart(cart, lineItem, account, request.sessionData?.organization, body.businessUnitKey);
-
-  const cartId = cart.cartId;
-
-  return {
-    statusCode: 200,
-    body: JSON.stringify(cart),
-    sessionData: {
-      ...request.sessionData,
-      cartId,
-    },
-  };
-};
-
-export const addItemsToCart: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-
-  const body: {
-    list?: LineItemVariant[];
-    distributionChannelId?: string;
-    businessUnitKey?: string;
-  } = JSON.parse(request.body);
-
-  const lineItems: LineItem[] = body.list?.map((variant) => ({
-    variant: {
-      sku: variant.sku || undefined,
-      price: undefined,
-    },
-    count: +variant.count || 1,
-  }));
-
-  const distributionChannelId = body.distributionChannelId ?? request.sessionData.organization?.distributionChannel?.id;
-
-  let cart = await CartFetcher.fetchCart(request, actionContext);
-  cart = await cartApi.addItemsToCart(
-    cart,
-    lineItems,
-    distributionChannelId,
-    request.sessionData?.account,
-    request.sessionData?.organization,
-    body.businessUnitKey,
-  );
+  cart = await cartApi.addToCart(cart, lineItems, account, request.sessionData?.organization, body.businessUnitKey);
 
   const cartId = cart.cartId;
 

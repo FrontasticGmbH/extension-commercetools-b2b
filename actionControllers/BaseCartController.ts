@@ -64,38 +64,6 @@ export const getCart: ActionHook = async (request, actionContext) => {
   }
 };
 
-export const addToCart: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-
-  const body: {
-    variant?: { sku?: string; count: number };
-  } = JSON.parse(request.body);
-
-  const lineItem: LineItem = {
-    variant: {
-      sku: body.variant?.sku || undefined,
-      price: undefined,
-    },
-    count: +body.variant?.count || 1,
-  };
-
-  let cart = await CartFetcher.fetchCart(request, actionContext);
-  cart = await cartApi.addToCart(cart, lineItem);
-
-  const cartId = cart.cartId;
-
-  const response: Response = {
-    statusCode: 200,
-    body: JSON.stringify(cart),
-    sessionData: {
-      ...request.sessionData,
-      cartId,
-    },
-  };
-
-  return response;
-};
-
 export const updateLineItem: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 

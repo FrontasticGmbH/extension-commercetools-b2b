@@ -182,25 +182,6 @@ export class BaseCartApi extends BaseApi {
       });
   };
 
-  addToCart: (cart: Cart, lineItem: LineItem) => Promise<Cart> = async (cart: Cart, lineItem: LineItem) => {
-    const locale = await this.getCommercetoolsLocal();
-
-    const cartUpdate: CartUpdate = {
-      version: +cart.cartVersion,
-      actions: [
-        {
-          action: 'addLineItem',
-          sku: lineItem.variant.sku,
-          quantity: +lineItem.count,
-        } as CartAddLineItemAction,
-      ],
-    };
-
-    const commercetoolsCart = await this.updateCart(cart.cartId, cartUpdate, locale);
-
-    return this.buildCartWithAvailableShippingMethods(commercetoolsCart, locale);
-  };
-
   updateLineItem: (cart: Cart, lineItem: LineItem) => Promise<Cart> = async (cart: Cart, lineItem: LineItem) => {
     const locale = await this.getCommercetoolsLocal();
 

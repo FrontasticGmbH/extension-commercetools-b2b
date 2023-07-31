@@ -3,9 +3,8 @@ import { LineItem, ReturnLineItem } from '@Types/cart/LineItem';
 import { Address } from '@Types/account/Address';
 import { Order } from '@Types/cart/Order';
 import { Account } from '@Types/account/Account';
-import { Cart as CommercetoolsCart, CartDraft, CartUpdateAction } from '@commercetools/platform-sdk';
+import { Cart as CommercetoolsCart, CartDraft } from '@commercetools/platform-sdk';
 import {
-  CartAddLineItemAction,
   CartRemoveLineItemAction,
   CartSetCountryAction,
   CartSetCustomerIdAction,
@@ -168,13 +167,13 @@ export class CartApi extends BaseCartApi {
 
   addToCart: (
     cart: Cart,
-    lineItem: LineItem,
+    lineItems: LineItem[],
     account?: Account,
     organization?: Organization,
     businessUnitKey?: string,
   ) => Promise<Cart> = async (
     cart: Cart,
-    lineItem: LineItem,
+    lineItems: LineItem[],
     account?: Account,
     organization?: Organization,
     businessUnitKey?: string,
@@ -184,23 +183,25 @@ export class CartApi extends BaseCartApi {
 
       const cartUpdate: CartUpdate = {
         version: +cart.cartVersion,
-        actions: [
-          {
-            action: 'addLineItem',
-            sku: lineItem.variant.sku,
-            quantity: +lineItem.count,
-          } as CartAddLineItemAction,
-        ],
+        actions: [],
       };
 
-      const oldLineItem = cart.lineItems?.find((li) => li.variant?.sku === lineItem.variant.sku);
-      if (oldLineItem) {
+      lineItems.map((lineItem) => {
         cartUpdate.actions.push({
-          action: 'setLineItemShippingDetails',
-          lineItemId: oldLineItem.lineItemId,
-          shippingDetails: null,
+          action: 'addLineItem',
+          sku: lineItem.variant.sku,
+          quantity: +lineItem.count,
         });
-      }
+
+        const oldLineItem = cart.lineItems?.find((li) => li.variant?.sku === lineItem.variant.sku);
+        if (oldLineItem) {
+          cartUpdate.actions.push({
+            action: 'setLineItemShippingDetails',
+            lineItemId: oldLineItem.lineItemId,
+            shippingDetails: null,
+          });
+        }
+      });
 
       const commercetoolsCart = await this.updateCart(
         cart.cartId,
@@ -212,65 +213,6 @@ export class CartApi extends BaseCartApi {
       );
 
       return await this.buildCartWithAvailableShippingMethods(commercetoolsCart, locale);
-    } catch (error) {
-      throw new ExternalError({
-        status: 400,
-        message: 'addToCart failed',
-        body: `addToCart failed. ${error}`,
-      });
-    }
-  };
-
-  addItemsToCart: (
-    cart: Cart,
-    lineItems: LineItem[],
-    distributionChannelId: string,
-    account?: Account,
-    organization?: Organization,
-    businessUnitKey?: string,
-  ) => Promise<Cart> = async (
-    cart: Cart,
-    lineItems: LineItem[],
-    distributionChannelId: string,
-    account?: Account,
-    organization?: Organization,
-    businessUnitKey?: string,
-  ) => {
-    try {
-      const locale = await this.getCommercetoolsLocal();
-
-      const actions: CartUpdateAction[] = [];
-      lineItems.forEach((lineItem) => {
-        actions.push({
-          action: 'addLineItem',
-          sku: lineItem.variant.sku,
-          quantity: +lineItem.count,
-          distributionChannel: { id: distributionChannelId, typeId: 'channel' },
-        });
-        const oldLineItem = cart.lineItems?.find((li) => li.variant?.sku === lineItem.variant.sku);
-        if (oldLineItem) {
-          actions.push({
-            action: 'setLineItemShippingDetails',
-            lineItemId: oldLineItem.lineItemId,
-            shippingDetails: null,
-          });
-        }
-      });
-      const cartUpdate: CartUpdate = {
-        version: +cart.cartVersion,
-        actions,
-      };
-
-      const commercetoolsCart = await this.updateCart(
-        cart.cartId,
-        cartUpdate,
-        locale,
-        account,
-        organization,
-        businessUnitKey,
-      );
-
-      return this.buildCartWithAvailableShippingMethods(commercetoolsCart, locale);
     } catch (error) {
       throw new ExternalError({
         status: 400,
