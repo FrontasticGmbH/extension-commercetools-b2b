@@ -525,70 +525,6 @@ export class BaseCartApi extends BaseApi {
       .execute();
   };
 
-  updateOrderByNumber: (
-    orderNumber: string,
-    payload: Pick<Order, 'orderState' | 'payments'> & { paymentState?: PaymentState },
-  ) => Promise<Order> = async (orderNumber, payload) => {
-    const locale = await this.getCommercetoolsLocal();
-
-    const order = await this.requestBuilder()
-      .orders()
-      .withOrderNumber({ orderNumber })
-      .get()
-      .execute()
-      .then((res) => res.body);
-
-    const orderUpdateActions = [] as OrderUpdateAction[];
-
-    if (payload.orderState) {
-      orderUpdateActions.push({
-        action: 'changeOrderState',
-        orderState: payload.orderState as OrderState,
-      });
-    }
-
-    if (payload.payments) {
-      payload.payments.forEach((payment) => {
-        orderUpdateActions.push({
-          action: 'addPayment',
-          payment: {
-            typeId: 'payment',
-            id: payment.id,
-          },
-        });
-      });
-    }
-
-    if (payload.paymentState) {
-      orderUpdateActions.push({
-        action: 'changePaymentState',
-        paymentState: payload.paymentState,
-      });
-    }
-
-    return this.requestBuilder()
-      .orders()
-      .withOrderNumber({ orderNumber })
-      .post({ body: { version: order.version, actions: orderUpdateActions } })
-      .execute()
-      .then((response) => CartMapper.commercetoolsOrderToOrder(response.body, locale))
-      .catch((error) => {
-        throw new ExternalError({ status: error.code, message: error.message, body: error.body });
-      });
-  };
-
-  createPayment: (payload: PaymentDraft) => Promise<Payment> = async (payload) => {
-    const locale = await this.getCommercetoolsLocal();
-
-    const payment = this.requestBuilder()
-      .payments()
-      .post({ body: payload })
-      .execute()
-      .then((response) => CartMapper.commercetoolsPaymentToPayment(response.body, locale));
-
-    return payment;
-  };
-
   updateOrderPayment: (paymentId: string, paymentDraft: Payment) => Promise<any> = async (
     paymentId: string,
     paymentDraft: Payment,
@@ -596,15 +532,6 @@ export class BaseCartApi extends BaseApi {
     const locale = await this.getCommercetoolsLocal();
 
     const paymentUpdateActions: PaymentUpdateAction[] = [];
-
-    /*if (paymentDraft.) {
-      paymentUpdateActions.push({
-        action: 'setMethodInfoName',
-        name: {
-          'en': 'adyen'
-        }
-      });
-    }*/
 
     if (paymentDraft.paymentMethod) {
       paymentUpdateActions.push({

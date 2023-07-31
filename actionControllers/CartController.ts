@@ -144,7 +144,7 @@ export const cancelOrder: ActionHook = async (request: Request, actionContext: A
 
   try {
     const body: {
-      orderNumber: string;
+      orderId: string;
       orderState: string;
       businessUnitKey?: string;
     } = JSON.parse(request.body);
@@ -152,7 +152,7 @@ export const cancelOrder: ActionHook = async (request: Request, actionContext: A
     const account = fetchAccountFromSession(request);
 
     const res = await cartApi.updateOrderState(
-      body.orderNumber,
+      body.orderId,
       OrderState.Cancelled,
       account,
       request.sessionData?.organization,
@@ -360,11 +360,11 @@ export const transitionOrderState: ActionHook = async (request: Request, actionC
 
   try {
     const {
-      orderNumber,
+      orderId,
       stateKey,
       businessUnitKey,
     }: {
-      orderNumber: string;
+      orderId: string;
       stateKey: string;
       businessUnitKey?: string;
     } = JSON.parse(request.body);
@@ -372,7 +372,7 @@ export const transitionOrderState: ActionHook = async (request: Request, actionC
     const account = fetchAccountFromSession(request);
 
     const res = await cartApi.transitionOrderState(
-      orderNumber,
+      orderId,
       stateKey,
       account,
       request.sessionData?.organization,

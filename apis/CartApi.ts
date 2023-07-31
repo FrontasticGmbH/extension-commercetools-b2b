@@ -473,8 +473,8 @@ export class CartApi extends BaseCartApi {
       });
   };
 
-  getOrder: (orderNumber: string, account?: Account, organization?: Organization) => Promise<Order> = async (
-    orderNumber: string,
+  getOrder: (orderId: string, account?: Account, organization?: Organization) => Promise<Order> = async (
+    orderId: string,
     account?: Account,
     organization?: Organization,
   ) => {
@@ -483,7 +483,7 @@ export class CartApi extends BaseCartApi {
 
     return await this.associateEndpoints(account, organization)
       .orders()
-      .withOrderNumber({ orderNumber })
+      .withOrderNumber({ orderNumber: orderId })
       .get({
         queryArgs: {
           expand: [
@@ -502,13 +502,13 @@ export class CartApi extends BaseCartApi {
   };
 
   updateOrderState: (
-    orderNumber: string,
+    orderId: string,
     orderState: string,
     account?: Account,
     organization?: Organization,
     businessUnitKey?: string,
   ) => Promise<Order> = async (
-    orderNumber: string,
+    orderId: string,
     orderState: string,
     account?: Account,
     organization?: Organization,
@@ -516,13 +516,13 @@ export class CartApi extends BaseCartApi {
   ) => {
     const locale = await this.getCommercetoolsLocal();
 
-    return await this.getOrder(orderNumber).then((order) => {
+    return await this.getOrder(orderId).then((order) => {
       if (order.orderState === OrderState.Complete) {
         throw 'Cannot cancel a Completed order.';
       }
       return this.associateEndpoints(account, organization, businessUnitKey)
         .orders()
-        .withOrderNumber({ orderNumber })
+        .withOrderNumber({ orderNumber: orderId })
         .post({
           body: {
             version: +order.orderVersion,
@@ -550,13 +550,13 @@ export class CartApi extends BaseCartApi {
   };
 
   returnItems: (
-    orderNumber: string,
+    orderId: string,
     returnLineItems: ReturnLineItem[],
     account?: Account,
     organization?: Organization,
     businessUnitKey?: string,
   ) => Promise<Order> = async (
-    orderNumber: string,
+    orderId: string,
     returnLineItems: ReturnLineItem[],
     account?: Account,
     organization?: Organization,
@@ -566,10 +566,10 @@ export class CartApi extends BaseCartApi {
     const config = this.frontasticContext?.project?.configuration?.preBuy;
     const returnItems = CartMapper.returnLineItemToCommercetoolsReturnItemDraft(returnLineItems);
 
-    return await this.getOrder(orderNumber).then((order) => {
+    return await this.getOrder(orderId).then((order) => {
       return this.associateEndpoints(account, organization, businessUnitKey)
         .orders()
-        .withOrderNumber({ orderNumber })
+        .withOrderNumber({ orderNumber: orderId })
         .post({
           body: {
             version: +order.orderVersion,
@@ -592,13 +592,13 @@ export class CartApi extends BaseCartApi {
   };
 
   transitionOrderState: (
-    orderNumber: string,
+    orderId: string,
     stateKey: string,
     account?: Account,
     organization?: Organization,
     businessUnitKey?: string,
   ) => Promise<Order> = async (
-    orderNumber: string,
+    orderId: string,
     stateKey: string,
     account?: Account,
     organization?: Organization,
@@ -607,10 +607,10 @@ export class CartApi extends BaseCartApi {
     const locale = await this.getCommercetoolsLocal();
     const config = this.frontasticContext?.project?.configuration?.preBuy;
 
-    return await this.getOrder(orderNumber).then((order) => {
+    return await this.getOrder(orderId).then((order) => {
       return this.associateEndpoints(account, organization, businessUnitKey)
         .orders()
-        .withOrderNumber({ orderNumber })
+        .withOrderNumber({ orderNumber: orderId })
         .post({
           body: {
             version: +order.orderVersion,
