@@ -145,7 +145,6 @@ export const cancelOrder: ActionHook = async (request: Request, actionContext: A
   try {
     const body: {
       orderId: string;
-      orderState: string;
       businessUnitKey?: string;
     } = JSON.parse(request.body);
 
@@ -170,12 +169,12 @@ export const cancelOrder: ActionHook = async (request: Request, actionContext: A
 
 export const replicateCart: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-  const orderId = request.query?.['orderId'];
   const body: {
+    orderId: string;
     businessUnitKey?: string;
   } = JSON.parse(request.body);
 
-  if (!orderId) {
+  if (!body.orderId) {
     return {
       statusCode: 500,
       sessionData: request.sessionData,
@@ -185,7 +184,12 @@ export const replicateCart: ActionHook = async (request: Request, actionContext:
   try {
     const account = fetchAccountFromSession(request);
 
-    const cart = await cartApi.replicateCart(orderId, account, request.sessionData?.organization, body.businessUnitKey);
+    const cart = await cartApi.replicateCart(
+      body.orderId,
+      account,
+      request.sessionData?.organization,
+      body.businessUnitKey,
+    );
     const order = await cartApi.order(cart, account, request.sessionData?.organization, body?.businessUnitKey);
     return {
       statusCode: 200,
