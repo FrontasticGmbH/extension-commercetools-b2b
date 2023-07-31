@@ -585,48 +585,6 @@ export class CartApi extends BaseCartApi {
     });
   };
 
-  transitionOrderState: (
-    orderId: string,
-    stateKey: string,
-    account?: Account,
-    organization?: Organization,
-    businessUnitKey?: string,
-  ) => Promise<Order> = async (
-    orderId: string,
-    stateKey: string,
-    account?: Account,
-    organization?: Organization,
-    businessUnitKey?: string,
-  ) => {
-    const locale = await this.getCommercetoolsLocal();
-    const config = this.frontasticContext?.project?.configuration?.preBuy;
-
-    return await this.getOrder(orderId).then((order) => {
-      return this.associateEndpoints(account, organization, businessUnitKey)
-        .orders()
-        .withOrderNumber({ orderNumber: orderId })
-        .post({
-          body: {
-            version: +order.orderVersion,
-            actions: [
-              {
-                action: 'transitionState',
-                state: {
-                  typeId: 'state',
-                  key: stateKey,
-                },
-              },
-            ],
-          },
-        })
-        .execute()
-        .then((response) => CartMapper.commercetoolsOrderToOrder(response.body, locale, config))
-        .catch((error) => {
-          throw new ExternalError({ status: error.code, message: error.message, body: error.body });
-        });
-    });
-  };
-
   getBusinessUnitOrders: (businessUnitKey: string, account?: Account) => Promise<Order[]> = async (
     businessUnitKey: string,
     account?: Account,
@@ -751,37 +709,6 @@ export class CartApi extends BaseCartApi {
         actions: [
           {
             action: 'unfreezeCart',
-          },
-        ],
-      };
-      const commercetoolsCart = await this.updateCart(cart.cartId, cartUpdate, locale, account, organization);
-
-      return await this.buildCartWithAvailableShippingMethods(commercetoolsCart, locale);
-    } catch (error) {
-      throw new ExternalError({ status: 400, message: `freeze error failed`, body: `freeze error failed. ${error}` });
-    }
-  };
-
-  setCartExpirationDays: (
-    cart: Cart,
-    deleteDaysAfterLastModification: number,
-    account?: Account,
-    organization?: Organization,
-  ) => Promise<Cart> = async (
-    cart: Cart,
-    deleteDaysAfterLastModification: number,
-    account?: Account,
-    organization?: Organization,
-  ) => {
-    try {
-      const locale = await this.getCommercetoolsLocal();
-
-      const cartUpdate: CartUpdate = {
-        version: +cart.cartVersion,
-        actions: [
-          {
-            action: 'setDeleteDaysAfterLastModification',
-            deleteDaysAfterLastModification,
           },
         ],
       };

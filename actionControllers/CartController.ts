@@ -365,36 +365,3 @@ export const checkout: ActionHook = async (request: Request, actionContext: Acti
     return handleError(error, request);
   }
 };
-
-export const transitionOrderState: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-
-  try {
-    const {
-      orderId,
-      stateKey,
-      businessUnitKey,
-    }: {
-      orderId: string;
-      stateKey: string;
-      businessUnitKey?: string;
-    } = JSON.parse(request.body);
-
-    const account = fetchAccountFromSession(request);
-
-    const res = await cartApi.transitionOrderState(
-      orderId,
-      stateKey,
-      account,
-      request.sessionData?.organization,
-      businessUnitKey,
-    );
-    return {
-      statusCode: 200,
-      body: JSON.stringify(res),
-      sessionData: request.sessionData,
-    };
-  } catch (error) {
-    return handleError(error, request);
-  }
-};
