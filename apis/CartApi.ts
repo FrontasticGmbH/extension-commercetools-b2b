@@ -407,7 +407,7 @@ export class CartApi extends BaseCartApi {
       id: cart.cartId,
       version: +cart.cartVersion,
       orderNumber: `${date.getMonth() + 1}-${date.getDate()}-${date.getFullYear()}-${String(Date.now()).slice(-6, -1)}`,
-      orderState: cart.isPreBuyCart ? 'Open' : 'Confirmed',
+      orderState: 'Confirmed',
     };
     if (typeof payload === 'object' && payload?.poNumber) {
       orderFromCartDraft.purchaseOrderNumber = payload.poNumber;
