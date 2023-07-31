@@ -299,9 +299,6 @@ export const removeLineItem: ActionHook = async (request: Request, actionContext
 
   const lineItem: LineItem = {
     lineItemId: body.lineItem?.id,
-    variant: {
-      sku: '',
-    },
   };
 
   let cart = await CartFetcher.fetchCart(request, actionContext);
