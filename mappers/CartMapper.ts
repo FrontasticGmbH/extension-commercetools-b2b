@@ -22,7 +22,7 @@ export class CartMapper extends BaseCartMapper {
   ): Cart {
     return {
       cartId: commercetoolsCart.id,
-      customerId: commercetoolsCart.customerId,
+      accountId: commercetoolsCart.customerId,
       cartVersion: commercetoolsCart.version.toString(),
       lineItems: this.commercetoolsLineItemsToLineItems(commercetoolsCart.lineItems, locale),
       email: commercetoolsCart?.customerEmail,
@@ -98,7 +98,7 @@ export class CartMapper extends BaseCartMapper {
   ): Order {
     return {
       cartId: commercetoolsOrder.id,
-      customerId: commercetoolsOrder.customerId,
+      accountId: commercetoolsOrder.customerId,
       origin: commercetoolsOrder.origin,
       orderState: commercetoolsOrder.orderState,
       orderId: commercetoolsOrder.orderNumber,

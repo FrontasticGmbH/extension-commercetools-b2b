@@ -42,8 +42,12 @@ export class QuoteMappers {
     }));
   }
 
-  static mapQuotationCartReference(cartReference: CartReference, locale: Locale): Cart | CartReference {
-    return cartReference.obj ? CartMapper.commercetoolsCartToCart(cartReference.obj, locale) : cartReference;
+  static mapQuotationCartReference(cartReference: CartReference, locale: Locale): Cart {
+    return cartReference.obj
+      ? CartMapper.commercetoolsCartToCart(cartReference.obj, locale)
+      : {
+          cartId: cartReference.id,
+        };
   }
 
   static mapCommercetoolsLineitems(lineitems: CommercetoolsLineItem[], locale: Locale): LineItem[] {
