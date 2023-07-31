@@ -35,8 +35,8 @@ export class CartMapper extends BaseCartMapper {
       taxed: this.commercetoolsTaxedPriceToTaxed(commercetoolsCart.taxedPrice, locale),
       itemShippingAddresses: commercetoolsCart.itemShippingAddresses,
       origin: commercetoolsCart.origin,
-      businessUnit: commercetoolsCart.businessUnit?.key,
-      store: commercetoolsCart.store?.key,
+      businessUnitKey: commercetoolsCart.businessUnit?.key,
+      storeKey: commercetoolsCart.store?.key,
     };
   }
 
@@ -108,7 +108,8 @@ export class CartMapper extends BaseCartMapper {
       shippingAddress: this.commercetoolsAddressToAddress(commercetoolsOrder.shippingAddress),
       billingAddress: this.commercetoolsAddressToAddress(commercetoolsOrder.billingAddress),
       sum: ProductMapper.commercetoolsMoneyToMoney(commercetoolsOrder.totalPrice),
-      businessUnit: commercetoolsOrder.businessUnit?.key,
+      businessUnitKey: commercetoolsOrder.businessUnit?.key,
+      storeKey: commercetoolsOrder.store?.key,
       createdAt: new Date(commercetoolsOrder.createdAt),
       shippingInfo: this.commercetoolsShippingInfoToShippingInfo(commercetoolsOrder.shippingInfo, locale),
       returnInfo: this.commercetoolsReturnInfoToReturnInfo(commercetoolsOrder.returnInfo),

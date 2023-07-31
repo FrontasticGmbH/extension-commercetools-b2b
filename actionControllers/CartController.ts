@@ -8,6 +8,7 @@ import { CartApi, Payload } from '../apis/CartApi';
 import { EmailApiFactory } from '../utils/EmailApiFactory';
 import handleError from '@Commerce-commercetools/utils/handleError';
 import { fetchAccountFromSession } from '@Commerce-commercetools/utils/fetchAccountFromSession';
+import { OrderState } from '@Types/cart/Order';
 
 export * from './BaseCartController';
 
@@ -138,7 +139,7 @@ export const returnItems: ActionHook = async (request: Request, actionContext: A
   }
 };
 
-export const updateOrderState: ActionHook = async (request: Request, actionContext: ActionContext) => {
+export const cancelOrder: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 
   try {
@@ -152,7 +153,7 @@ export const updateOrderState: ActionHook = async (request: Request, actionConte
 
     const res = await cartApi.updateOrderState(
       body.orderNumber,
-      body.orderState,
+      OrderState.Cancelled,
       account,
       request.sessionData?.organization,
       body.businessUnitKey,

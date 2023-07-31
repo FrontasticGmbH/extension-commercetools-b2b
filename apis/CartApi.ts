@@ -1,7 +1,7 @@
 import { Cart } from '@Types/cart/Cart';
 import { LineItem, ReturnLineItem } from '@Types/cart/LineItem';
 import { Address } from '@Types/account/Address';
-import { Order } from '@Types/cart/Order';
+import { Order, OrderState } from '@Types/cart/Order';
 import { Account } from '@Types/account/Account';
 import { Cart as CommercetoolsCart, CartDraft } from '@commercetools/platform-sdk';
 import {
@@ -517,7 +517,7 @@ export class CartApi extends BaseCartApi {
     const locale = await this.getCommercetoolsLocal();
 
     return await this.getOrder(orderNumber).then((order) => {
-      if (order.orderState === 'Complete') {
+      if (order.orderState === OrderState.Complete) {
         throw 'Cannot cancel a Completed order.';
       }
       return this.associateEndpoints(account, organization, businessUnitKey)
@@ -737,10 +737,10 @@ export class CartApi extends BaseCartApi {
     storeKey?: string,
   ) => boolean = (cart: Cart, organization: Organization, businessUnitKey?: string, storeKey?: string) => {
     return (
-      !!cart.businessUnit &&
-      !!cart.store &&
-      (cart.businessUnit === businessUnitKey || cart.businessUnit === organization?.businessUnit?.key) &&
-      (cart.store === storeKey || cart.store === organization?.store?.key)
+      !!cart.businessUnitKey &&
+      !!cart.storeKey &&
+      (cart.businessUnitKey === businessUnitKey || cart.businessUnitKey === organization?.businessUnit?.key) &&
+      (cart.storeKey === storeKey || cart.storeKey === organization?.store?.key)
     );
   };
 
