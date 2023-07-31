@@ -34,15 +34,15 @@ async function updateCartFromRequest(request: Request, actionContext: ActionCont
   } = JSON.parse(request.body);
 
   if (body?.account?.email !== undefined) {
-    cart = (await cartApi.setEmail(cart, body.account.email)) as Cart;
+    cart = await cartApi.setEmail(cart, body.account.email);
   }
 
   if (body?.shipping !== undefined || body?.billing !== undefined) {
     const shippingAddress = body?.shipping !== undefined ? body.shipping : body.billing;
     const billingAddress = body?.billing !== undefined ? body.billing : body.shipping;
 
-    cart = (await cartApi.setShippingAddress(cart, shippingAddress)) as Cart;
-    cart = (await cartApi.setBillingAddress(cart, billingAddress)) as Cart;
+    cart = await cartApi.setShippingAddress(cart, shippingAddress);
+    cart = await cartApi.setBillingAddress(cart, billingAddress);
   }
 
   return cart;
@@ -330,17 +330,22 @@ export const checkout: ActionHook = async (request: Request, actionContext: Acti
   const cartApi = new CartApi(actionContext.frontasticContext, locale, getCurrency(request));
 
   const cart = await updateCartFromRequest(request, actionContext);
+
   const body: {
-    payload: Payload;
+    purchaseOrderNumber?: string;
     businessUnitKey?: string;
   } = JSON.parse(request.body);
 
   const account = fetchAccountFromSession(request);
 
   try {
-    const order = await cartApi.order(cart, account, request.sessionData?.organization, body.businessUnitKey, {
-      ...body.payload,
-    });
+    const order = await cartApi.order(
+      cart,
+      account,
+      request.sessionData?.organization,
+      body.businessUnitKey,
+      body.purchaseOrderNumber,
+    );
     const emailApi = EmailApiFactory.getDefaultApi(actionContext.frontasticContext, locale);
 
     emailApi.sendOrderConfirmationEmail({ ...order, email: order.email || cart.email });

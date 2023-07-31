@@ -392,13 +392,13 @@ export class CartApi extends BaseCartApi {
     account?: Account,
     organization?: Organization,
     businessUnitKey?: string,
-    payload?: Payload,
+    purchaseOrderNumber?: string,
   ) => Promise<Order> = async (
     cart: Cart,
     account?: Account,
     organization?: Organization,
     businessUnitKey?: string,
-    payload?: { poNumber?: string; orderState?: string },
+    purchaseOrderNumber?: string,
   ) => {
     const locale = await this.getCommercetoolsLocal();
     const date = new Date();
@@ -409,15 +409,9 @@ export class CartApi extends BaseCartApi {
       orderNumber: `${date.getMonth() + 1}-${date.getDate()}-${date.getFullYear()}-${String(Date.now()).slice(-6, -1)}`,
       orderState: 'Confirmed',
     };
-    if (typeof payload === 'object' && payload?.poNumber) {
-      orderFromCartDraft.purchaseOrderNumber = payload.poNumber;
+    if (purchaseOrderNumber) {
+      orderFromCartDraft.purchaseOrderNumber = purchaseOrderNumber;
     }
-    // if (typeof payload === 'object' && payload?.orderState) {
-    //   orderFromCartDraft.state = {
-    //     typeId: 'state',
-    //     id: payload?.orderState,
-    //   };
-    // }
 
     if (!isReadyForCheckout(cart)) {
       throw new Error('Cart not complete yet.');
