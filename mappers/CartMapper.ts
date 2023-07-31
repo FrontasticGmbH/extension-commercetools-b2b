@@ -32,7 +32,6 @@ export class CartMapper extends BaseCartMapper {
       shippingInfo: this.commercetoolsShippingInfoToShippingInfo(commercetoolsCart.shippingInfo, locale),
       payments: this.commercetoolsPaymentInfoToPayments(commercetoolsCart.paymentInfo, locale),
       discountCodes: this.commercetoolsDiscountCodesInfoToDiscountCodes(commercetoolsCart.discountCodes, locale),
-      directDiscounts: commercetoolsCart.directDiscounts?.length,
       taxed: this.commercetoolsTaxedPriceToTaxed(commercetoolsCart.taxedPrice, locale),
       itemShippingAddresses: commercetoolsCart.itemShippingAddresses,
       origin: commercetoolsCart.origin,
