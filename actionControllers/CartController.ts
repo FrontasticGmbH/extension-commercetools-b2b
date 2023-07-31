@@ -8,7 +8,6 @@ import { CartApi, Payload } from '../apis/CartApi';
 import { EmailApiFactory } from '../utils/EmailApiFactory';
 import handleError from '@Commerce-commercetools/utils/handleError';
 import { fetchAccountFromSession } from '@Commerce-commercetools/utils/fetchAccountFromSession';
-import { AccountAuthenticationError } from '@Commerce-commercetools/errors/AccountAuthenticationError';
 
 export * from './BaseCartController';
 
@@ -64,10 +63,6 @@ export const addToCart: ActionHook = async (request: Request, actionContext: Act
 
   const account = fetchAccountFromSession(request);
 
-  if (account === undefined) {
-    throw new AccountAuthenticationError({ message: 'Not logged in.' });
-  }
-
   let cart = await CartFetcher.fetchCart(request, actionContext);
 
   cart = await cartApi.addToCart(cart, lineItems, account, request.sessionData?.organization, body.businessUnitKey);
@@ -97,14 +92,10 @@ export const updateLineItem: ActionHook = async (request: Request, actionContext
     count: +body.lineItem?.count || 1,
   };
 
+  const account = fetchAccountFromSession(request);
+
   let cart = await CartFetcher.fetchCart(request, actionContext);
-  cart = await cartApi.updateLineItem(
-    cart,
-    lineItem,
-    request.sessionData?.account,
-    request.sessionData?.organization,
-    body.businessUnitKey,
-  );
+  cart = await cartApi.updateLineItem(cart, lineItem, account, request.sessionData?.organization, body.businessUnitKey);
 
   const cartId = cart.cartId;
 
@@ -128,10 +119,12 @@ export const returnItems: ActionHook = async (request: Request, actionContext: A
       businessUnitKey?: string;
     } = JSON.parse(request.body);
 
+    const account = fetchAccountFromSession(request);
+
     const res = await cartApi.returnItems(
       body.orderId,
       body.returnLineItems,
-      request.sessionData?.account,
+      account,
       request.sessionData?.organization,
       body.businessUnitKey,
     );
@@ -155,10 +148,12 @@ export const updateOrderState: ActionHook = async (request: Request, actionConte
       businessUnitKey?: string;
     } = JSON.parse(request.body);
 
+    const account = fetchAccountFromSession(request);
+
     const res = await cartApi.updateOrderState(
       body.orderNumber,
       body.orderState,
-      request.sessionData?.account,
+      account,
       request.sessionData?.organization,
       body.businessUnitKey,
     );
@@ -187,18 +182,10 @@ export const replicateCart: ActionHook = async (request: Request, actionContext:
     };
   }
   try {
-    const cart = await cartApi.replicateCart(
-      orderId,
-      request.sessionData?.account,
-      request.sessionData?.organization,
-      body.businessUnitKey,
-    );
-    const order = await cartApi.order(
-      cart,
-      request.sessionData?.account,
-      request.sessionData?.organization,
-      body?.businessUnitKey,
-    );
+    const account = fetchAccountFromSession(request);
+
+    const cart = await cartApi.replicateCart(orderId, account, request.sessionData?.organization, body.businessUnitKey);
+    const order = await cartApi.order(cart, account, request.sessionData?.organization, body?.businessUnitKey);
     return {
       statusCode: 200,
       body: JSON.stringify(order),
@@ -229,12 +216,14 @@ export const splitLineItem: ActionHook = async (request: Request, actionContext:
         cartItemsShippingAddresses.findIndex((address: Address) => address.addressId === addressSplit.addressId) === -1,
     );
 
+  const account = fetchAccountFromSession(request);
+
   if (remainingAddresses.length) {
     for await (const address of remainingAddresses) {
       await cartApi.addItemShippingAddress(
         cart,
         address,
-        request.sessionData?.account,
+        account,
         request.sessionData?.organization,
         body?.businessUnitKey,
       );
@@ -248,7 +237,7 @@ export const splitLineItem: ActionHook = async (request: Request, actionContext:
     cart,
     body.lineItemId,
     target,
-    request.sessionData?.account,
+    account,
     request.sessionData?.organization,
     body.businessUnitKey,
   );
@@ -306,10 +295,13 @@ export const removeLineItem: ActionHook = async (request: Request, actionContext
   };
 
   let cart = await CartFetcher.fetchCart(request, actionContext);
+
+  const account = fetchAccountFromSession(request);
+
   cart = await cartApi.removeLineItem(
     cart,
     lineItem,
-    request.sessionData?.account,
+    account,
     request.sessionData?.organization,
     body?.businessUnitKey,
   );
@@ -336,16 +328,12 @@ export const checkout: ActionHook = async (request: Request, actionContext: Acti
     businessUnitKey?: string;
   } = JSON.parse(request.body);
 
+  const account = fetchAccountFromSession(request);
+
   try {
-    const order = await cartApi.order(
-      cart,
-      request.sessionData?.account,
-      request.sessionData?.organization,
-      body.businessUnitKey,
-      {
-        ...body.payload,
-      },
-    );
+    const order = await cartApi.order(cart, account, request.sessionData?.organization, body.businessUnitKey, {
+      ...body.payload,
+    });
     const emailApi = EmailApiFactory.getDefaultApi(actionContext.frontasticContext, locale);
 
     emailApi.sendOrderConfirmationEmail({ ...order, email: order.email || cart.email });
@@ -380,10 +368,12 @@ export const transitionOrderState: ActionHook = async (request: Request, actionC
       businessUnitKey?: string;
     } = JSON.parse(request.body);
 
+    const account = fetchAccountFromSession(request);
+
     const res = await cartApi.transitionOrderState(
       orderNumber,
       stateKey,
-      request.sessionData?.account,
+      account,
       request.sessionData?.organization,
       businessUnitKey,
     );
