@@ -1,10 +1,11 @@
 import { ActionContext, Request, Response } from '@frontastic/extension-types';
-import { LineItem, ReturnLineItem } from '@Types/cart/LineItem';
+import { LineItem } from '@Types/cart/LineItem';
+import { ReturnLineItem } from '@Types/cart/Order';
 import { getCurrency, getLocale } from '../utils/Request';
 import { Cart } from '@Types/cart/Cart';
 import { Address } from '@Types/account/Address';
 import { CartFetcher } from '../utils/CartFetcher';
-import { CartApi, Payload } from '../apis/CartApi';
+import { CartApi } from '../apis/CartApi';
 import { EmailApiFactory } from '../utils/EmailApiFactory';
 import handleError from '@Commerce-commercetools/utils/handleError';
 import { fetchAccountFromSession } from '@Commerce-commercetools/utils/fetchAccountFromSession';

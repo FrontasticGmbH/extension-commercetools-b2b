@@ -1,7 +1,7 @@
 import { Cart } from '@Types/cart/Cart';
-import { LineItem, ReturnLineItem } from '@Types/cart/LineItem';
+import { LineItem } from '@Types/cart/LineItem';
 import { Address } from '@Types/account/Address';
-import { Order, OrderState } from '@Types/cart/Order';
+import { Order, OrderState, ReturnLineItem } from '@Types/cart/Order';
 import { Account } from '@Types/account/Account';
 import { Cart as CommercetoolsCart, CartDraft } from '@commercetools/platform-sdk';
 import {

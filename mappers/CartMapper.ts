@@ -9,10 +9,13 @@ import { BaseCartMapper } from './BaseCartMapper';
 import { Locale } from '@Commerce-commercetools/interfaces/Locale';
 import { ProductMapper } from './ProductMapper';
 import { ProductRouter } from '../utils/ProductRouter';
-import { LineItem, LineItemShippingAddress, ReturnLineItem } from '@Types/cart/LineItem';
+import { LineItem, LineItemShippingAddress } from '@Types/cart/LineItem';
 import { Cart } from '@Types/cart/Cart';
-import { Order, ReturnInfo } from '@Types/cart/Order';
-import { ReturnInfo as CommercetoolsReturnInfo } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/order';
+import { Order, ReturnInfo, ReturnLineItem } from '@Types/cart/Order';
+import {
+  LineItemReturnItem,
+  ReturnInfo as CommercetoolsReturnInfo,
+} from '@commercetools/platform-sdk/dist/declarations/src/generated/models/order';
 
 export class CartMapper extends BaseCartMapper {
   static commercetoolsCartToCart(
@@ -130,17 +133,15 @@ export class CartMapper extends BaseCartMapper {
   }
 
   static commercetoolsReturnInfoToReturnInfo(commercetoolsReturnInfo: CommercetoolsReturnInfo[]): ReturnInfo[] {
-    return commercetoolsReturnInfo.map((ctReturnInfo) => ({
-      returnDate: ctReturnInfo.returnDate,
-      returnTrackingId: ctReturnInfo.returnTrackingId,
-      items: ctReturnInfo.items.map((item) => ({
-        comment: item.comment,
-        createdAt: item.createdAt,
-        // @ts-ignore
-        lineItemId: item.lineItemId,
-        returnInfoId: item.id,
-        count: item.quantity,
-        shipmentState: item.shipmentState,
+    return commercetoolsReturnInfo.map((returnInfo) => ({
+      returnDate: new Date(returnInfo.returnDate),
+      returnTrackingId: returnInfo.returnTrackingId,
+      lineItems: returnInfo.items.map((returnItem) => ({
+        returnLineItemId: returnItem.id,
+        count: returnItem.quantity,
+        lineItemId: (returnItem as LineItemReturnItem)?.lineItemId,
+        comment: returnItem.comment,
+        createdAt: new Date(returnItem.createdAt),
       })),
     }));
   }
