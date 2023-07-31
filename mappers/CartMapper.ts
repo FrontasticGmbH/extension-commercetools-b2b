@@ -64,8 +64,6 @@ export class CartMapper extends BaseCartMapper {
           locale,
         ),
         totalPrice: ProductMapper.commercetoolsMoneyToMoney(commercetoolsLineItem.totalPrice),
-        custom: commercetoolsLineItem.custom,
-        parentId: commercetoolsLineItem.custom?.fields?.parentId,
         variant: ProductMapper.commercetoolsProductVariantToVariant(
           commercetoolsLineItem.variant,
           locale,
