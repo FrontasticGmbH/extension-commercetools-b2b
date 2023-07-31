@@ -261,18 +261,23 @@ export const reassignCart: ActionHook = async (request: Request, actionContext: 
   let cart = await CartFetcher.fetchCart(request, actionContext);
   const cartId = cart.cartId;
   const body: {
+    accountId?: string;
+    email?: string;
     businessUnitKey?: string;
   } = JSON.parse(request.body);
 
+  const account = fetchAccountFromSession(request);
+
   const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
+
   cart = await cartApi.setCustomerId(
     cart,
-    request.query?.customerId,
-    request.sessionData?.account,
+    body.accountId,
+    account,
     request.sessionData?.organization,
     body?.businessUnitKey,
   );
-  cart = await cartApi.setEmail(cart, request.query?.email);
+  cart = await cartApi.setEmail(cart, body.email);
 
   return {
     statusCode: 200,
