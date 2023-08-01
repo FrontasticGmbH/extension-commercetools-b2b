@@ -2,19 +2,23 @@ import { ActionContext, Request, Response } from '@frontastic/extension-types';
 import { Cart as CommercetoolsCart } from '@commercetools/platform-sdk';
 import { getCurrency, getLocale } from '../utils/Request';
 import { QuoteRequest } from '@Types/quotes/QuoteRequest';
-import { Quote } from '@Types/quotes/Quote';
+import { DeprecatedQuote } from '@Types/quotes/DeprecatedQuote';
 import { StagedQuote } from '@Types/quotes/StagedQuote';
 import { CartApi } from '../apis/CartApi';
 import { QuoteApi } from '../apis/QuoteApi';
 import { Cart } from '@Types/cart/Cart';
+import { CartFetcher } from '@Commerce-commercetools/utils/CartFetcher';
+import { QuoteDraft } from '@Types/quotes/QuoteDraft';
+import { fetchAccountFromSession } from '@Commerce-commercetools/utils/fetchAccountFromSession';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
 
 export interface QuoteRequestBody {
   comment: string;
+  // businessUnitKey?: string;
 }
 
-const mergeQuotesOverview = (quoteRequests: QuoteRequest[], stagedQuotes: StagedQuote[], quotes: Quote[]) => {
+const mergeQuotesOverview = (quoteRequests: QuoteRequest[], stagedQuotes: StagedQuote[], quotes: DeprecatedQuote[]) => {
   // combine quote-requests + quote + staged-quote
   return quoteRequests?.map((quoteRequest) => {
     const stagedQuote = stagedQuotes?.find((stagedQuote) => stagedQuote.quoteRequest.id === quoteRequest.id);
@@ -35,32 +39,28 @@ const mergeQuotesOverview = (quoteRequests: QuoteRequest[], stagedQuotes: Staged
   });
 };
 
-export const createQuoteRequest: ActionHook = async (request: Request, actionContext: ActionContext) => {
+export const createQuote: ActionHook = async (request: Request, actionContext: ActionContext) => {
+  console.debug('createQuote');
   const quoteApi = new QuoteApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
   const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 
   const quoteBody: QuoteRequestBody = JSON.parse(request.body);
-  const cartId = request.sessionData?.cartId;
-  if (!cartId) {
-    throw new Error('No active cart');
-  }
+  let quoteDraft: QuoteDraft = {
+    buyerComment: quoteBody.comment,
+  };
 
-  const cart = await cartApi.getById(cartId);
-  const cartVersion = parseInt(cart.cartVersion, 10);
-  const quoteRequest = await quoteApi.createQuoteRequest({
-    cart: {
-      typeId: 'cart',
-      id: cartId,
-    },
-    cartVersion,
-    comment: quoteBody.comment,
-  });
+  const cart = await CartFetcher.fetchCart(request, actionContext);
+  const account = fetchAccountFromSession(request);
 
-  await cartApi.deleteCart(cartId, cartVersion, request.sessionData?.account, request.sessionData?.organization);
+  quoteDraft = await quoteApi.createQuote(quoteDraft, cart);
+
+  await cartApi.deleteCart(cart, account, request.sessionData?.organization);
+
+  console.debug('createQuote quoteDraft:: ', quoteDraft);
 
   const response: Response = {
     statusCode: 200,
-    body: JSON.stringify(quoteRequest),
+    body: JSON.stringify(quoteDraft),
     sessionData: {
       ...request.sessionData,
       cartId: undefined,
@@ -100,6 +100,10 @@ export const getMyQuotesOverview: ActionHook = async (request: Request, actionCo
   const quoteRequests = await quoteApi.getQuoteRequestsByCustomer(accountId);
   const stagedQuotes = await quoteApi.getStagedQuotesByCustomer(accountId);
   const quotes = await quoteApi.getQuotesByCustomer(accountId);
+
+  console.debug('quoteRequests:: ', quoteRequests);
+  console.debug('stagedQuotes:: ', stagedQuotes);
+  console.debug('quotes:: ', quotes);
 
   const res = mergeQuotesOverview(quoteRequests, stagedQuotes, quotes);
 

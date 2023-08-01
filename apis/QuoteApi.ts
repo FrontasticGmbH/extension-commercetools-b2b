@@ -8,15 +8,30 @@ import {
 } from '@commercetools/platform-sdk';
 import { BaseApi } from './BaseApi';
 import { QuoteRequest } from '@Types/quotes/QuoteRequest';
-import { Quote } from '@Types/quotes/Quote';
+import { DeprecatedQuote } from '@Types/quotes/DeprecatedQuote';
 import { StagedQuote } from '@Types/quotes/StagedQuote';
 import { QuoteMappers } from '../mappers/QuoteMappers';
+import { Cart } from '@Types/cart/Cart';
+import { QuoteDraft } from '@Types/quotes/QuoteDraft';
 
 export class QuoteApi extends BaseApi {
-  createQuoteRequest: (quoteRequest: QuoteRequestDraft) => Promise<CommercetoolsQuoteRequest> = async (
-    quoteRequest: QuoteRequestDraft,
+  createQuote: (quoteDraft: QuoteDraft, cart: Cart) => Promise<QuoteDraft> = async (
+    quoteDraft: QuoteDraft,
+    cart: Cart,
   ) => {
     try {
+      const cartVersion = parseInt(cart.cartVersion, 10);
+      const locale = await this.getCommercetoolsLocal();
+
+      const quoteRequest: QuoteRequestDraft = {
+        cart: {
+          typeId: 'cart',
+          id: cart.cartId,
+        },
+        cartVersion,
+        comment: quoteDraft.buyerComment,
+      };
+
       return this.requestBuilder()
         .quoteRequests()
         .post({
@@ -26,7 +41,7 @@ export class QuoteApi extends BaseApi {
         })
         .execute()
         .then((response) => {
-          return response.body;
+          return QuoteMappers.commercetoolsQuoteRequestToQuoteDraft(response.body, locale);
         })
         .catch((error) => {
           throw error;
@@ -35,6 +50,7 @@ export class QuoteApi extends BaseApi {
       throw '';
     }
   };
+
   getStagedQuote: (ID: string) => Promise<CommercetoolsStagedQuote> = async (ID: string) => {
     try {
       return this.requestBuilder()
@@ -57,6 +73,7 @@ export class QuoteApi extends BaseApi {
       throw '';
     }
   };
+
   getQuoteRequest: (ID: string) => Promise<CommercetoolsQuoteRequest> = async (ID: string) => {
     try {
       return this.requestBuilder()
@@ -79,6 +96,7 @@ export class QuoteApi extends BaseApi {
       throw '';
     }
   };
+
   getQuote: (ID: string) => Promise<CommercetoolsQuote> = async (ID: string) => {
     try {
       return this.requestBuilder()
@@ -113,7 +131,7 @@ export class QuoteApi extends BaseApi {
         })
         .execute()
         .then((response) => {
-          return QuoteMappers.mapCommercetoolsQuoteRequest(response.body.results, locale);
+          return QuoteMappers.commercetoolsQuoteRequestsToQuoteRequests(response.body.results, locale);
         })
         .catch((error) => {
           throw error;
@@ -148,7 +166,7 @@ export class QuoteApi extends BaseApi {
     }
   };
 
-  getQuotesByCustomer: (customerId: string) => Promise<Quote[]> = async (customerId: string) => {
+  getQuotesByCustomer: (customerId: string) => Promise<DeprecatedQuote[]> = async (customerId: string) => {
     const locale = await this.getCommercetoolsLocal();
     try {
       return this.requestBuilder()
@@ -190,7 +208,7 @@ export class QuoteApi extends BaseApi {
         })
         .execute()
         .then((response) => {
-          return QuoteMappers.mapCommercetoolsQuoteRequest(response.body.results, locale);
+          return QuoteMappers.commercetoolsQuoteRequestsToQuoteRequests(response.body.results, locale);
         })
         .catch((error) => {
           throw error;
@@ -227,7 +245,9 @@ export class QuoteApi extends BaseApi {
     }
   };
 
-  getQuotesByBusinessUnit: (businessUnitKeys: string) => Promise<Quote[]> = async (businessUnitKeys: string) => {
+  getQuotesByBusinessUnit: (businessUnitKeys: string) => Promise<DeprecatedQuote[]> = async (
+    businessUnitKeys: string,
+  ) => {
     const locale = await this.getCommercetoolsLocal();
     try {
       return this.requestBuilder()

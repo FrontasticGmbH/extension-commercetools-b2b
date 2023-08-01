@@ -33,7 +33,7 @@ export class BusinessUnitMapper {
       unitType: commercetoolsBusinessUnit.unitType,
       contactEmail: commercetoolsBusinessUnit.contactEmail,
       addresses: commercetoolsBusinessUnit.addresses.map((commercetoolsAddress) => {
-        return AccountMapper.commercetoolsAddressToAddresses(commercetoolsAddress);
+        return AccountMapper.commercetoolsAddressToAddress(commercetoolsAddress);
       }),
       defaultShippingAddressId: commercetoolsBusinessUnit.defaultShippingAddressId,
       defaultBillingAddressId: commercetoolsBusinessUnit.defaultBillingAddressId,

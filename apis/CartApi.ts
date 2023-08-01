@@ -885,31 +885,30 @@ export class CartApi extends BaseCartApi {
       }
     }
 
+    const primaryCart: Cart = {
+      cartId: primaryCommercetoolsCart.id,
+      cartVersion: primaryCommercetoolsCart.version.toString(),
+    };
+
     // Delete previous cart
-    await this.deleteCart(primaryCartId, cartVersion);
+    await this.deleteCart(primaryCart);
 
     return CartMapper.commercetoolsCartToCart(replicatedCommercetoolsCart, locale);
   };
 
-  deleteCart: (
-    primaryCartId: string,
-    cartVersion: number,
-    account?: Account,
-    organization?: Organization,
-  ) => Promise<void> = async (
-    primaryCartId: string,
-    cartVersion: number,
+  deleteCart: (cart: Cart, account?: Account, organization?: Organization) => Promise<void> = async (
+    cart: Cart,
     account?: Account,
     organization?: Organization,
   ) => {
     await this.associateEndpoints(account, organization)
       .carts()
       .withId({
-        ID: primaryCartId,
+        ID: cart.cartId,
       })
       .delete({
         queryArgs: {
-          version: cartVersion,
+          version: parseInt(cart.cartVersion, 10),
         },
       })
       .execute();

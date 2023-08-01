@@ -26,7 +26,7 @@ export class BaseAccountMapper {
 
     commercetoolsCustomer.addresses.forEach((commercetoolsAddress) => {
       addresses.push({
-        ...this.commercetoolsAddressToAddresses(commercetoolsAddress),
+        ...this.commercetoolsAddressToAddress(commercetoolsAddress),
         isDefaultBillingAddress: commercetoolsAddress.id === commercetoolsCustomer.defaultBillingAddressId,
         isDefaultShippingAddress: commercetoolsAddress.id === commercetoolsCustomer.defaultShippingAddressId,
       } as Address);
@@ -35,7 +35,7 @@ export class BaseAccountMapper {
     return addresses;
   }
 
-  static commercetoolsAddressToAddresses(commercetoolsAddress: CommercetoolsAddress): Address {
+  static commercetoolsAddressToAddress(commercetoolsAddress: CommercetoolsAddress): Address {
     return {
       addressId: commercetoolsAddress.id,
       salutation: commercetoolsAddress.salutation ?? undefined,
