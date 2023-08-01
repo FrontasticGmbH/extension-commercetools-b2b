@@ -1,13 +1,8 @@
-import {
-  Customer as commercetoolsCustomer,
-  CustomerToken,
-  Address as CommercetoolsAddress,
-} from '@commercetools/platform-sdk';
+import { Customer as commercetoolsCustomer, Address as CommercetoolsAddress } from '@commercetools/platform-sdk';
 import { Locale } from '@Commerce-commercetools/interfaces/Locale';
 import { Account } from '@Types/account/Account';
 import { Address } from '@Types/account/Address';
 import { BaseAddress } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/common';
-import { AccountToken } from '@Types/account/AccountToken';
 import { AccountRegisterBody } from '@Commerce-commercetools/actionControllers/AccountController';
 import { parseBirthday } from '@Commerce-commercetools/utils/parseBirthday';
 import { Request } from '@frontastic/extension-types';
@@ -26,14 +21,6 @@ export class BaseAccountMapper {
     } as Account;
   }
 
-  static commercetoolsCustomerTokenToToken(commercetoolsCustomerToken: CustomerToken, account: Account): AccountToken {
-    return {
-      tokenValidUntil: new Date(commercetoolsCustomerToken.expiresAt),
-      token: commercetoolsCustomerToken.value,
-      email: account.email,
-    };
-  }
-
   static commercetoolsCustomerToAddresses(commercetoolsCustomer: commercetoolsCustomer, locale: Locale): Address[] {
     const addresses: Address[] = [];
 
@@ -41,9 +28,7 @@ export class BaseAccountMapper {
       addresses.push({
         ...this.commercetoolsAddressToAddresses(commercetoolsAddress),
         isDefaultBillingAddress: commercetoolsAddress.id === commercetoolsCustomer.defaultBillingAddressId,
-        isBillingAddress: commercetoolsCustomer.billingAddressIds.includes(commercetoolsAddress.id),
         isDefaultShippingAddress: commercetoolsAddress.id === commercetoolsCustomer.defaultShippingAddressId,
-        isShippingAddress: commercetoolsCustomer.shippingAddressIds.includes(commercetoolsAddress.id),
       } as Address);
     });
 
