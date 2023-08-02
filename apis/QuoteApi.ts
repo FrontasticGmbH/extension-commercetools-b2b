@@ -7,12 +7,23 @@ import {
   QuoteRequestState,
 } from '@commercetools/platform-sdk';
 import { BaseApi } from './BaseApi';
+<<<<<<< Updated upstream
 import { QuoteRequest } from '@Types/quotes/QuoteRequest';
 import { DeprecatedQuote } from '@Types/quotes/DeprecatedQuote';
 import { StagedQuote } from '@Types/quotes/StagedQuote';
 import { QuoteMappers } from '../mappers/QuoteMappers';
 import { Cart } from '@Types/cart/Cart';
 import { QuoteDraft } from '@Types/quotes/QuoteDraft';
+=======
+import { QuoteRequest } from '@Types/quote/QuoteRequest';
+import { DeprecatedQuote } from '@Types/quote/DeprecatedQuote';
+import { StagedQuote } from '@Types/quote/StagedQuote';
+import { QuoteMappers } from '../mappers/QuoteMappers';
+import { Cart } from '@Types/cart/Cart';
+import { QuoteDraft } from '@Types/quote/QuoteDraft';
+import { Account } from '@Types/account/Account';
+import { Quote } from '@Types/quote/Quote';
+>>>>>>> Stashed changes
 
 export class QuoteApi extends BaseApi {
   createQuote: (quoteDraft: QuoteDraft, cart: Cart) => Promise<QuoteDraft> = async (
@@ -41,7 +52,11 @@ export class QuoteApi extends BaseApi {
         })
         .execute()
         .then((response) => {
+<<<<<<< Updated upstream
           return QuoteMappers.commercetoolsQuoteRequestToQuoteDraft(response.body, locale);
+=======
+          return QuoteMappers.commercetoolsQuoteRequestToQuote(response.body, locale);
+>>>>>>> Stashed changes
         })
         .catch((error) => {
           throw error;
@@ -186,6 +201,76 @@ export class QuoteApi extends BaseApi {
         .catch((error) => {
           throw error;
         });
+    } catch {
+      throw '';
+    }
+  };
+
+  getQuotes: (account: Account) => Promise<Quote[]> = async (account: Account) => {
+    const locale = await this.getCommercetoolsLocal();
+
+    try {
+      const quotes = await this.requestBuilder()
+        .quoteRequests()
+        .get({
+          queryArgs: {
+            where: `customer(id="${account.accountId}")`,
+            expand: 'customer',
+            sort: 'createdAt desc',
+            limit: 50,
+          },
+        })
+        .execute()
+        .then((response) => {
+          return response.body.results.map((commercetoolsQuoteRequest) =>
+            QuoteMappers.commercetoolsQuoteRequestToQuote(commercetoolsQuoteRequest, locale),
+          );
+        })
+        .catch((error) => {
+          throw error;
+        });
+
+      await this.requestBuilder()
+        .stagedQuotes()
+        .get({
+          queryArgs: {
+            where: `customer(id="${account.accountId}")`,
+            expand: ['customer', 'quotationCart'],
+            sort: 'createdAt desc',
+            limit: 50,
+          },
+        })
+        .execute()
+        .then((response) => {
+          return response.body.results.map((commercetoolsStagedQuote) => {
+            QuoteMappers.updateQuoteFromCommercetoolsStagedQuote(quotes, commercetoolsStagedQuote);
+          });
+        })
+        .catch((error) => {
+          throw error;
+        });
+
+      await this.requestBuilder()
+        .quotes()
+        .get({
+          queryArgs: {
+            where: `customer(id="${account.accountId}")`,
+            expand: 'customer',
+            sort: 'createdAt desc',
+            limit: 50,
+          },
+        })
+        .execute()
+        .then((response) => {
+          return response.body.results.map((commercetoolsQuote) => {
+            QuoteMappers.updateQuoteFromCommercetoolsQuote(quotes, commercetoolsQuote);
+          });
+        })
+        .catch((error) => {
+          throw error;
+        });
+
+      return quotes;
     } catch {
       throw '';
     }
