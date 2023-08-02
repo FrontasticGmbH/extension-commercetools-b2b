@@ -1,33 +1,21 @@
 import { ActionContext, Request, Response } from '@frontastic/extension-types';
 import { Cart as CommercetoolsCart } from '@commercetools/platform-sdk';
 import { getCurrency, getLocale } from '../utils/Request';
-<<<<<<< Updated upstream
-import { QuoteRequest } from '@Types/quotes/QuoteRequest';
-import { DeprecatedQuote } from '@Types/quotes/DeprecatedQuote';
-import { StagedQuote } from '@Types/quotes/StagedQuote';
-=======
 import { QuoteRequest } from '@Types/quote/QuoteRequest';
 import { DeprecatedQuote } from '@Types/quote/DeprecatedQuote';
 import { StagedQuote } from '@Types/quote/StagedQuote';
->>>>>>> Stashed changes
 import { CartApi } from '../apis/CartApi';
 import { QuoteApi } from '../apis/QuoteApi';
 import { Cart } from '@Types/cart/Cart';
 import { CartFetcher } from '@Commerce-commercetools/utils/CartFetcher';
-<<<<<<< Updated upstream
-import { QuoteDraft } from '@Types/quotes/QuoteDraft';
-import { fetchAccountFromSession } from '@Commerce-commercetools/utils/fetchAccountFromSession';
-=======
 import { QuoteDraft } from '@Types/quote/QuoteDraft';
 import { fetchAccountFromSession } from '@Commerce-commercetools/utils/fetchAccountFromSession';
 import { AccountAuthenticationError } from '@Commerce-commercetools/errors/AccountAuthenticationError';
->>>>>>> Stashed changes
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
 
 export interface QuoteRequestBody {
   comment: string;
-  // businessUnitKey?: string;
 }
 
 const mergeQuotesOverview = (quoteRequests: QuoteRequest[], stagedQuotes: StagedQuote[], quotes: DeprecatedQuote[]) => {
@@ -52,10 +40,6 @@ const mergeQuotesOverview = (quoteRequests: QuoteRequest[], stagedQuotes: Staged
 };
 
 export const createQuote: ActionHook = async (request: Request, actionContext: ActionContext) => {
-<<<<<<< Updated upstream
-  console.debug('createQuote');
-=======
->>>>>>> Stashed changes
   const quoteApi = new QuoteApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
   const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 
@@ -63,11 +47,6 @@ export const createQuote: ActionHook = async (request: Request, actionContext: A
   let quoteDraft: QuoteDraft = {
     buyerComment: quoteBody.comment,
   };
-<<<<<<< Updated upstream
-
-  const cart = await CartFetcher.fetchCart(request, actionContext);
-  const account = fetchAccountFromSession(request);
-=======
 
   const account = fetchAccountFromSession(request);
   if (account === undefined) {
@@ -75,16 +54,10 @@ export const createQuote: ActionHook = async (request: Request, actionContext: A
   }
 
   const cart = await CartFetcher.fetchCart(request, actionContext);
->>>>>>> Stashed changes
 
   quoteDraft = await quoteApi.createQuote(quoteDraft, cart);
 
   await cartApi.deleteCart(cart, account, request.sessionData?.organization);
-<<<<<<< Updated upstream
-
-  console.debug('createQuote quoteDraft:: ', quoteDraft);
-=======
->>>>>>> Stashed changes
 
   const response: Response = {
     statusCode: 200,
@@ -98,8 +71,6 @@ export const createQuote: ActionHook = async (request: Request, actionContext: A
   return response;
 };
 
-<<<<<<< Updated upstream
-=======
 export const getQuotes: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const quoteApi = new QuoteApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 
@@ -119,33 +90,28 @@ export const getQuotes: ActionHook = async (request: Request, actionContext: Act
   return response;
 };
 
->>>>>>> Stashed changes
-export const getMyQuotesOverview: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const quoteApi = new QuoteApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-
-  const accountId = request.sessionData?.account?.accountId;
-  if (!accountId) {
-    throw new Error('No active user');
-  }
-
-  const quoteRequests = await quoteApi.getQuoteRequestsByCustomer(accountId);
-  const stagedQuotes = await quoteApi.getStagedQuotesByCustomer(accountId);
-  const quotes = await quoteApi.getQuotesByCustomer(accountId);
-
-  console.debug('quoteRequests:: ', quoteRequests);
-  console.debug('stagedQuotes:: ', stagedQuotes);
-  console.debug('quotes:: ', quotes);
-
-  const res = mergeQuotesOverview(quoteRequests, stagedQuotes, quotes);
-
-  const response: Response = {
-    statusCode: 200,
-    body: JSON.stringify(res),
-    sessionData: request.sessionData,
-  };
-
-  return response;
-};
+// export const getMyQuotesOverview: ActionHook = async (request: Request, actionContext: ActionContext) => {
+//   const quoteApi = new QuoteApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
+//
+//   const accountId = request.sessionData?.account?.accountId;
+//   if (!accountId) {
+//     throw new Error('No active user');
+//   }
+//
+//   const quoteRequests = await quoteApi.getQuoteRequestsByCustomer(accountId);
+//   const stagedQuotes = await quoteApi.getStagedQuotesByCustomer(accountId);
+//   const quotes = await quoteApi.getQuotesByCustomer(accountId);
+//
+//   const res = mergeQuotesOverview(quoteRequests, stagedQuotes, quotes);
+//
+//   const response: Response = {
+//     statusCode: 200,
+//     body: JSON.stringify(res),
+//     sessionData: request.sessionData,
+//   };
+//
+//   return response;
+// };
 
 export const getBusinessUnitQuotesOverview: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const quoteApi = new QuoteApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));

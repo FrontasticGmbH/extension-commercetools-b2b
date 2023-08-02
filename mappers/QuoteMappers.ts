@@ -10,51 +10,31 @@ import { CartMapper } from './CartMapper';
 import { QuoteRequest } from '@Types/quote/QuoteRequest';
 import { Cart } from '@Types/cart/Cart';
 import { AccountMapper } from '@Commerce-commercetools/mappers/AccountMapper';
-<<<<<<< Updated upstream
-import { QuoteDraft, QuoteDraftState } from '@Types/quotes/QuoteDraft';
-import { ProductMapper } from '@Commerce-commercetools/mappers/ProductMapper';
-import { QuoteRequestState } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/quote-request';
-import { StagedQuoteState } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/staged-quote';
-import { QuoteState } from '@Types/quotes/Quote';
-
-export class QuoteMappers {
-  static commercetoolsQuoteRequestToQuoteDraft(
-    commercetoolsQuoteRequest: CommercetoolsQuoteRequest,
-    locale: Locale,
-  ): QuoteDraft {
-    return {
-      quoteDraftId: commercetoolsQuoteRequest.id,
-      key: commercetoolsQuoteRequest.key,
-      version: commercetoolsQuoteRequest.version,
-=======
-import { QuoteDraft, QuoteDraftState } from '@Types/quote/QuoteDraft';
+import { QuoteDraftState } from '@Types/quote/QuoteDraft';
 import { ProductMapper } from '@Commerce-commercetools/mappers/ProductMapper';
 import { QuoteRequestState } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/quote-request';
 import { StagedQuoteState } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/staged-quote';
 import { Quote, QuoteState } from '@Types/quote/Quote';
-import { StagedQuote } from '@Types/quote/StagedQuote';
-import { DeprecatedQuote } from '@Types/quote/DeprecatedQuote';
 
 export class QuoteMappers {
   static commercetoolsQuoteRequestToQuote(commercetoolsQuoteRequest: CommercetoolsQuoteRequest, locale: Locale): Quote {
     return {
       quoteDraftId: commercetoolsQuoteRequest.id,
       key: commercetoolsQuoteRequest.key,
->>>>>>> Stashed changes
       createdAt: new Date(commercetoolsQuoteRequest.createdAt),
       lastModifiedAt: new Date(commercetoolsQuoteRequest.lastModifiedAt),
       account: {
         accountId: commercetoolsQuoteRequest.customer.id,
+        ...(commercetoolsQuoteRequest.customer?.obj
+          ? AccountMapper.commercetoolsCustomerToAccount(commercetoolsQuoteRequest.customer.obj, locale)
+          : undefined),
       },
       buyerComment: commercetoolsQuoteRequest.comment,
       store: { key: commercetoolsQuoteRequest.store.key },
       businessUnit: { key: commercetoolsQuoteRequest.businessUnit.key },
       lineItems: CartMapper.commercetoolsLineItemsToLineItems(commercetoolsQuoteRequest.lineItems, locale),
       sum: ProductMapper.commercetoolsMoneyToMoney(commercetoolsQuoteRequest.totalPrice),
-<<<<<<< Updated upstream
-=======
       taxed: CartMapper.commercetoolsTaxedPriceToTaxed(commercetoolsQuoteRequest.taxedPrice, locale),
->>>>>>> Stashed changes
       shippingAddress: AccountMapper.commercetoolsAddressToAddress(commercetoolsQuoteRequest.shippingAddress),
       billingAddress: AccountMapper.commercetoolsAddressToAddress(commercetoolsQuoteRequest.billingAddress),
       quoteDraftState: this.commercetoolsQuoteStateToQuoteDraftState(commercetoolsQuoteRequest.quoteRequestState),
@@ -64,13 +44,9 @@ export class QuoteMappers {
     };
   }
 
-<<<<<<< Updated upstream
-=======
   static updateQuoteFromCommercetoolsStagedQuote(quotes: Quote[], commercetoolsStagedQuote: CommercetoolsStagedQuote) {
     const quoteToUpdate = quotes.find((quote) => quote.quoteDraftId === commercetoolsStagedQuote.quoteRequest.id);
     if (quoteToUpdate) {
-      console.debug('quoteToUpdate:: ', quoteToUpdate);
-      console.debug('commercetoolsStagedQuote:: ', commercetoolsStagedQuote);
       quoteToUpdate.sellerComment = commercetoolsStagedQuote.sellerComment;
       quoteToUpdate.quoteDraftState = this.commercetoolsQuoteStateToQuoteDraftState(
         commercetoolsStagedQuote.stagedQuoteState,
@@ -83,8 +59,6 @@ export class QuoteMappers {
   static updateQuoteFromCommercetoolsQuote(quotes: Quote[], commercetoolsQuote: CommercetoolsQuote) {
     const quoteToUpdate = quotes.find((quote) => quote.quoteDraftId === commercetoolsQuote.quoteRequest.id);
     if (quoteToUpdate) {
-      console.debug('quoteToUpdate:: ', quoteToUpdate);
-      console.debug('commercetoolsQuote:: ', commercetoolsQuote);
       quoteToUpdate.quoteId = commercetoolsQuote.id;
       quoteToUpdate.quoteState = this.commercetoolsQuoteStateToQuoteState(commercetoolsQuote.quoteState);
       quoteToUpdate.lastModifiedAt = new Date(commercetoolsQuote.lastModifiedAt);
@@ -92,7 +66,6 @@ export class QuoteMappers {
     }
   }
 
->>>>>>> Stashed changes
   static commercetoolsQuoteRequestsToQuoteRequests(
     results: CommercetoolsQuoteRequest[],
     locale: Locale,
@@ -154,15 +127,12 @@ export class QuoteMappers {
       case commercetoolsQuoteState === 'Submitted':
         quoteDraftState = QuoteDraftState.Submitted;
         break;
-<<<<<<< Updated upstream
-=======
       case commercetoolsQuoteState === 'InProgress':
         quoteDraftState = QuoteDraftState.InProgress;
         break;
       case commercetoolsQuoteState === 'Sent':
         quoteDraftState = QuoteDraftState.Sent;
         break;
->>>>>>> Stashed changes
       default:
         break;
     }
