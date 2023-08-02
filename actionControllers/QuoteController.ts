@@ -70,25 +70,6 @@ export const createQuote: ActionHook = async (request: Request, actionContext: A
   return response;
 };
 
-export const getMyQuoteRequests: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const quoteApi = new QuoteApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-
-  const accountId = request.sessionData?.account?.accountId;
-  if (!accountId) {
-    throw new Error('No active user');
-  }
-
-  const quoteRequests = await quoteApi.getQuoteRequestsByCustomer(accountId);
-
-  const response: Response = {
-    statusCode: 200,
-    body: JSON.stringify(quoteRequests),
-    sessionData: request.sessionData,
-  };
-
-  return response;
-};
-
 export const getMyQuotesOverview: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const quoteApi = new QuoteApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 
