@@ -1,9 +1,6 @@
 import { ActionContext, Request, Response } from '@frontastic/extension-types';
 import { Cart as CommercetoolsCart } from '@commercetools/platform-sdk';
 import { getCurrency, getLocale } from '../utils/Request';
-import { DeprecatedQuoteRequest } from '@Types/quote/DeprecatedQuoteRequest';
-import { DeprecatedQuote } from '@Types/quote/DeprecatedQuote';
-import { StagedQuote } from '@Types/quote/StagedQuote';
 import { CartApi } from '../apis/CartApi';
 import { QuoteApi } from '../apis/QuoteApi';
 import { Cart } from '@Types/cart/Cart';
@@ -11,6 +8,7 @@ import { CartFetcher } from '@Commerce-commercetools/utils/CartFetcher';
 import { QuoteRequest } from '@Types/quote/QuoteRequest';
 import { fetchAccountFromSession } from '@Commerce-commercetools/utils/fetchAccountFromSession';
 import { AccountAuthenticationError } from '@Commerce-commercetools/errors/AccountAuthenticationError';
+import { QuoteState } from '@Types/quote/Quote';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
 
@@ -80,7 +78,7 @@ export const updateQuoteState: ActionHook = async (request: Request, actionConte
   const quote = await quoteApi.updateQuoteState(ID, state);
   const sessionData = { ...request.sessionData };
 
-  if (state === 'Accepted') {
+  if (state === QuoteState.Accepted) {
     const stagedQuote = await quoteApi.getStagedQuote(quote.stagedQuote.id);
 
     const commercetoolsCart = stagedQuote.quotationCart.obj as CommercetoolsCart;
@@ -107,15 +105,12 @@ export const updateQuoteState: ActionHook = async (request: Request, actionConte
   return response;
 };
 
-export const updateQuoteRequestState: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  console.debug('updateQuoteRequestState', request.body);
-
+export const cancelQuoteRequest: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const quoteApi = new QuoteApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 
-  const ID = request.query?.['id'];
-  const { state } = JSON.parse(request.body);
+  const quoteRequestId = request.query?.['id'];
 
-  const quoteRequest = await quoteApi.updateQuoteRequestState(ID, state);
+  const quoteRequest = await quoteApi.cancelQuoteRequest(quoteRequestId);
 
   const response: Response = {
     statusCode: 200,
