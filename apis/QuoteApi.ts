@@ -171,7 +171,7 @@ export class QuoteApi extends BaseApi {
         .execute()
         .then((response) => {
           return response.body.results.map((commercetoolsQuote) => {
-            QuoteMappers.updateQuoteFromCommercetoolsQuote(quotes, commercetoolsQuote);
+            QuoteMappers.updateQuoteFromCommercetoolsQuote(quotes, commercetoolsQuote, locale);
           });
         })
         .catch((error) => {
