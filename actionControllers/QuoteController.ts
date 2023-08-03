@@ -1,14 +1,14 @@
 import { ActionContext, Request, Response } from '@frontastic/extension-types';
 import { Cart as CommercetoolsCart } from '@commercetools/platform-sdk';
 import { getCurrency, getLocale } from '../utils/Request';
-import { QuoteRequest } from '@Types/quote/QuoteRequest';
+import { DeprecatedQuoteRequest } from '@Types/quote/DeprecatedQuoteRequest';
 import { DeprecatedQuote } from '@Types/quote/DeprecatedQuote';
 import { StagedQuote } from '@Types/quote/StagedQuote';
 import { CartApi } from '../apis/CartApi';
 import { QuoteApi } from '../apis/QuoteApi';
 import { Cart } from '@Types/cart/Cart';
 import { CartFetcher } from '@Commerce-commercetools/utils/CartFetcher';
-import { QuoteDraft } from '@Types/quote/QuoteDraft';
+import { QuoteRequest } from '@Types/quote/QuoteRequest';
 import { fetchAccountFromSession } from '@Commerce-commercetools/utils/fetchAccountFromSession';
 import { AccountAuthenticationError } from '@Commerce-commercetools/errors/AccountAuthenticationError';
 
@@ -23,7 +23,7 @@ export const createQuote: ActionHook = async (request: Request, actionContext: A
   const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 
   const quoteBody: QuoteRequestBody = JSON.parse(request.body);
-  let quoteDraft: QuoteDraft = {
+  let quoteDraft: QuoteRequest = {
     buyerComment: quoteBody.comment,
   };
 

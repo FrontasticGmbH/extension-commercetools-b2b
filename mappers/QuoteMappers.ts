@@ -7,22 +7,22 @@ import {
 } from '@commercetools/platform-sdk';
 import { Locale } from '@Commerce-commercetools/interfaces/Locale';
 import { CartMapper } from './CartMapper';
-import { QuoteRequest } from '@Types/quote/QuoteRequest';
+import { DeprecatedQuoteRequest } from '@Types/quote/DeprecatedQuoteRequest';
 import { Cart } from '@Types/cart/Cart';
 import { AccountMapper } from '@Commerce-commercetools/mappers/AccountMapper';
-import { QuoteDraftState } from '@Types/quote/QuoteDraft';
+import { QuoteRequestState } from '@Types/quote/QuoteRequest';
 import { ProductMapper } from '@Commerce-commercetools/mappers/ProductMapper';
-import { QuoteRequestState } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/quote-request';
-import { StagedQuoteState } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/staged-quote';
+import { QuoteRequestState as CommercetoolsQuoteRequestState } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/quote-request';
+import { StagedQuoteState as CommercetoolsStagedQuoteState } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/staged-quote';
 import { Quote, QuoteState } from '@Types/quote/Quote';
 
 export class QuoteMappers {
   static commercetoolsQuoteRequestToQuote(commercetoolsQuoteRequest: CommercetoolsQuoteRequest, locale: Locale): Quote {
     return {
-      quoteDraftId: commercetoolsQuoteRequest.id,
+      quoteRequestId: commercetoolsQuoteRequest.id,
       key: commercetoolsQuoteRequest.key,
-      quoteDraftCreatedAt: new Date(commercetoolsQuoteRequest.createdAt),
-      quoteDraftLastModifiedAt: new Date(commercetoolsQuoteRequest.lastModifiedAt),
+      createdAt: new Date(commercetoolsQuoteRequest.createdAt),
+      lastModifiedAt: new Date(commercetoolsQuoteRequest.lastModifiedAt),
       account: {
         accountId: commercetoolsQuoteRequest.customer.id,
         ...(commercetoolsQuoteRequest.customer?.obj
@@ -32,12 +32,12 @@ export class QuoteMappers {
       buyerComment: commercetoolsQuoteRequest.comment,
       store: { key: commercetoolsQuoteRequest.store.key },
       businessUnit: { key: commercetoolsQuoteRequest.businessUnit.key },
-      quoteDraftLineItems: CartMapper.commercetoolsLineItemsToLineItems(commercetoolsQuoteRequest.lineItems, locale),
-      quoteDraftSum: ProductMapper.commercetoolsMoneyToMoney(commercetoolsQuoteRequest.totalPrice),
-      quoteDraftTax: CartMapper.commercetoolsTaxedPriceToTaxed(commercetoolsQuoteRequest.taxedPrice, locale),
+      lineItems: CartMapper.commercetoolsLineItemsToLineItems(commercetoolsQuoteRequest.lineItems, locale),
+      sum: ProductMapper.commercetoolsMoneyToMoney(commercetoolsQuoteRequest.totalPrice),
+      tax: CartMapper.commercetoolsTaxedPriceToTaxed(commercetoolsQuoteRequest.taxedPrice, locale),
       shippingAddress: AccountMapper.commercetoolsAddressToAddress(commercetoolsQuoteRequest.shippingAddress),
       billingAddress: AccountMapper.commercetoolsAddressToAddress(commercetoolsQuoteRequest.billingAddress),
-      quoteDraftState: this.commercetoolsQuoteStateToQuoteDraftState(commercetoolsQuoteRequest.quoteRequestState),
+      state: this.commercetoolsQuoteStateToQuoteDraftState(commercetoolsQuoteRequest.quoteRequestState),
       itemShippingAddresses: commercetoolsQuoteRequest.itemShippingAddresses.map((itemShippingAddress) =>
         AccountMapper.commercetoolsAddressToAddress(itemShippingAddress),
       ),
@@ -45,19 +45,17 @@ export class QuoteMappers {
   }
 
   static updateQuoteFromCommercetoolsStagedQuote(quotes: Quote[], commercetoolsStagedQuote: CommercetoolsStagedQuote) {
-    const quoteToUpdate = quotes.find((quote) => quote.quoteDraftId === commercetoolsStagedQuote.quoteRequest.id);
+    const quoteToUpdate = quotes.find((quote) => quote.quoteRequestId === commercetoolsStagedQuote.quoteRequest.id);
     if (quoteToUpdate) {
       quoteToUpdate.sellerComment = commercetoolsStagedQuote.sellerComment;
-      quoteToUpdate.quoteDraftState = this.commercetoolsQuoteStateToQuoteDraftState(
-        commercetoolsStagedQuote.stagedQuoteState,
-      );
-      quoteToUpdate.quoteDraftLastModifiedAt = new Date(commercetoolsStagedQuote.lastModifiedAt);
-      quoteToUpdate.quoteDraftExpirationDate = new Date(commercetoolsStagedQuote.validTo);
+      quoteToUpdate.state = this.commercetoolsQuoteStateToQuoteDraftState(commercetoolsStagedQuote.stagedQuoteState);
+      quoteToUpdate.lastModifiedAt = new Date(commercetoolsStagedQuote.lastModifiedAt);
+      quoteToUpdate.expirationDate = new Date(commercetoolsStagedQuote.validTo);
     }
   }
 
   static updateQuoteFromCommercetoolsQuote(quotes: Quote[], commercetoolsQuote: CommercetoolsQuote, locale: Locale) {
-    const quoteToUpdate = quotes.find((quote) => quote.quoteDraftId === commercetoolsQuote.quoteRequest.id);
+    const quoteToUpdate = quotes.find((quote) => quote.quoteRequestId === commercetoolsQuote.quoteRequest.id);
     if (quoteToUpdate) {
       quoteToUpdate.quoteId = commercetoolsQuote.id;
       quoteToUpdate.key = commercetoolsQuote.key;
@@ -74,7 +72,7 @@ export class QuoteMappers {
   static commercetoolsQuoteRequestsToQuoteRequests(
     results: CommercetoolsQuoteRequest[],
     locale: Locale,
-  ): QuoteRequest[] {
+  ): DeprecatedQuoteRequest[] {
     return results?.map((quote) => ({
       ...quote,
       customer: {
@@ -112,31 +110,31 @@ export class QuoteMappers {
   }
 
   static commercetoolsQuoteStateToQuoteDraftState(
-    commercetoolsQuoteState: QuoteRequestState | StagedQuoteState,
-  ): QuoteDraftState {
-    let quoteDraftState: QuoteDraftState;
+    commercetoolsQuoteState: CommercetoolsQuoteRequestState | CommercetoolsStagedQuoteState,
+  ): QuoteRequestState {
+    let quoteDraftState: QuoteRequestState;
 
     switch (true) {
       case commercetoolsQuoteState === 'Accepted':
-        quoteDraftState = QuoteDraftState.Accepted;
+        quoteDraftState = QuoteRequestState.Accepted;
         break;
       case commercetoolsQuoteState === 'Cancelled':
-        quoteDraftState = QuoteDraftState.Cancelled;
+        quoteDraftState = QuoteRequestState.Cancelled;
         break;
       case commercetoolsQuoteState === 'Closed':
-        quoteDraftState = QuoteDraftState.Closed;
+        quoteDraftState = QuoteRequestState.Closed;
         break;
       case commercetoolsQuoteState === 'Rejected':
-        quoteDraftState = QuoteDraftState.Rejected;
+        quoteDraftState = QuoteRequestState.Rejected;
         break;
       case commercetoolsQuoteState === 'Submitted':
-        quoteDraftState = QuoteDraftState.Submitted;
+        quoteDraftState = QuoteRequestState.Submitted;
         break;
       case commercetoolsQuoteState === 'InProgress':
-        quoteDraftState = QuoteDraftState.InProgress;
+        quoteDraftState = QuoteRequestState.InProgress;
         break;
       case commercetoolsQuoteState === 'Sent':
-        quoteDraftState = QuoteDraftState.Sent;
+        quoteDraftState = QuoteRequestState.Sent;
         break;
       default:
         break;

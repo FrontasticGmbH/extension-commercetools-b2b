@@ -9,13 +9,13 @@ import {
 import { BaseApi } from './BaseApi';
 import { QuoteMappers } from '../mappers/QuoteMappers';
 import { Cart } from '@Types/cart/Cart';
-import { QuoteDraft } from '@Types/quote/QuoteDraft';
+import { QuoteRequest } from '@Types/quote/QuoteRequest';
 import { Account } from '@Types/account/Account';
 import { Quote } from '@Types/quote/Quote';
 
 export class QuoteApi extends BaseApi {
-  createQuote: (quoteDraft: QuoteDraft, cart: Cart) => Promise<QuoteDraft> = async (
-    quoteDraft: QuoteDraft,
+  createQuote: (quoteDraft: QuoteRequest, cart: Cart) => Promise<QuoteRequest> = async (
+    quoteDraft: QuoteRequest,
     cart: Cart,
   ) => {
     try {
