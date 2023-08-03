@@ -5,7 +5,7 @@ import {
   StagedQuote as CommercetoolsStagedQuote,
 } from '@commercetools/platform-sdk';
 import { BaseApi } from './BaseApi';
-import { QuoteMappers } from '../mappers/QuoteMappers';
+import { QuoteMapper } from '../mappers/QuoteMapper';
 import { Cart } from '@Types/cart/Cart';
 import { QuoteRequest, QuoteRequestState } from '@Types/quote/QuoteRequest';
 import { Account } from '@Types/account/Account';
@@ -38,7 +38,7 @@ export class QuoteApi extends BaseApi {
       })
       .execute()
       .then((response) => {
-        return QuoteMappers.commercetoolsQuoteRequestToQuoteRequest(response.body, locale);
+        return QuoteMapper.commercetoolsQuoteRequestToQuoteRequest(response.body, locale);
       })
       .catch((error) => {
         throw new ExternalError({ status: error.code, message: error.message, body: error.body });
@@ -103,7 +103,7 @@ export class QuoteApi extends BaseApi {
       .then((response) => {
         return response.body.results.map((commercetoolsQuoteRequest) => {
           const quote: Quote = {
-            quotedRequested: QuoteMappers.commercetoolsQuoteRequestToQuoteRequest(commercetoolsQuoteRequest, locale),
+            quotedRequested: QuoteMapper.commercetoolsQuoteRequestToQuoteRequest(commercetoolsQuoteRequest, locale),
           };
 
           return quote;
@@ -126,7 +126,7 @@ export class QuoteApi extends BaseApi {
       .execute()
       .then((response) => {
         return response.body.results.map((commercetoolsStagedQuote) => {
-          QuoteMappers.updateQuotesFromCommercetoolsStagedQuotes(quotes, commercetoolsStagedQuote);
+          QuoteMapper.updateQuotesFromCommercetoolsStagedQuotes(quotes, commercetoolsStagedQuote);
         });
       })
       .catch((error) => {
@@ -146,7 +146,7 @@ export class QuoteApi extends BaseApi {
       .execute()
       .then((response) => {
         return response.body.results.map((commercetoolsQuote) => {
-          QuoteMappers.updateQuotesFromCommercetoolsQuotes(quotes, commercetoolsQuote, locale);
+          QuoteMapper.updateQuotesFromCommercetoolsQuotes(quotes, commercetoolsQuote, locale);
         });
       })
       .catch((error) => {
@@ -176,7 +176,7 @@ export class QuoteApi extends BaseApi {
         })
         .execute()
         .then((response) => {
-          return QuoteMappers.commercetoolsQuoteToQuote(response.body, locale);
+          return QuoteMapper.commercetoolsQuoteToQuote(response.body, locale);
         })
         .catch((error) => {
           throw new ExternalError({ status: error.code, message: error.message, body: error.body });
@@ -204,7 +204,7 @@ export class QuoteApi extends BaseApi {
         })
         .execute()
         .then((response) => {
-          return QuoteMappers.commercetoolsQuoteToQuote(response.body, locale);
+          return QuoteMapper.commercetoolsQuoteToQuote(response.body, locale);
         })
         .catch((error) => {
           throw new ExternalError({ status: error.code, message: error.message, body: error.body });
@@ -232,7 +232,7 @@ export class QuoteApi extends BaseApi {
         })
         .execute()
         .then((response) => {
-          return QuoteMappers.commercetoolsQuoteRequestToQuoteRequest(response.body, locale);
+          return QuoteMapper.commercetoolsQuoteRequestToQuoteRequest(response.body, locale);
         })
         .catch((error) => {
           throw new ExternalError({ status: error.code, message: error.message, body: error.body });
