@@ -7,9 +7,6 @@ import {
   QuoteRequestState,
 } from '@commercetools/platform-sdk';
 import { BaseApi } from './BaseApi';
-import { QuoteRequest } from '@Types/quote/QuoteRequest';
-import { DeprecatedQuote } from '@Types/quote/DeprecatedQuote';
-import { StagedQuote } from '@Types/quote/StagedQuote';
 import { QuoteMappers } from '../mappers/QuoteMappers';
 import { Cart } from '@Types/cart/Cart';
 import { QuoteDraft } from '@Types/quote/QuoteDraft';
@@ -117,82 +114,6 @@ export class QuoteApi extends BaseApi {
     }
   };
 
-  // getQuoteRequestsByCustomer: (customerId: string) => Promise<QuoteRequest[]> = async (customerId: string) => {
-  //   try {
-  //     const locale = await this.getCommercetoolsLocal();
-  //
-  //     return this.requestBuilder()
-  //       .quoteRequests()
-  //       .get({
-  //         queryArgs: {
-  //           where: `customer(id="${customerId}")`,
-  //           expand: 'customer',
-  //           sort: 'createdAt desc',
-  //           limit: 50,
-  //         },
-  //       })
-  //       .execute()
-  //       .then((response) => {
-  //         return QuoteMappers.commercetoolsQuoteRequestsToQuoteRequests(response.body.results, locale);
-  //       })
-  //       .catch((error) => {
-  //         throw error;
-  //       });
-  //   } catch {
-  //     throw '';
-  //   }
-  // };
-
-  // getStagedQuotesByCustomer: (customerId: string) => Promise<StagedQuote[]> = async (customerId: string) => {
-  //   const locale = await this.getCommercetoolsLocal();
-  //   try {
-  //     return this.requestBuilder()
-  //       .stagedQuotes()
-  //       .get({
-  //         queryArgs: {
-  //           where: `customer(id="${customerId}")`,
-  //           expand: ['customer', 'quotationCart'],
-  //           sort: 'createdAt desc',
-  //           limit: 50,
-  //         },
-  //       })
-  //       .execute()
-  //       .then((response) => {
-  //         return QuoteMappers.mapCommercetoolsStagedQuote(response.body.results, locale);
-  //       })
-  //       .catch((error) => {
-  //         throw error;
-  //       });
-  //   } catch {
-  //     throw '';
-  //   }
-  // };
-
-  // getQuotesByCustomer: (customerId: string) => Promise<DeprecatedQuote[]> = async (customerId: string) => {
-  //   const locale = await this.getCommercetoolsLocal();
-  //   try {
-  //     return this.requestBuilder()
-  //       .quotes()
-  //       .get({
-  //         queryArgs: {
-  //           where: `customer(id="${customerId}")`,
-  //           expand: 'customer',
-  //           sort: 'createdAt desc',
-  //           limit: 50,
-  //         },
-  //       })
-  //       .execute()
-  //       .then((response) => {
-  //         return QuoteMappers.mapCommercetoolsQuote(response.body.results, locale);
-  //       })
-  //       .catch((error) => {
-  //         throw error;
-  //       });
-  //   } catch {
-  //     throw '';
-  //   }
-  // };
-
   getQuotes: (account: Account) => Promise<Quote[]> = async (account: Account) => {
     const locale = await this.getCommercetoolsLocal();
 
@@ -258,87 +179,6 @@ export class QuoteApi extends BaseApi {
         });
 
       return quotes;
-    } catch {
-      throw '';
-    }
-  };
-
-  getQuoteRequestsByBusinessUnit: (businessUnitKeys: string) => Promise<QuoteRequest[]> = async (
-    businessUnitKeys: string,
-  ) => {
-    const locale = await this.getCommercetoolsLocal();
-    try {
-      return this.requestBuilder()
-        .quoteRequests()
-        .get({
-          queryArgs: {
-            where: `businessUnit(key in (${businessUnitKeys}))`,
-            expand: 'customer',
-            sort: 'createdAt desc',
-            limit: 50,
-          },
-        })
-        .execute()
-        .then((response) => {
-          return QuoteMappers.commercetoolsQuoteRequestsToQuoteRequests(response.body.results, locale);
-        })
-        .catch((error) => {
-          throw error;
-        });
-    } catch {
-      throw '';
-    }
-  };
-
-  getStagedQuotesByBusinessUnit: (businessUnitKeys: string) => Promise<StagedQuote[]> = async (
-    businessUnitKeys: string,
-  ) => {
-    const locale = await this.getCommercetoolsLocal();
-    try {
-      return this.requestBuilder()
-        .stagedQuotes()
-        .get({
-          queryArgs: {
-            where: `businessUnit(key in (${businessUnitKeys}))`,
-            expand: ['customer', 'quotationCart'],
-            sort: 'createdAt desc',
-            limit: 50,
-          },
-        })
-        .execute()
-        .then((response) => {
-          return QuoteMappers.mapCommercetoolsStagedQuote(response.body.results, locale);
-        })
-        .catch((error) => {
-          throw error;
-        });
-    } catch {
-      throw '';
-    }
-  };
-
-  getQuotesByBusinessUnit: (businessUnitKeys: string) => Promise<DeprecatedQuote[]> = async (
-    businessUnitKeys: string,
-  ) => {
-    const locale = await this.getCommercetoolsLocal();
-    try {
-      return this.requestBuilder()
-        .quotes()
-        .get({
-          queryArgs: {
-            where: `businessUnit(key in (${businessUnitKeys}))`,
-            expand: 'customer',
-            sort: 'createdAt desc',
-            limit: 50,
-          },
-        })
-        .execute()
-        .then((response) => {
-          return QuoteMappers.mapCommercetoolsQuote(response.body.results, locale);
-        })
-        .catch((error) => {
-          throw error;
-        });
     } catch {
       throw '';
     }

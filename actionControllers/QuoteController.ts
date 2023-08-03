@@ -18,27 +18,6 @@ export interface QuoteRequestBody {
   comment: string;
 }
 
-const mergeQuotesOverview = (quoteRequests: QuoteRequest[], stagedQuotes: StagedQuote[], quotes: DeprecatedQuote[]) => {
-  // combine quote-requests + quote + staged-quote
-  return quoteRequests?.map((quoteRequest) => {
-    const stagedQuote = stagedQuotes?.find((stagedQuote) => stagedQuote.quoteRequest.id === quoteRequest.id);
-    if (stagedQuote) {
-      // @ts-ignore
-      quoteRequest.staged = stagedQuote;
-      // @ts-ignore
-      quoteRequest.quoteRequestState = stagedQuote.stagedQuoteState;
-    }
-    const quote = quotes?.find((quote) => quote.quoteRequest.id === quoteRequest.id);
-    if (quote) {
-      // @ts-ignore
-      quoteRequest.quoted = quote;
-      // @ts-ignore
-      quoteRequest.quoteRequestState = quote.quoteState;
-    }
-    return quoteRequest;
-  });
-};
-
 export const createQuote: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const quoteApi = new QuoteApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
   const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
@@ -90,54 +69,9 @@ export const getQuotes: ActionHook = async (request: Request, actionContext: Act
   return response;
 };
 
-// export const getMyQuotesOverview: ActionHook = async (request: Request, actionContext: ActionContext) => {
-//   const quoteApi = new QuoteApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-//
-//   const accountId = request.sessionData?.account?.accountId;
-//   if (!accountId) {
-//     throw new Error('No active user');
-//   }
-//
-//   const quoteRequests = await quoteApi.getQuoteRequestsByCustomer(accountId);
-//   const stagedQuotes = await quoteApi.getStagedQuotesByCustomer(accountId);
-//   const quotes = await quoteApi.getQuotesByCustomer(accountId);
-//
-//   const res = mergeQuotesOverview(quoteRequests, stagedQuotes, quotes);
-//
-//   const response: Response = {
-//     statusCode: 200,
-//     body: JSON.stringify(res),
-//     sessionData: request.sessionData,
-//   };
-//
-//   return response;
-// };
-
-export const getBusinessUnitQuotesOverview: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const quoteApi = new QuoteApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-
-  const keys = request.query['keys'];
-
-  if (!keys) {
-    throw new Error('No business unit');
-  }
-
-  const quoteRequests = await quoteApi.getQuoteRequestsByBusinessUnit(keys);
-  const stagedQuotes = await quoteApi.getStagedQuotesByBusinessUnit(keys);
-  const quotes = await quoteApi.getQuotesByBusinessUnit(keys);
-
-  const res = mergeQuotesOverview(quoteRequests, stagedQuotes, quotes);
-
-  const response: Response = {
-    statusCode: 200,
-    body: JSON.stringify(res),
-    sessionData: request.sessionData,
-  };
-
-  return response;
-};
-
 export const updateQuoteState: ActionHook = async (request: Request, actionContext: ActionContext) => {
+  console.debug('updateQuoteState', request.body);
+
   const quoteApi = new QuoteApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 
   const ID = request.query?.['id'];
@@ -174,6 +108,8 @@ export const updateQuoteState: ActionHook = async (request: Request, actionConte
 };
 
 export const updateQuoteRequestState: ActionHook = async (request: Request, actionContext: ActionContext) => {
+  console.debug('updateQuoteRequestState', request.body);
+
   const quoteApi = new QuoteApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 
   const ID = request.query?.['id'];
