@@ -19,53 +19,63 @@ import { Quote, QuoteState } from '@Types/quote/Quote';
 export class QuoteMappers {
   static commercetoolsQuoteRequestToQuote(commercetoolsQuoteRequest: CommercetoolsQuoteRequest, locale: Locale): Quote {
     return {
-      quoteRequestId: commercetoolsQuoteRequest.id,
-      key: commercetoolsQuoteRequest.key,
-      createdAt: new Date(commercetoolsQuoteRequest.createdAt),
-      lastModifiedAt: new Date(commercetoolsQuoteRequest.lastModifiedAt),
-      account: {
-        accountId: commercetoolsQuoteRequest.customer.id,
-        ...(commercetoolsQuoteRequest.customer?.obj
-          ? AccountMapper.commercetoolsCustomerToAccount(commercetoolsQuoteRequest.customer.obj, locale)
-          : undefined),
+      quotedRequested: {
+        quoteRequestId: commercetoolsQuoteRequest.id,
+        key: commercetoolsQuoteRequest.key,
+        createdAt: new Date(commercetoolsQuoteRequest.createdAt),
+        lastModifiedAt: new Date(commercetoolsQuoteRequest.lastModifiedAt),
+        account: {
+          accountId: commercetoolsQuoteRequest.customer.id,
+          ...(commercetoolsQuoteRequest.customer?.obj
+            ? AccountMapper.commercetoolsCustomerToAccount(commercetoolsQuoteRequest.customer.obj, locale)
+            : undefined),
+        },
+        buyerComment: commercetoolsQuoteRequest.comment,
+        store: { key: commercetoolsQuoteRequest.store.key },
+        businessUnit: { key: commercetoolsQuoteRequest.businessUnit.key },
+        lineItems: CartMapper.commercetoolsLineItemsToLineItems(commercetoolsQuoteRequest.lineItems, locale),
+        sum: ProductMapper.commercetoolsMoneyToMoney(commercetoolsQuoteRequest.totalPrice),
+        tax: CartMapper.commercetoolsTaxedPriceToTaxed(commercetoolsQuoteRequest.taxedPrice, locale),
+        shippingAddress: AccountMapper.commercetoolsAddressToAddress(commercetoolsQuoteRequest.shippingAddress),
+        billingAddress: AccountMapper.commercetoolsAddressToAddress(commercetoolsQuoteRequest.billingAddress),
+        quoteRequestState: this.commercetoolsQuoteStateToQuoteDraftState(commercetoolsQuoteRequest.quoteRequestState),
+        itemShippingAddresses: commercetoolsQuoteRequest.itemShippingAddresses.map((itemShippingAddress) =>
+          AccountMapper.commercetoolsAddressToAddress(itemShippingAddress),
+        ),
       },
-      buyerComment: commercetoolsQuoteRequest.comment,
-      store: { key: commercetoolsQuoteRequest.store.key },
-      businessUnit: { key: commercetoolsQuoteRequest.businessUnit.key },
-      lineItems: CartMapper.commercetoolsLineItemsToLineItems(commercetoolsQuoteRequest.lineItems, locale),
-      sum: ProductMapper.commercetoolsMoneyToMoney(commercetoolsQuoteRequest.totalPrice),
-      tax: CartMapper.commercetoolsTaxedPriceToTaxed(commercetoolsQuoteRequest.taxedPrice, locale),
-      shippingAddress: AccountMapper.commercetoolsAddressToAddress(commercetoolsQuoteRequest.shippingAddress),
-      billingAddress: AccountMapper.commercetoolsAddressToAddress(commercetoolsQuoteRequest.billingAddress),
-      state: this.commercetoolsQuoteStateToQuoteDraftState(commercetoolsQuoteRequest.quoteRequestState),
-      itemShippingAddresses: commercetoolsQuoteRequest.itemShippingAddresses.map((itemShippingAddress) =>
-        AccountMapper.commercetoolsAddressToAddress(itemShippingAddress),
-      ),
     };
   }
 
   static updateQuoteFromCommercetoolsStagedQuote(quotes: Quote[], commercetoolsStagedQuote: CommercetoolsStagedQuote) {
-    const quoteToUpdate = quotes.find((quote) => quote.quoteRequestId === commercetoolsStagedQuote.quoteRequest.id);
+    const quoteToUpdate = quotes.find(
+      (quote) => quote.quotedRequested.quoteRequestId === commercetoolsStagedQuote.quoteRequest.id,
+    );
     if (quoteToUpdate) {
-      quoteToUpdate.sellerComment = commercetoolsStagedQuote.sellerComment;
-      quoteToUpdate.state = this.commercetoolsQuoteStateToQuoteDraftState(commercetoolsStagedQuote.stagedQuoteState);
-      quoteToUpdate.lastModifiedAt = new Date(commercetoolsStagedQuote.lastModifiedAt);
-      quoteToUpdate.expirationDate = new Date(commercetoolsStagedQuote.validTo);
+      quoteToUpdate.quotedRequested.sellerComment = commercetoolsStagedQuote.sellerComment;
+      quoteToUpdate.quotedRequested.quoteRequestState = this.commercetoolsQuoteStateToQuoteDraftState(
+        commercetoolsStagedQuote.stagedQuoteState,
+      );
+      quoteToUpdate.quotedRequested.lastModifiedAt = new Date(commercetoolsStagedQuote.lastModifiedAt);
+      quoteToUpdate.quotedRequested.expirationDate = new Date(commercetoolsStagedQuote.validTo);
     }
   }
 
   static updateQuoteFromCommercetoolsQuote(quotes: Quote[], commercetoolsQuote: CommercetoolsQuote, locale: Locale) {
-    const quoteToUpdate = quotes.find((quote) => quote.quoteRequestId === commercetoolsQuote.quoteRequest.id);
+    const quoteToUpdate = quotes.find(
+      (quote) => quote.quotedRequested.quoteRequestId === commercetoolsQuote.quoteRequest.id,
+    );
     if (quoteToUpdate) {
       quoteToUpdate.quoteId = commercetoolsQuote.id;
       quoteToUpdate.key = commercetoolsQuote.key;
       quoteToUpdate.quoteState = this.commercetoolsQuoteStateToQuoteState(commercetoolsQuote.quoteState);
-      quoteToUpdate.quoteCreatedAt = new Date(commercetoolsQuote.createdAt);
-      quoteToUpdate.quoteLastModifiedAt = new Date(commercetoolsQuote.lastModifiedAt);
-      quoteToUpdate.quoteLineItems = CartMapper.commercetoolsLineItemsToLineItems(commercetoolsQuote.lineItems, locale);
-      quoteToUpdate.quoteSum = ProductMapper.commercetoolsMoneyToMoney(commercetoolsQuote.totalPrice);
-      quoteToUpdate.quoteTax = CartMapper.commercetoolsTaxedPriceToTaxed(commercetoolsQuote.taxedPrice, locale);
-      quoteToUpdate.quoteExpirationDate = new Date(commercetoolsQuote.validTo);
+      quoteToUpdate.createdAt = new Date(commercetoolsQuote.createdAt);
+      quoteToUpdate.lastModifiedAt = new Date(commercetoolsQuote.lastModifiedAt);
+      quoteToUpdate.lineItems = CartMapper.commercetoolsLineItemsToLineItems(commercetoolsQuote.lineItems, locale);
+      quoteToUpdate.sum = ProductMapper.commercetoolsMoneyToMoney(commercetoolsQuote.totalPrice);
+      quoteToUpdate.tax = CartMapper.commercetoolsTaxedPriceToTaxed(commercetoolsQuote.taxedPrice, locale);
+      quoteToUpdate.buyerComment = commercetoolsQuote.buyerComment;
+      quoteToUpdate.sellerComment = commercetoolsQuote.sellerComment;
+      quoteToUpdate.expirationDate = new Date(commercetoolsQuote.validTo);
     }
   }
 
