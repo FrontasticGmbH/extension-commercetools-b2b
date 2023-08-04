@@ -27,9 +27,18 @@ export class QuoteMapper {
       buyerComment: commercetoolsQuote.buyerComment,
       sellerComment: commercetoolsQuote.sellerComment,
       expirationDate: new Date(commercetoolsQuote.validTo),
-      quotedRequested: commercetoolsQuote.quoteRequest?.obj
-        ? this.commercetoolsQuoteRequestToQuoteRequest(commercetoolsQuote.quoteRequest.obj, locale)
-        : undefined,
+      quotedRequested: {
+        ...(commercetoolsQuote.quoteRequest?.obj
+          ? this.commercetoolsQuoteRequestToQuoteRequest(commercetoolsQuote.quoteRequest.obj, locale)
+          : undefined),
+      },
+      quotationCart: {
+        cartId: commercetoolsQuote.stagedQuote?.obj?.quotationCart?.id,
+        ...(commercetoolsQuote.stagedQuote?.obj?.quotationCart?.obj
+          ? CartMapper.commercetoolsCartToCart(commercetoolsQuote.stagedQuote.obj.quotationCart.obj, locale)
+          : undefined),
+      },
+      quoteVersion: commercetoolsQuote.version.toString(),
     };
   }
 
@@ -60,28 +69,14 @@ export class QuoteMapper {
       itemShippingAddresses: commercetoolsQuoteRequest.itemShippingAddresses.map((itemShippingAddress) =>
         AccountMapper.commercetoolsAddressToAddress(itemShippingAddress),
       ),
-    };
-  }
-
-  static commercetoolsStagedQuoteToQuoteRequest(
-    commercetoolsStagedQuote: CommercetoolsStagedQuote,
-    locale: Locale,
-  ): QuoteRequest {
-    return {
-      quoteRequestId: commercetoolsStagedQuote.quoteRequest.id,
-      ...(commercetoolsStagedQuote.quoteRequest?.obj
-        ? this.commercetoolsQuoteRequestToQuoteRequest(commercetoolsStagedQuote.quoteRequest.obj, locale)
-        : undefined),
-      sellerComment: commercetoolsStagedQuote.sellerComment,
-      quoteRequestState: this.commercetoolsQuoteStateToQuoteDraftState(commercetoolsStagedQuote.stagedQuoteState),
-      lastModifiedAt: new Date(commercetoolsStagedQuote.lastModifiedAt),
-      expirationDate: new Date(commercetoolsStagedQuote.validTo),
+      quoteRequestVersion: commercetoolsQuoteRequest.version.toString(),
     };
   }
 
   static updateQuotesFromCommercetoolsStagedQuotes(
     quotes: Quote[],
     commercetoolsStagedQuote: CommercetoolsStagedQuote,
+    locale: Locale,
   ) {
     const quoteToUpdate = quotes.find(
       (quote) => quote.quotedRequested.quoteRequestId === commercetoolsStagedQuote.quoteRequest.id,
@@ -93,6 +88,13 @@ export class QuoteMapper {
       );
       quoteToUpdate.quotedRequested.lastModifiedAt = new Date(commercetoolsStagedQuote.lastModifiedAt);
       quoteToUpdate.quotedRequested.expirationDate = new Date(commercetoolsStagedQuote.validTo);
+      quoteToUpdate.quotationCart = {
+        cartId: commercetoolsStagedQuote.quotationCart?.id,
+        ...(commercetoolsStagedQuote.quotationCart?.obj
+          ? CartMapper.commercetoolsCartToCart(commercetoolsStagedQuote.quotationCart.obj, locale)
+          : undefined),
+      };
+      quoteToUpdate.quotedRequested.quoteRequestVersion = commercetoolsStagedQuote.version.toString();
     }
   }
 
@@ -112,6 +114,7 @@ export class QuoteMapper {
       quoteToUpdate.buyerComment = commercetoolsQuote.buyerComment;
       quoteToUpdate.sellerComment = commercetoolsQuote.sellerComment;
       quoteToUpdate.expirationDate = new Date(commercetoolsQuote.validTo);
+      quoteToUpdate.quoteVersion = commercetoolsQuote.version.toString();
     }
   }
 

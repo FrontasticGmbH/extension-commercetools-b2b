@@ -65,17 +65,30 @@ export const getQuotes: ActionHook = async (request: Request, actionContext: Act
 };
 
 export const acceptQuote: ActionHook = async (request: Request, actionContext: ActionContext) => {
+  const account = fetchAccountFromSession(request);
+  if (account === undefined) {
+    throw new AccountAuthenticationError({ message: 'Not logged in.' });
+  }
+
   const quoteApi = new QuoteApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
+  const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 
   const quoteId = request.query?.['id'];
 
   const quote = await quoteApi.acceptQuote(quoteId);
-  const sessionData = { ...request.sessionData };
+
+  let cart = quote.quotationCart ?? (await quoteApi.getQuote(quote.quoteId)).quotationCart;
+
+  cart = await cartApi.setEmail(cart, quote.quotedRequested.account.email);
+  cart = await cartApi.setCustomerId(cart, quote.quotedRequested.account.accountId, account);
 
   const response: Response = {
     statusCode: 200,
     body: JSON.stringify(quote),
-    sessionData,
+    sessionData: {
+      ...request.sessionData,
+      cartId: cart.cartId,
+    },
   };
 
   return response;
@@ -87,12 +100,13 @@ export const declineQuote: ActionHook = async (request: Request, actionContext: 
   const quoteId = request.query?.['id'];
 
   const quote = await quoteApi.declineQuote(quoteId);
-  const sessionData = { ...request.sessionData };
 
   const response: Response = {
     statusCode: 200,
     body: JSON.stringify(quote),
-    sessionData,
+    sessionData: {
+      ...request.sessionData,
+    },
   };
 
   return response;
@@ -108,6 +122,9 @@ export const cancelQuoteRequest: ActionHook = async (request: Request, actionCon
   const response: Response = {
     statusCode: 200,
     body: JSON.stringify(quoteRequest),
+    sessionData: {
+      ...request.sessionData,
+    },
   };
 
   return response;

@@ -1,9 +1,4 @@
-import {
-  QuoteRequest as CommercetoolsQuoteRequest,
-  QuoteRequestDraft,
-  Quote as CommercetoolsQuote,
-  StagedQuote as CommercetoolsStagedQuote,
-} from '@commercetools/platform-sdk';
+import { QuoteRequest as CommercetoolsQuoteRequest, QuoteRequestDraft } from '@commercetools/platform-sdk';
 import { BaseApi } from './BaseApi';
 import { QuoteMapper } from '../mappers/QuoteMapper';
 import { Cart } from '@Types/cart/Cart';
@@ -68,22 +63,23 @@ export class QuoteApi extends BaseApi {
     }
   };
 
-  getQuote: (ID: string) => Promise<CommercetoolsQuote> = async (ID: string) => {
-    try {
-      return this.requestBuilder()
-        .quotes()
-        .withId({ ID })
-        .get()
-        .execute()
-        .then((response) => {
-          return response.body;
-        })
-        .catch((error) => {
-          throw new ExternalError({ status: error.code, message: error.message, body: error.body });
-        });
-    } catch {
-      throw '';
-    }
+  getQuote: (quoteId: string) => Promise<Quote> = async (quoteId: string) => {
+    const locale = await this.getCommercetoolsLocal();
+    return this.requestBuilder()
+      .quotes()
+      .withId({ ID: quoteId })
+      .get({
+        queryArgs: {
+          expand: ['customer', 'quoteRequest', 'stagedQuote'],
+        },
+      })
+      .execute()
+      .then((response) => {
+        return QuoteMapper.commercetoolsQuoteToQuote(response.body, locale);
+      })
+      .catch((error) => {
+        throw new ExternalError({ status: error.code, message: error.message, body: error.body });
+      });
   };
 
   getQuotes: (account: Account) => Promise<Quote[]> = async (account: Account) => {
@@ -118,7 +114,7 @@ export class QuoteApi extends BaseApi {
       .get({
         queryArgs: {
           where: `customer(id="${account.accountId}")`,
-          expand: ['customer', 'quotationCart'],
+          expand: ['quotationCart'],
           sort: 'createdAt desc',
           limit: 50,
         },
@@ -126,7 +122,7 @@ export class QuoteApi extends BaseApi {
       .execute()
       .then((response) => {
         return response.body.results.map((commercetoolsStagedQuote) => {
-          QuoteMapper.updateQuotesFromCommercetoolsStagedQuotes(quotes, commercetoolsStagedQuote);
+          QuoteMapper.updateQuotesFromCommercetoolsStagedQuotes(quotes, commercetoolsStagedQuote, locale);
         });
       })
       .catch((error) => {
@@ -138,7 +134,6 @@ export class QuoteApi extends BaseApi {
       .get({
         queryArgs: {
           where: `customer(id="${account.accountId}")`,
-          expand: 'customer',
           sort: 'createdAt desc',
           limit: 50,
         },
@@ -164,6 +159,9 @@ export class QuoteApi extends BaseApi {
         .quotes()
         .withId({ ID: quoteId })
         .post({
+          queryArgs: {
+            expand: ['quoteRequest', 'quoteRequest.customer', 'stagedQuote.quotationCart'],
+          },
           body: {
             actions: [
               {
@@ -171,7 +169,7 @@ export class QuoteApi extends BaseApi {
                 quoteState: QuoteState.Accepted,
               },
             ],
-            version: quote.version,
+            version: parseInt(quote.quoteVersion, 10),
           },
         })
         .execute()
@@ -192,6 +190,9 @@ export class QuoteApi extends BaseApi {
         .quotes()
         .withId({ ID: quoteId })
         .post({
+          queryArgs: {
+            expand: ['quoteRequest', 'quoteRequest.customer'],
+          },
           body: {
             actions: [
               {
@@ -199,7 +200,7 @@ export class QuoteApi extends BaseApi {
                 quoteState: QuoteState.Declined,
               },
             ],
-            version: quote.version,
+            version: parseInt(quote.quoteVersion, 10),
           },
         })
         .execute()
