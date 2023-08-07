@@ -128,7 +128,12 @@ export class BaseProductApi extends BaseApi {
             total: response.body.total,
             items: items,
             count: response.body.count,
-            facets: ProductMapper.commercetoolsFacetResultsToFacets(response.body.facets, productQuery, locale),
+            facets: ProductMapper.commercetoolsFacetResultsToFacets(
+              facetDefinitions,
+              response.body.facets,
+              productQuery,
+              locale,
+            ),
             previousCursor: ProductMapper.calculatePreviousCursor(response.body.offset, response.body.count),
             nextCursor: ProductMapper.calculateNextCursor(
               response.body.offset,
