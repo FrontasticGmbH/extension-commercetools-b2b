@@ -30,28 +30,9 @@ export class ProductMapper extends BaseProductMapper {
       price: price,
       discountedPrice: discountedPrice,
       discounts: discounts,
-      availability: this.getPriceChannelAvailability(commercetoolsVariant, productPrice),
       isOnStock: commercetoolsVariant.availability?.isOnStock || undefined,
+      restockableInDays: commercetoolsVariant.availability?.restockableInDays || undefined,
     } as Variant;
-  }
-
-  static getPriceChannelAvailability(
-    variant: CommercetoolsProductVariant,
-    productPrice?: Price,
-  ): ProductVariantAvailability {
-    let channelId = '';
-    if (productPrice) {
-      channelId = productPrice.channel?.id;
-    } else {
-      channelId = variant.scopedPrice?.channel?.id || variant.price?.channel?.id;
-    }
-    if (!channelId) {
-      return variant.availability;
-    }
-    if (!variant.availability?.channels?.[channelId]) {
-      return variant.availability;
-    }
-    return variant.availability.channels[channelId];
   }
 
   static commercetoolsCategoryToCategory: (commercetoolsCategory: CommercetoolsCategory, locale: Locale) => Category = (

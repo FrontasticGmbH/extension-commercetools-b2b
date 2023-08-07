@@ -11,18 +11,9 @@ function productQueryFromContext(context: DataSourceContext, config: DataSourceC
     context.request ? getLocale(context.request) : null,
     context.request ? getCurrency(context.request) : null,
   );
-  const additionalQueryArgs = {};
-  const distributionChannelId =
-    context.request.query?.['distributionChannelId'] ||
-    context.request.sessionData?.organization?.distributionChannel?.id;
-
-  if (distributionChannelId) {
-    // @ts-ignore
-    additionalQueryArgs.priceChannel = distributionChannelId;
-  }
 
   const productQuery = ProductQueryFactory.queryFromParams(context?.request, config);
-  return { productApi, productQuery, additionalQueryArgs };
+  return { productApi, productQuery };
 }
 
 export default {
@@ -49,9 +40,9 @@ export default {
     }
   },
   'frontastic/product-list': async (config: DataSourceConfiguration, context: DataSourceContext) => {
-    const { productApi, productQuery, additionalQueryArgs } = productQueryFromContext(context, config);
+    const { productApi, productQuery } = productQueryFromContext(context, config);
 
-    return await productApi.query(productQuery, additionalQueryArgs).then((queryResult) => {
+    return await productApi.query(productQuery).then((queryResult) => {
       return {
         dataSourcePayload: queryResult,
       };
@@ -84,9 +75,9 @@ export default {
   },
 
   'frontastic/product': async (config: DataSourceConfiguration, context: DataSourceContext) => {
-    const { productApi, productQuery, additionalQueryArgs } = productQueryFromContext(context, config);
+    const { productApi, productQuery } = productQueryFromContext(context, config);
 
-    return await productApi.getProduct(productQuery, additionalQueryArgs).then((queryResult) => {
+    return await productApi.getProduct(productQuery).then((queryResult) => {
       return {
         dataSourcePayload: {
           product: queryResult,

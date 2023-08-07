@@ -13,145 +13,133 @@ import { Product } from '@Types/product/Product';
 import { ExternalError } from '@Commerce-commercetools/utils/Errors';
 
 export class ProductApi extends BaseProductApi {
-  query: (productQuery: ProductQuery, additionalQueryArgs?: object, additionalFacets?: object[]) => Promise<Result> =
-    async (productQuery: ProductQuery, additionalQueryArgs?: object, additionalFacets: object[] = []) => {
-      const locale = await this.getCommercetoolsLocal();
+  query: (productQuery: ProductQuery) => Promise<Result> = async (productQuery: ProductQuery) => {
+    const locale = await this.getCommercetoolsLocal();
 
-      // TODO: get default from constant
-      const limit = +productQuery.limit || 24;
+    // TODO: get default from constant
+    const limit = +productQuery.limit || 24;
 
-      const filterQuery: string[] = [];
-      const filterFacets: string[] = [];
-      const sortAttributes: string[] = [];
+    const filterQuery: string[] = [];
+    const filterFacets: string[] = [];
+    const sortAttributes: string[] = [];
 
-      const facetDefinitions: FacetDefinition[] = [
-        ...ProductMapper.commercetoolsProductTypesToFacetDefinitions(await this.getProductTypes(), locale),
-        ...additionalFacets,
-        // Include Scoped Price facet
-        {
-          attributeId: 'variants.scopedPrice.value',
-          attributeType: 'money',
-        },
-        // Include Price facet
-        {
-          attributeId: 'variants.price',
-          attributeType: 'money',
-        },
-      ];
+    const facetDefinitions: FacetDefinition[] = [
+      ...ProductMapper.commercetoolsProductTypesToFacetDefinitions(await this.getProductTypes(), locale),
+      // Include Scoped Price facet
+      {
+        attributeId: 'variants.scopedPrice.value',
+        attributeType: 'money',
+      },
+      // Include Price facet
+      {
+        attributeId: 'variants.price',
+        attributeType: 'money',
+      },
+    ];
 
-      const queryArgFacets = ProductMapper.facetDefinitionsToCommercetoolsQueryArgFacets(facetDefinitions, locale);
+    const queryArgFacets = ProductMapper.facetDefinitionsToCommercetoolsQueryArgFacets(facetDefinitions, locale);
 
-      if (productQuery.productIds !== undefined && productQuery.productIds.length !== 0) {
-        filterQuery.push(`id:"${productQuery.productIds.join('","')}"`);
-      }
+    if (productQuery.productIds !== undefined && productQuery.productIds.length !== 0) {
+      filterQuery.push(`id:"${productQuery.productIds.join('","')}"`);
+    }
 
-      if (productQuery.skus !== undefined && productQuery.skus.length !== 0) {
-        filterQuery.push(`variants.sku:"${productQuery.skus.join('","')}"`);
-      }
+    if (productQuery.skus !== undefined && productQuery.skus.length !== 0) {
+      filterQuery.push(`variants.sku:"${productQuery.skus.join('","')}"`);
+    }
 
-      if (productQuery.category !== undefined && productQuery.category !== '') {
-        filterQuery.push(`categories.id:subtree("${productQuery.category}")`);
-      }
+    if (productQuery.category !== undefined && productQuery.category !== '') {
+      filterQuery.push(`categories.id:subtree("${productQuery.category}")`);
+    }
 
-      if (productQuery.rootCategoryId) {
-        filterQuery.push(`categories.id:subtree("${productQuery.rootCategoryId}")`);
-      }
+    if (productQuery.rootCategoryId) {
+      filterQuery.push(`categories.id:subtree("${productQuery.rootCategoryId}")`);
+    }
 
-      if (productQuery.filters !== undefined) {
-        productQuery.filters.forEach((filter) => {
-          switch (filter.type) {
-            case FilterTypes.TERM:
-              filterQuery.push(`${filter.identifier}.key:"${(filter as TermFilter).terms.join('","')}"`);
-              break;
-            case FilterTypes.BOOLEAN:
+    if (productQuery.filters !== undefined) {
+      productQuery.filters.forEach((filter) => {
+        switch (filter.type) {
+          case FilterTypes.TERM:
+            filterQuery.push(`${filter.identifier}.key:"${(filter as TermFilter).terms.join('","')}"`);
+            break;
+          case FilterTypes.BOOLEAN:
+            filterQuery.push(
+              `${filter.identifier}:${(filter as TermFilter).terms[0]?.toString().toLowerCase() === 'true'}`,
+            );
+            break;
+          case FilterTypes.RANGE:
+            if (filter.identifier === 'price') {
+              // The scopedPrice filter is a commercetools price filter of a product variant selected
+              // base on the price scope. The scope used is currency and country.
               filterQuery.push(
-                `${filter.identifier}:${(filter as TermFilter).terms[0]?.toString().toLowerCase() === 'true'}`,
+                `variants.scopedPrice.value.centAmount:range (${(filter as RangeFilter).min ?? '*'} to ${
+                  (filter as RangeFilter).max ?? '*'
+                })`,
               );
-              break;
-            case FilterTypes.RANGE:
-              if (filter.identifier === 'price') {
-                // The scopedPrice filter is a commercetools price filter of a product variant selected
-                // base on the price scope. The scope used is currency and country.
-                filterQuery.push(
-                  `variants.scopedPrice.value.centAmount:range (${(filter as RangeFilter).min ?? '*'} to ${
-                    (filter as RangeFilter).max ?? '*'
-                  })`,
-                );
-              }
-              break;
-          }
-        });
-      }
+            }
+            break;
+        }
+      });
+    }
 
-      if (productQuery.facets !== undefined) {
-        filterFacets.push(
-          ...ProductMapper.facetDefinitionsToFilterFacets(productQuery.facets, facetDefinitions, locale),
-        );
-      }
+    if (productQuery.facets !== undefined) {
+      filterFacets.push(...ProductMapper.facetDefinitionsToFilterFacets(productQuery.facets, facetDefinitions, locale));
+    }
 
-      if (productQuery.sortAttributes !== undefined) {
-        Object.keys(productQuery.sortAttributes).map((field, directionIndex) => {
-          sortAttributes.push(`${field} ${Object.values(productQuery.sortAttributes)[directionIndex]}`);
-        });
-      } else {
-        // default sort
-        sortAttributes.push(`variants.attributes.salesRank asc`);
-      }
+    if (productQuery.sortAttributes !== undefined) {
+      Object.keys(productQuery.sortAttributes).map((field, directionIndex) => {
+        sortAttributes.push(`${field} ${Object.values(productQuery.sortAttributes)[directionIndex]}`);
+      });
+    } else {
+      // default sort
+      sortAttributes.push(`variants.attributes.salesRank asc`);
+    }
 
-      const methodArgs = {
-        queryArgs: {
-          sort: sortAttributes,
-          limit: limit,
-          offset: this.getOffsetFromCursor(productQuery.cursor),
-          priceCurrency: locale.currency,
-          priceCountry: locale.country,
-          facet: queryArgFacets.length > 0 ? queryArgFacets : undefined,
-          filter: filterFacets.length > 0 ? filterFacets : undefined,
-          expand: 'categories[*]',
-          'filter.facets': filterFacets.length > 0 ? filterFacets : undefined,
-          'filter.query': filterQuery.length > 0 ? filterQuery : undefined,
-          [`text.${locale.language}`]: productQuery.query,
-          storeProjection: productQuery.storeKey ?? undefined,
-          ...additionalQueryArgs,
-        },
-      };
-
-      return await this.requestBuilder()
-        .productProjections()
-        .search()
-        .get(methodArgs)
-        .execute()
-        .then((response) => {
-          const items = response.body.results.map((product) =>
-            ProductMapper.commercetoolsProductProjectionToProduct(product, locale),
-          );
-
-          const result: Result = {
-            total: response.body.total,
-            items: items,
-            count: response.body.count,
-            facets: ProductMapper.commercetoolsFacetResultsToFacets(response.body.facets, productQuery, locale),
-            previousCursor: ProductMapper.calculatePreviousCursor(response.body.offset, response.body.count),
-            nextCursor: ProductMapper.calculateNextCursor(
-              response.body.offset,
-              response.body.count,
-              response.body.total,
-            ),
-            query: productQuery,
-          };
-          return result;
-        })
-        .catch((error) => {
-          throw new ExternalError({ status: error.code, message: error.message, body: error.body });
-        });
+    const methodArgs = {
+      queryArgs: {
+        sort: sortAttributes,
+        limit: limit,
+        offset: this.getOffsetFromCursor(productQuery.cursor),
+        priceCurrency: locale.currency,
+        priceCountry: locale.country,
+        facet: queryArgFacets.length > 0 ? queryArgFacets : undefined,
+        filter: filterFacets.length > 0 ? filterFacets : undefined,
+        expand: 'categories[*]',
+        'filter.facets': filterFacets.length > 0 ? filterFacets : undefined,
+        'filter.query': filterQuery.length > 0 ? filterQuery : undefined,
+        [`text.${locale.language}`]: productQuery.query,
+        storeProjection: productQuery.storeKey ?? undefined,
+      },
     };
 
-  getProduct: (productQuery: ProductQuery, additionalQueryArgs?: object) => Promise<Product> = async (
-    productQuery: ProductQuery,
-    additionalQueryArgs?: object,
-  ) => {
+    return await this.requestBuilder()
+      .productProjections()
+      .search()
+      .get(methodArgs)
+      .execute()
+      .then((response) => {
+        const items = response.body.results.map((product) =>
+          ProductMapper.commercetoolsProductProjectionToProduct(product, locale),
+        );
+
+        const result: Result = {
+          total: response.body.total,
+          items: items,
+          count: response.body.count,
+          facets: ProductMapper.commercetoolsFacetResultsToFacets(response.body.facets, productQuery, locale),
+          previousCursor: ProductMapper.calculatePreviousCursor(response.body.offset, response.body.count),
+          nextCursor: ProductMapper.calculateNextCursor(response.body.offset, response.body.count, response.body.total),
+          query: productQuery,
+        };
+        return result;
+      })
+      .catch((error) => {
+        throw new ExternalError({ status: error.code, message: error.message, body: error.body });
+      });
+  };
+
+  getProduct: (productQuery: ProductQuery) => Promise<Product> = async (productQuery: ProductQuery) => {
     try {
-      const result = await this.query(productQuery, additionalQueryArgs);
+      const result = await this.query(productQuery);
 
       return result.items.shift() as Product;
     } catch (error) {
