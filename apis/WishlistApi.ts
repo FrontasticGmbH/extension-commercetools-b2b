@@ -1,214 +1,213 @@
-import { Wishlist, WishlistDraft } from '@Types/wishlist/Wishlist';
+import { Wishlist } from '@Types/wishlist/Wishlist';
 import { BaseWishlistApi } from './BaseWishlistApi';
 import { WishlistMapper } from '../mappers/WishlistMapper';
+import { ExternalError } from '@Commerce-commercetools/utils/Errors';
+import { Account } from '@Types/account/Account';
 
 const expandVariants = ['lineItems[*].variant', 'store'];
 
 export class WishlistApi extends BaseWishlistApi {
-  getForAccount = async (accountId: string) => {
-    try {
-      const locale = await this.getCommercetoolsLocal();
-      const config = this.frontasticContext?.project?.configuration?.wishlistSharing;
+  getForAccount = async (account: Account) => {
+    const locale = await this.getCommercetoolsLocal();
+    const config = this.frontasticContext?.project?.configuration?.wishlistSharing;
 
-      const response = await this.requestBuilder()
-        .shoppingLists()
-        .get({
-          queryArgs: {
-            where: `customer(id="${accountId}")`,
-            expand: expandVariants,
-          },
-        })
-        .execute();
-
-      return response.body.results.map((shoppingList) =>
-        WishlistMapper.commercetoolsShoppingListToWishlist(shoppingList, locale, config),
-      );
-    } catch (error) {
-      throw new Error(`Get wishlist for account failed: ${error}`);
-    }
+    return await this.requestBuilder()
+      .shoppingLists()
+      .get({
+        queryArgs: {
+          where: `customer(id="${account.accountId}")`,
+          expand: expandVariants,
+        },
+      })
+      .execute()
+      .then((response) => {
+        return response.body.results.map((shoppingList) =>
+          WishlistMapper.commercetoolsShoppingListToWishlist(shoppingList, locale, config),
+        );
+      })
+      .catch((error) => {
+        throw new ExternalError({ status: error.code, message: error.message, body: error.body });
+      });
   };
 
-  getForAccountStore = async (accountId: string, storeKey: string) => {
-    try {
-      const locale = await this.getCommercetoolsLocal();
-      const response = await this.requestBuilder()
-        .inStoreKeyWithStoreKeyValue({ storeKey })
-        .shoppingLists()
-        .get({
-          queryArgs: {
-            where: [`customer(id="${accountId}")`],
-            expand: expandVariants,
-          },
-        })
-        .execute();
-
-      return response.body.results.map((shoppingList) =>
-        WishlistMapper.commercetoolsShoppingListToWishlist(shoppingList, locale),
-      );
-    } catch (error) {
-      throw new Error(`Get wishlist for account failed: ${error}`);
-    }
+  getForAccountStore = async (account: Account, storeKey: string) => {
+    const locale = await this.getCommercetoolsLocal();
+    return await this.requestBuilder()
+      .inStoreKeyWithStoreKeyValue({ storeKey })
+      .shoppingLists()
+      .get({
+        queryArgs: {
+          where: [`customer(id="${account.accountId}")`],
+          expand: expandVariants,
+        },
+      })
+      .execute()
+      .then((response) => {
+        return response.body.results.map((shoppingList) =>
+          WishlistMapper.commercetoolsShoppingListToWishlist(shoppingList, locale),
+        );
+      })
+      .catch((error) => {
+        throw new ExternalError({ status: error.code, message: error.message, body: error.body });
+      });
   };
 
-  getForBusinessUnit = async (businessUnitKey: string, accountId: string): Promise<Wishlist[]> => {
-    try {
-      const locale = await this.getCommercetoolsLocal();
-      const config = this.frontasticContext?.project?.configuration?.wishlistSharing;
-      const response = await this.requestBuilder()
-        .shoppingLists()
-        .get({
-          queryArgs: {
-            where: [
-              `custom(fields(${config.wishlistSharingCustomField} contains any ("${businessUnitKey}")))`,
-              `customer(id!="${accountId}")`,
-            ],
-            expand: expandVariants,
-          },
-        })
-        .execute();
-
-      return response.body.results.map((shoppingList) =>
-        WishlistMapper.commercetoolsShoppingListToWishlist(shoppingList, locale),
-      );
-    } catch (error) {
-      throw new Error(`Get wishlist for BU failed: ${error}`);
-    }
+  getForBusinessUnit = async (businessUnitKey: string, account: Account): Promise<Wishlist[]> => {
+    const locale = await this.getCommercetoolsLocal();
+    const config = this.frontasticContext?.project?.configuration?.wishlistSharing;
+    return await this.requestBuilder()
+      .shoppingLists()
+      .get({
+        queryArgs: {
+          where: [
+            `custom(fields(${config.wishlistSharingCustomField} contains any ("${businessUnitKey}")))`,
+            `customer(id!="${account.accountId}")`,
+          ],
+          expand: expandVariants,
+        },
+      })
+      .execute()
+      .then((response) => {
+        return response.body.results.map((shoppingList) =>
+          WishlistMapper.commercetoolsShoppingListToWishlist(shoppingList, locale),
+        );
+      })
+      .catch((error) => {
+        throw new ExternalError({ status: error.code, message: error.message, body: error.body });
+      });
   };
 
-  getByIdForAccount = async (wishlistId: string, accountId: string) => {
-    try {
-      const locale = await this.getCommercetoolsLocal();
-      const config = this.frontasticContext?.project?.configuration?.wishlistSharing;
+  getByIdForAccount = async (wishlistId: string, account: Account) => {
+    const locale = await this.getCommercetoolsLocal();
+    const config = this.frontasticContext?.project?.configuration?.wishlistSharing;
 
-      const response = await this.requestBuilder()
-        .shoppingLists()
-        .withId({ ID: wishlistId })
-        .get({
-          queryArgs: {
-            where: `customer(id="${accountId}")`,
-            expand: expandVariants,
-          },
-        })
-        .execute();
-
-      return WishlistMapper.commercetoolsShoppingListToWishlist(response.body, locale, config);
-    } catch (error) {
-      // @ts-ignore
-      throw error;
-    }
+    return await this.requestBuilder()
+      .shoppingLists()
+      .withId({ ID: wishlistId })
+      .get({
+        queryArgs: {
+          where: `customer(id="${account.accountId}")`,
+          expand: expandVariants,
+        },
+      })
+      .execute()
+      .then((response) => {
+        return WishlistMapper.commercetoolsShoppingListToWishlist(response.body, locale, config);
+      })
+      .catch((error) => {
+        throw new ExternalError({ status: error.code, message: error.message, body: error.body });
+      });
   };
 
-  // @ts-ignore
-  create = async (accountId: string, storeKey: string, wishlist: WishlistDraft) => {
-    try {
-      const locale = await this.getCommercetoolsLocal();
-      const body = WishlistMapper.wishlistToCommercetoolsShoppingListDraft(wishlist, locale, accountId);
-      const response = await this.requestBuilder()
-        .inStoreKeyWithStoreKeyValue({ storeKey })
-        .shoppingLists()
-        .post({
-          body: body,
-          queryArgs: {
-            expand: expandVariants,
-          },
-        })
-        .execute();
-
-      return WishlistMapper.commercetoolsShoppingListToWishlist(response.body, locale);
-    } catch (error) {
-      throw new Error(`Create wishlist failed: ${error}`);
-    }
+  create = async (wishlist: Omit<Wishlist, 'wishlistId'>, storeKey?: string) => {
+    const locale = await this.getCommercetoolsLocal();
+    const body = WishlistMapper.wishlistToCommercetoolsShoppingListDraft(wishlist, locale);
+    return await this.requestBuilder()
+      .inStoreKeyWithStoreKeyValue({ storeKey })
+      .shoppingLists()
+      .post({
+        body: body,
+        queryArgs: {
+          expand: expandVariants,
+        },
+      })
+      .execute()
+      .then((response) => {
+        return WishlistMapper.commercetoolsShoppingListToWishlist(response.body, locale);
+      })
+      .catch((error) => {
+        throw new ExternalError({ status: error.code, message: error.message, body: error.body });
+      });
   };
 
   delete = async (wishlist: Wishlist, storeKey: string) => {
-    try {
-      await this.requestBuilder()
-        .inStoreKeyWithStoreKeyValue({ storeKey })
-        .shoppingLists()
-        .withId({ ID: wishlist.wishlistId })
-        .delete({
-          queryArgs: {
-            version: +wishlist.wishlistVersion,
-          },
-        })
-        .execute();
-    } catch (error) {
-      throw new Error(`Delete wishlist failed: ${error}`);
-    }
+    await this.requestBuilder()
+      .inStoreKeyWithStoreKeyValue({ storeKey })
+      .shoppingLists()
+      .withId({ ID: wishlist.wishlistId })
+      .delete({
+        queryArgs: {
+          version: +wishlist.wishlistVersion,
+        },
+      })
+      .execute()
+      .catch((error) => {
+        throw new ExternalError({ status: error.code, message: error.message, body: error.body });
+      });
   };
 
   rename = async (wishlist: Wishlist, name: string) => {
     const locale = await this.getCommercetoolsLocal();
 
-    try {
-      const response = await this.requestBuilder()
-        .shoppingLists()
-        .withId({ ID: wishlist.wishlistId })
-        .post({
-          body: {
-            version: +wishlist.wishlistVersion,
-            actions: [
-              {
-                action: 'changeName',
-                name: {
-                  [locale.language]: name,
-                },
+    return await this.requestBuilder()
+      .shoppingLists()
+      .withId({ ID: wishlist.wishlistId })
+      .post({
+        body: {
+          version: +wishlist.wishlistVersion,
+          actions: [
+            {
+              action: 'changeName',
+              name: {
+                [locale.language]: name,
               },
-            ],
-          },
-          queryArgs: {
-            expand: expandVariants,
-          },
-        })
-        .execute();
-      return WishlistMapper.commercetoolsShoppingListToWishlist(response.body, locale);
-    } catch (error) {
-      throw new Error(`Rename wishlist failed: ${error}`);
-    }
+            },
+          ],
+        },
+        queryArgs: {
+          expand: expandVariants,
+        },
+      })
+      .execute()
+      .then((response) => {
+        return WishlistMapper.commercetoolsShoppingListToWishlist(response.body, locale);
+      })
+      .catch((error) => {
+        throw new ExternalError({ status: error.code, message: error.message, body: error.body });
+      });
   };
 
   share = async (wishlist: Wishlist, businessUnitKey: string) => {
-    try {
-      const locale = await this.getCommercetoolsLocal();
-      const config = this.frontasticContext?.project?.configuration?.wishlistSharing;
+    const locale = await this.getCommercetoolsLocal();
+    const config = this.frontasticContext?.project?.configuration?.wishlistSharing;
 
-      // @ts-ignore
-      let currentSharedBUs: string[] = wishlist?.shared || [];
+    let currentSharedBUs: string[] = wishlist?.shared || [];
 
-      if (currentSharedBUs.includes(businessUnitKey)) {
-        currentSharedBUs = currentSharedBUs.filter((item) => item !== businessUnitKey);
-      } else {
-        currentSharedBUs.push(businessUnitKey);
-      }
-
-      const response = await this.requestBuilder()
-        .shoppingLists()
-        .withId({ ID: wishlist.wishlistId })
-        .post({
-          body: {
-            version: +wishlist.wishlistVersion,
-            actions: [
-              {
-                action: 'setCustomType',
-                type: {
-                  key: config.wishlistSharingCustomType,
-                  typeId: 'type',
-                },
-                fields: {
-                  [config.wishlistSharingCustomField]: currentSharedBUs,
-                },
-              },
-            ],
-          },
-          queryArgs: {
-            expand: expandVariants,
-          },
-        })
-        .execute();
-
-      return WishlistMapper.commercetoolsShoppingListToWishlist(response.body, locale);
-    } catch (error) {
-      throw error;
+    if (currentSharedBUs.includes(businessUnitKey)) {
+      currentSharedBUs = currentSharedBUs.filter((item) => item !== businessUnitKey);
+    } else {
+      currentSharedBUs.push(businessUnitKey);
     }
+
+    await this.requestBuilder()
+      .shoppingLists()
+      .withId({ ID: wishlist.wishlistId })
+      .post({
+        body: {
+          version: +wishlist.wishlistVersion,
+          actions: [
+            {
+              action: 'setCustomType',
+              type: {
+                key: config.wishlistSharingCustomType,
+                typeId: 'type',
+              },
+              fields: {
+                [config.wishlistSharingCustomField]: currentSharedBUs,
+              },
+            },
+          ],
+        },
+        queryArgs: {
+          expand: expandVariants,
+        },
+      })
+      .execute()
+      .then((response) => {
+        return WishlistMapper.commercetoolsShoppingListToWishlist(response.body, locale, config);
+      })
+      .catch((error) => {
+        throw new ExternalError({ status: error.code, message: error.message, body: error.body });
+      });
   };
 }

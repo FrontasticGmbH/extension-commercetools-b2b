@@ -1,4 +1,4 @@
-import { Wishlist, WishlistDraft } from '@Types/wishlist/Wishlist';
+import { Wishlist } from '@Types/wishlist/Wishlist';
 import { CustomFields, ShoppingList, StoreKeyReference } from '@commercetools/platform-sdk';
 import { ShoppingListDraft } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/shopping-list';
 import { Store } from '@Types/store/Store';
@@ -45,7 +45,7 @@ export class WishlistMapper extends BaseWishlistMapper {
   };
 
   static wishlistToCommercetoolsShoppingListDraft = (
-    wishlist: WishlistDraft,
+    wishlist: Omit<Wishlist, 'wishlistId'>,
     locale: Locale,
     accountId?: string,
     storeKey?: string,
