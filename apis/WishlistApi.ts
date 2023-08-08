@@ -30,7 +30,7 @@ export class WishlistApi extends BaseWishlistApi {
       });
   };
 
-  getForAccountStore = async (account: Account, storeKey: string) => {
+  getByStoreKeyForAccount = async (storeKey: string, account: Account) => {
     const locale = await this.getCommercetoolsLocal();
     return await this.requestBuilder()
       .inStoreKeyWithStoreKeyValue({ storeKey })

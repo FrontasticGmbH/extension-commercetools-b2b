@@ -40,29 +40,16 @@ async function fetchWishlist(request: Request, wishlistApi: WishlistApi) {
   return null;
 }
 
-export const getStoreWishlists: ActionHook = async (request, actionContext) => {
-  try {
-    const account = fetchAccountFromSessionEnsureLoggedIn(request);
-    const wishlistApi = getWishlistApi(request, actionContext);
-    const storeKey = fetchStoreFromSession(request);
-    const wishlists = await wishlistApi.getForAccountStore(account, storeKey);
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify(wishlists),
-      sessionData: request.sessionData,
-    };
-  } catch (error) {
-    return handleError(error, request);
-  }
-};
-
 export const getWishlists: ActionHook = async (request, actionContext) => {
   try {
     const account = fetchAccountFromSessionEnsureLoggedIn(request);
 
+    const storeKey = request.query?.['storeKey'] ?? undefined;
+
     const wishlistApi = getWishlistApi(request, actionContext);
-    const wishlists = await wishlistApi.getForAccount(account);
+    const wishlists = storeKey
+      ? await wishlistApi.getByStoreKeyForAccount(storeKey, account)
+      : await wishlistApi.getForAccount(account);
 
     return {
       statusCode: 200,
