@@ -1,3 +1,5 @@
+import { fetchAccountFromSession } from '@Commerce-commercetools/utils/fetchAccountFromSession';
+
 export * from './BaseWishlistController';
 import { ActionContext, Request, Response } from '@frontastic/extension-types';
 import { WishlistApi } from '../apis/WishlistApi';
@@ -9,18 +11,6 @@ type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Re
 
 function getWishlistApi(request: Request, actionContext: ActionContext) {
   return new WishlistApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-}
-
-function fetchStoreFromSession(request: Request): string {
-  const store = request.sessionData?.organization?.store?.key;
-  if (!store) {
-    throw 'No organization in session';
-  }
-  return store;
-}
-
-function fetchAccountFromSession(request: Request): Account | undefined {
-  return request.sessionData?.account;
 }
 
 function fetchAccountFromSessionEnsureLoggedIn(request: Request): Account {
@@ -67,9 +57,14 @@ export const createWishlist: ActionHook = async (request, actionContext) => {
   const body: {
     name?: string;
   } = JSON.parse(request.body);
+
   const account = fetchAccountFromSessionEnsureLoggedIn(request);
 
-  const storeKey = fetchStoreFromSession(request);
+  const storeKey = request.query?.['storeKey'] ?? request.sessionData?.organization?.store?.key;
+
+  if (!storeKey) {
+    throw new Error('No storeKey');
+  }
 
   try {
     const wishlist = await wishlistApi.create(
@@ -91,13 +86,16 @@ export const deleteWishlist: ActionHook = async (request, actionContext) => {
   try {
     const wishlistApi = getWishlistApi(request, actionContext);
     const wishlist = await fetchWishlist(request, wishlistApi);
-    const storeKey = fetchStoreFromSession(request);
+    const storeKey = request.query?.['storeKey'] ?? request.sessionData?.organization?.store?.key;
 
-    const deletedWishlist = await wishlistApi.delete(wishlist, storeKey);
+    if (!storeKey) {
+      throw new Error('No storeKey');
+    }
+
+    await wishlistApi.delete(wishlist, storeKey);
 
     return {
       statusCode: 200,
-      body: JSON.stringify(deletedWishlist),
       sessionData: request.sessionData,
     };
   } catch (error) {

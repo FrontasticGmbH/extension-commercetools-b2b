@@ -74,7 +74,7 @@ export class WishlistApi extends BaseWishlistApi {
       });
   };
 
-  create = async (wishlist: Omit<Wishlist, 'wishlistId'>, storeKey?: string) => {
+  create = async (wishlist: Wishlist, storeKey?: string) => {
     const locale = await this.getCommercetoolsLocal();
     const body = WishlistMapper.wishlistToCommercetoolsShoppingListDraft(wishlist, locale);
     return await this.requestBuilder()
