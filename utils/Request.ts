@@ -14,10 +14,6 @@ export const getLocale = (request: Request): string => {
   throw new Error(`Locale is missing from request ${request}`);
 };
 
-export const getCountry = (locale: string) => {
-  return { de_DE: 'DE', en_GB: 'GB', 'de_DE@EUR': 'DE', 'en_GB@EUR': 'GB' }[locale];
-};
-
 export const getCurrency = (request: Request): string | null => {
   if (request !== undefined) {
     const currency = getHeader(request, 'frontastic-currency') ?? request.query['currency'];

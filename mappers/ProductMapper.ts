@@ -4,7 +4,6 @@ import {
   Category as CommercetoolsCategory,
   Price,
   ProductVariant as CommercetoolsProductVariant,
-  ProductVariantAvailability,
 } from '@commercetools/platform-sdk';
 import { Locale } from '@Commerce-commercetools/interfaces/Locale';
 import { BaseProductMapper } from './BaseProductMapper';
@@ -30,52 +29,32 @@ export class ProductMapper extends BaseProductMapper {
       price: price,
       discountedPrice: discountedPrice,
       discounts: discounts,
-      availability: this.getPriceChannelAvailability(commercetoolsVariant, productPrice),
       isOnStock: commercetoolsVariant.availability?.isOnStock || undefined,
+      restockableInDays: commercetoolsVariant.availability?.restockableInDays || undefined,
     } as Variant;
   }
 
-  static getPriceChannelAvailability(
-    variant: CommercetoolsProductVariant,
-    productPrice?: Price,
-  ): ProductVariantAvailability {
-    let channelId = '';
-    if (productPrice) {
-      channelId = productPrice.channel?.id;
-    } else {
-      channelId = variant.scopedPrice?.channel?.id || variant.price?.channel?.id;
-    }
-    if (!channelId) {
-      return variant.availability;
-    }
-    if (!variant.availability?.channels?.[channelId]) {
-      return variant.availability;
-    }
-    return variant.availability.channels[channelId];
-  }
-
-  static commercetoolsCategoryToCategory: (commercetoolsCategory: CommercetoolsCategory, locale: Locale) => Category = (
+  static commercetoolsCategoryToCategory: (
     commercetoolsCategory: CommercetoolsCategory,
+    categoryIdField: string,
     locale: Locale,
-  ) => {
+  ) => Category = (commercetoolsCategory: CommercetoolsCategory, categoryIdField: string, locale: Locale) => {
+    console.debug('commercetoolsCategory:: ', commercetoolsCategory);
+
     return {
-      categoryId: commercetoolsCategory.id,
-      parentId: commercetoolsCategory.parent?.id ? commercetoolsCategory.parent.id : undefined,
-      ancestors: commercetoolsCategory.ancestors?.length ? commercetoolsCategory.ancestors : undefined,
+      categoryId: commercetoolsCategory?.[categoryIdField] ?? commercetoolsCategory.id,
+      parentId: commercetoolsCategory.parent?.obj?.[categoryIdField] ?? commercetoolsCategory.parent?.id,
       name: commercetoolsCategory.name?.[locale.language] ?? undefined,
       slug: commercetoolsCategory.slug?.[locale.language] ?? undefined,
       depth: commercetoolsCategory.ancestors.length,
-      subCategories: (commercetoolsCategory as any).subCategories?.map((subCategory: CommercetoolsCategory) =>
-        this.commercetoolsCategoryToCategory(subCategory, locale),
-      ),
-      path:
+      _url:
         commercetoolsCategory.ancestors.length > 0
           ? `/${commercetoolsCategory.ancestors
               .map((ancestor) => {
-                return ancestor.id;
+                return ancestor?.obj?.slug?.[locale.language];
               })
-              .join('/')}/${commercetoolsCategory.id}`
-          : `/${commercetoolsCategory.id}`,
+              .join('/')}/${commercetoolsCategory?.slug?.[locale.language]}`
+          : `/${commercetoolsCategory?.slug?.[locale.language]}`,
     };
   };
 

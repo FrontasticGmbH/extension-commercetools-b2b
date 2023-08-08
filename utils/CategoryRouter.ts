@@ -40,25 +40,7 @@ export class CategoryRouter {
         ...request,
       });
 
-      const additionalQueryArgs = {};
-      const distributionChannelId =
-        request.query?.['distributionChannelId'] || request.sessionData?.organization?.distributionChannel?.id;
-
-      const additionalFacets = [
-        {
-          attributeId: 'categories.id',
-        },
-      ];
-
-      if (distributionChannelId) {
-        // @ts-ignore
-        additionalQueryArgs.priceChannel = distributionChannelId;
-        additionalFacets.push({
-          attributeId: `variants.availability.availableQuantity`,
-        });
-      }
-
-      return await productApi.query(productQuery, additionalQueryArgs, additionalFacets);
+      return await productApi.query(productQuery);
     }
 
     return null;
@@ -82,28 +64,7 @@ export class CategoryRouter {
         ...request,
       });
 
-      const additionalQueryArgs = {
-        staged: true,
-      };
-      const distributionChannelId =
-        request.query?.['distributionChannelId'] || request.sessionData?.organization?.distributionChannel?.id;
-
-      if (distributionChannelId) {
-        // @ts-ignore
-        additionalQueryArgs.priceChannel = distributionChannelId;
-      }
-
-      const additionalFacets = [
-        {
-          attributeId: 'published',
-          attributeType: 'boolean',
-        },
-        {
-          attributeId: 'categories.id',
-        },
-      ];
-
-      return await productApi.query(productQuery, additionalQueryArgs, additionalFacets);
+      return await productApi.query(productQuery);
     }
 
     return null;

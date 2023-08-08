@@ -11,18 +11,9 @@ function productQueryFromContext(context: DataSourceContext, config: DataSourceC
     context.request ? getLocale(context.request) : null,
     context.request ? getCurrency(context.request) : null,
   );
-  const additionalQueryArgs = {};
-  const distributionChannelId =
-    context.request.query?.['distributionChannelId'] ||
-    context.request.sessionData?.organization?.distributionChannel?.id;
-
-  if (distributionChannelId) {
-    // @ts-ignore
-    additionalQueryArgs.priceChannel = distributionChannelId;
-  }
 
   const productQuery = ProductQueryFactory.queryFromParams(context?.request, config);
-  return { productApi, productQuery, additionalQueryArgs };
+  return { productApi, productQuery };
 }
 
 export default {
@@ -32,26 +23,16 @@ export default {
       context.request ? getLocale(context.request) : null,
       context.request ? getCurrency(context.request) : null,
     );
-    try {
-      const categories = await productApi.getNavigationCategories(context?.request?.sessionData?.rootCategoryId);
-      return {
-        dataSourcePayload: {
-          categories,
-        },
-      };
-    } catch (error) {
-      console.log(error);
-      return {
-        dataSourcePayload: {
-          categories: [],
-        },
-      };
-    }
+    const queryResult = await productApi.queryCategories({});
+    return {
+      dataSourcePayload: queryResult,
+    };
   },
-  'frontastic/product-list': async (config: DataSourceConfiguration, context: DataSourceContext) => {
-    const { productApi, productQuery, additionalQueryArgs } = productQueryFromContext(context, config);
 
-    return await productApi.query(productQuery, additionalQueryArgs).then((queryResult) => {
+  'frontastic/product-list': async (config: DataSourceConfiguration, context: DataSourceContext) => {
+    const { productApi, productQuery } = productQueryFromContext(context, config);
+
+    return await productApi.query(productQuery).then((queryResult) => {
       return {
         dataSourcePayload: queryResult,
       };
@@ -59,24 +40,9 @@ export default {
   },
 
   'frontastic/similar-products': async (config: DataSourceConfiguration, context: DataSourceContext) => {
-    if (!context.hasOwnProperty('request')) {
-      throw new Error(`Request is not defined in context ${context}`);
-    }
+    const { productApi, productQuery } = productQueryFromContext(context, config);
 
-    const productApi = new ProductApi(
-      context.frontasticContext,
-      getLocale(context.request),
-      getCurrency(context.request),
-    );
-    const productQuery = ProductQueryFactory.queryFromParams(context.request, config);
-    const queryWithCategoryId = {
-      ...productQuery,
-      category: (
-        context.pageFolder.dataSourceConfigurations.find((stream) => (stream as any).streamId === '__master') as any
-      )?.preloadedValue?.product?.categories?.[0]?.categoryId,
-    };
-
-    return await productApi.query(queryWithCategoryId).then((queryResult) => {
+    return await productApi.query(productQuery).then((queryResult) => {
       return {
         dataSourcePayload: queryResult,
       };
@@ -84,9 +50,9 @@ export default {
   },
 
   'frontastic/product': async (config: DataSourceConfiguration, context: DataSourceContext) => {
-    const { productApi, productQuery, additionalQueryArgs } = productQueryFromContext(context, config);
+    const { productApi, productQuery } = productQueryFromContext(context, config);
 
-    return await productApi.getProduct(productQuery, additionalQueryArgs).then((queryResult) => {
+    return await productApi.getProduct(productQuery).then((queryResult) => {
       return {
         dataSourcePayload: {
           product: queryResult,
@@ -94,6 +60,10 @@ export default {
       };
     });
   },
+
+  /**
+   * @deprecated
+   */
   'b2b/organization': (config: DataSourceConfiguration, context: DataSourceContext) => {
     return {
       dataSourcePayload: {
@@ -101,6 +71,10 @@ export default {
       },
     };
   },
+
+  /**
+   * @deprecated
+   */
   'b2b/associations': async (config: DataSourceConfiguration, context: DataSourceContext) => {
     const account = fetchAccountFromSession(context.request);
 
@@ -125,6 +99,10 @@ export default {
       },
     };
   },
+
+  /**
+   * @deprecated
+   */
   'b2b/notifications': async (config: DataSourceConfiguration, context: DataSourceContext) => {
     const notificationToken = context.request.sessionData?.notificationToken;
 
@@ -134,6 +112,10 @@ export default {
       },
     };
   },
+
+  /**
+   * @deprecated
+   */
   'b2b/organization-tree': async (config: DataSourceConfiguration, context: DataSourceContext) => {
     const account = fetchAccountFromSession(context.request);
     if (account === undefined) {

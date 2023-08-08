@@ -43,16 +43,8 @@ export class ProductRouter {
       const productQuery: ProductQuery = {
         skus: [urlMatches[1]],
       };
-      const additionalQueryArgs = {};
-      const distributionChannelId =
-        request.query?.['distributionChannelId'] || request.sessionData?.organization?.distributionChannel?.id;
 
-      if (distributionChannelId) {
-        // @ts-ignore
-        additionalQueryArgs.priceChannel = distributionChannelId;
-      }
-
-      return productApi.getProduct(productQuery, additionalQueryArgs);
+      return productApi.getProduct(productQuery);
     }
 
     return null;
@@ -68,15 +60,7 @@ export class ProductRouter {
         skus: [urlMatches[1]],
       };
 
-      const additionalQueryArgs = { staged: true };
-      const distributionChannelId =
-        request.query?.['distributionChannelId'] || request.sessionData?.organization?.distributionChannel?.id;
-
-      if (distributionChannelId) {
-        // @ts-ignore
-        additionalQueryArgs.priceChannel = distributionChannelId;
-      }
-      return productApi.getProduct(productQuery, additionalQueryArgs);
+      return productApi.getProduct(productQuery);
     }
 
     return null;
