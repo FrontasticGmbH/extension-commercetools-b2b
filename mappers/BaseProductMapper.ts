@@ -37,7 +37,7 @@ import { RangeFacet as QueryRangeFacet } from '@Types/query/RangeFacet';
 import { Facet as QueryFacet } from '@Types/query/Facet';
 import { FacetDefinition } from '@Types/product/FacetDefinition';
 import { FilterTypes } from '@Types/query/Filter';
-import { Category } from '@Commerce-commercetools/interfaces/Category';
+import { Category } from '@Types/product/Category';
 
 const TypeMap = new Map<string, string>([
   ['boolean', FilterFieldTypes.BOOLEAN],
