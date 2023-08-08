@@ -74,33 +74,6 @@ export const getWishlists: ActionHook = async (request, actionContext) => {
   }
 };
 
-export const getSharedWishlists: ActionHook = async (request, actionContext) => {
-  const businessUnitKey = request.sessionData?.organization?.businessUnit?.key;
-  const config = actionContext.frontasticContext?.project?.configuration?.wishlistSharing;
-  const account = fetchAccountFromSessionEnsureLoggedIn(request);
-
-  if (!businessUnitKey || !config?.wishlistSharingCustomType || !config?.wishlistSharingCustomField) {
-    return {
-      statusCode: 400,
-      sessionData: request.sessionData,
-      error: new Error('No context or custom field'),
-      errorCode: 400,
-    };
-  }
-  const wishlistApi = getWishlistApi(request, actionContext);
-  try {
-    const wishlists = await wishlistApi.getForBusinessUnit(businessUnitKey, account);
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify(wishlists),
-      sessionData: request.sessionData,
-    };
-  } catch (error) {
-    return handleError(error, request);
-  }
-};
-
 export const createWishlist: ActionHook = async (request, actionContext) => {
   const wishlistApi = getWishlistApi(request, actionContext);
 
@@ -120,33 +93,6 @@ export const createWishlist: ActionHook = async (request, actionContext) => {
     return {
       statusCode: 200,
       body: JSON.stringify(wishlist),
-      sessionData: request.sessionData,
-    };
-  } catch (error) {
-    return handleError(error, request);
-  }
-};
-
-export const share: ActionHook = async (request, actionContext) => {
-  const wishlistApi = getWishlistApi(request, actionContext);
-  const config = actionContext.frontasticContext?.project?.configuration?.wishlistSharing;
-  if (!config?.wishlistSharingCustomType || !config?.wishlistSharingCustomField) {
-    return {
-      statusCode: 400,
-      sessionData: request.sessionData,
-      error: new Error('No context or custom field'),
-      errorCode: 400,
-    };
-  }
-
-
-  try {
-    const wishlist = await fetchWishlist(request, wishlistApi);
-    const wishlistRes = await wishlistApi.share(wishlist, request.query['business-unit-key']);
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify(wishlistRes),
       sessionData: request.sessionData,
     };
   } catch (error) {
@@ -175,7 +121,7 @@ export const deleteWishlist: ActionHook = async (request, actionContext) => {
 export const renameWishlist: ActionHook = async (request, actionContext) => {
   try {
     const { name } = JSON.parse(request.body);
-    
+
     const wishlistApi = getWishlistApi(request, actionContext);
 
     let wishlist = await fetchWishlist(request, wishlistApi);
