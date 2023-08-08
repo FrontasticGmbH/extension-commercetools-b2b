@@ -40,24 +40,9 @@ export default {
   },
 
   'frontastic/similar-products': async (config: DataSourceConfiguration, context: DataSourceContext) => {
-    if (!context.hasOwnProperty('request')) {
-      throw new Error(`Request is not defined in context ${context}`);
-    }
+    const { productApi, productQuery } = productQueryFromContext(context, config);
 
-    const productApi = new ProductApi(
-      context.frontasticContext,
-      getLocale(context.request),
-      getCurrency(context.request),
-    );
-    const productQuery = ProductQueryFactory.queryFromParams(context.request, config);
-    const queryWithCategoryId = {
-      ...productQuery,
-      category: (
-        context.pageFolder.dataSourceConfigurations.find((stream) => (stream as any).streamId === '__master') as any
-      )?.preloadedValue?.product?.categories?.[0]?.categoryId,
-    };
-
-    return await productApi.query(queryWithCategoryId).then((queryResult) => {
+    return await productApi.query(productQuery).then((queryResult) => {
       return {
         dataSourcePayload: queryResult,
       };
@@ -75,6 +60,10 @@ export default {
       };
     });
   },
+
+  /**
+   * @deprecated
+   */
   'b2b/organization': (config: DataSourceConfiguration, context: DataSourceContext) => {
     return {
       dataSourcePayload: {
@@ -82,6 +71,10 @@ export default {
       },
     };
   },
+
+  /**
+   * @deprecated
+   */
   'b2b/associations': async (config: DataSourceConfiguration, context: DataSourceContext) => {
     const account = fetchAccountFromSession(context.request);
 
@@ -106,6 +99,10 @@ export default {
       },
     };
   },
+
+  /**
+   * @deprecated
+   */
   'b2b/notifications': async (config: DataSourceConfiguration, context: DataSourceContext) => {
     const notificationToken = context.request.sessionData?.notificationToken;
 
@@ -115,6 +112,10 @@ export default {
       },
     };
   },
+
+  /**
+   * @deprecated
+   */
   'b2b/organization-tree': async (config: DataSourceConfiguration, context: DataSourceContext) => {
     const account = fetchAccountFromSession(context.request);
     if (account === undefined) {
