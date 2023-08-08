@@ -51,6 +51,7 @@ const TypeMap = new Map<string, string>([
 export class BaseProductMapper {
   static commercetoolsProductProjectionToProduct(
     commercetoolsProduct: CommercetoolsProductProjection,
+    categoryIdField: string,
     locale: Locale,
   ): Product {
     const product: Product = {
@@ -59,7 +60,11 @@ export class BaseProductMapper {
       name: commercetoolsProduct?.name?.[locale.language],
       slug: commercetoolsProduct?.slug?.[locale.language],
       description: commercetoolsProduct?.description?.[locale.language],
-      categories: this.commercetoolsCategoryReferencesToCategories(commercetoolsProduct.categories, locale),
+      categories: this.commercetoolsCategoryReferencesToCategories(
+        commercetoolsProduct.categories,
+        categoryIdField,
+        locale,
+      ),
       variants: this.commercetoolsProductProjectionToVariants(commercetoolsProduct, locale),
     };
 
@@ -123,6 +128,7 @@ export class BaseProductMapper {
 
   static commercetoolsCategoryReferencesToCategories(
     commercetoolsCategoryReferences: CategoryReference[],
+    categoryIdField: string,
     locale: Locale,
   ): Category[] {
     const categories: Category[] = [];
@@ -133,7 +139,7 @@ export class BaseProductMapper {
       } as any;
 
       if (commercetoolsCategory.obj) {
-        category = this.commercetoolsCategoryToCategory(commercetoolsCategory.obj, locale);
+        category = this.commercetoolsCategoryToCategory(commercetoolsCategory.obj, categoryIdField, locale);
       }
 
       categories.push(category);
@@ -142,16 +148,17 @@ export class BaseProductMapper {
     return categories;
   }
 
-  static commercetoolsCategoryToCategory(commercetoolsCategory: CommercetoolsCategory, locale: Locale): Category {
+  static commercetoolsCategoryToCategory(
+    commercetoolsCategory: CommercetoolsCategory,
+    categoryIdField: string,
+    locale: Locale,
+  ): Category {
     return {
-      categoryId: commercetoolsCategory.id,
+      categoryId: commercetoolsCategory?.[categoryIdField] ?? commercetoolsCategory.id,
       name: commercetoolsCategory.name?.[locale.language] ?? undefined,
       slug: commercetoolsCategory.slug?.[locale.language] ?? undefined,
       depth: commercetoolsCategory.ancestors.length,
-      subCategories: (commercetoolsCategory as any).subCategories?.map((subCategory: CommercetoolsCategory) =>
-        this.commercetoolsCategoryToCategory(subCategory, locale),
-      ),
-      path:
+      _url:
         commercetoolsCategory.ancestors.length > 0
           ? `/${commercetoolsCategory.ancestors
               .map((ancestor) => {

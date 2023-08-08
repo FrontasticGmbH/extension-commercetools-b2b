@@ -23,22 +23,12 @@ export default {
       context.request ? getLocale(context.request) : null,
       context.request ? getCurrency(context.request) : null,
     );
-    try {
-      const categories = await productApi.getNavigationCategories(context?.request?.sessionData?.rootCategoryId);
-      return {
-        dataSourcePayload: {
-          categories,
-        },
-      };
-    } catch (error) {
-      console.log(error);
-      return {
-        dataSourcePayload: {
-          categories: [],
-        },
-      };
-    }
+    const queryResult = await productApi.queryCategories({});
+    return {
+      dataSourcePayload: queryResult,
+    };
   },
+
   'frontastic/product-list': async (config: DataSourceConfiguration, context: DataSourceContext) => {
     const { productApi, productQuery } = productQueryFromContext(context, config);
 

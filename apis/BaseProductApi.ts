@@ -10,6 +10,7 @@ import { FacetDefinition } from '@Types/product/FacetDefinition';
 import { ProductMapper } from '../mappers/ProductMapper';
 import { CategoryQuery } from '@Types/query/CategoryQuery';
 import { BaseApi } from './BaseApi';
+import { ExternalError } from '@Commerce-commercetools/utils/Errors';
 
 export class BaseProductApi extends BaseApi {
   protected getOffsetFromCursor = (cursor: string) => {
@@ -121,7 +122,9 @@ export class BaseProductApi extends BaseApi {
         .execute()
         .then((response) => {
           const items = response.body.results
-            .map((product) => ProductMapper.commercetoolsProductProjectionToProduct(product, locale))
+            .map((product) =>
+              ProductMapper.commercetoolsProductProjectionToProduct(product, this.categoryIdField, locale),
+            )
             .filter((item) => !!item.name);
 
           const result: Result = {
@@ -166,110 +169,95 @@ export class BaseProductApi extends BaseApi {
   };
 
   getSearchableAttributes: () => Promise<FilterField[]> = async () => {
-    try {
-      const locale = await this.getCommercetoolsLocal();
+    const locale = await this.getCommercetoolsLocal();
 
-      const response = await this.requestBuilder().productTypes().get().execute();
-
-      const filterFields = ProductMapper.commercetoolsProductTypesToFilterFields(response.body.results, locale);
-
-      filterFields.push({
-        field: 'categoryId',
-        type: FilterFieldTypes.ENUM,
-        label: 'Category ID',
-        values: await this.queryCategories({ limit: 250 }).then((result) => {
-          return (result.items as Category[]).map((item) => {
-            return {
-              value: item.categoryId,
-              name: item.name,
-            };
-          });
-        }),
+    const response = await this.requestBuilder()
+      .productTypes()
+      .get()
+      .execute()
+      .catch((error) => {
+        throw new ExternalError({ status: error.code, message: error.message, body: error.body });
       });
 
-      return filterFields;
-    } catch (error) {
-      //TODO: better error, get status code etc...
-      throw new Error(`getSearchableAttributes failed. ${error}`);
-    }
+    const filterFields = ProductMapper.commercetoolsProductTypesToFilterFields(response.body.results, locale);
+
+    // Category filter. Not included as commercetools product type.
+    filterFields.push({
+      field: 'categoryIds',
+      type: FilterFieldTypes.ENUM,
+      label: 'Category',
+      values: await this.queryCategories({ limit: 250 }).then((result) => {
+        return (result.items as Category[]).map((item) => {
+          return {
+            value: item.categoryId,
+            name: item.name,
+          };
+        });
+      }),
+    });
+
+    // Variants price filter. Not included as commercetools product type.
+    filterFields.push({
+      field: 'variants.price',
+      type: FilterFieldTypes.MONEY,
+      label: 'Variants price', // TODO: localize label
+    });
+
+    // Variants scoped price filter. Not included as commercetools product type.
+    filterFields.push({
+      field: 'variants.scopedPrice.value',
+      type: FilterFieldTypes.MONEY,
+      label: 'Variants scoped price', // TODO: localize label
+    });
+
+    return filterFields;
   };
 
   queryCategories: (categoryQuery: CategoryQuery) => Promise<Result> = async (categoryQuery: CategoryQuery) => {
-    try {
-      const locale = await this.getCommercetoolsLocal();
+    const locale = await this.getCommercetoolsLocal();
 
-      // TODO: get default from constant
-      const limit = +categoryQuery.limit || 24;
-      const where: string[] = [];
+    // TODO: get default from constant
+    const limit = +categoryQuery.limit || 24;
+    const where: string[] = [];
 
-      if (categoryQuery.slug) {
-        where.push(`slug(${locale.language}="${categoryQuery.slug}")`);
-      }
+    if (categoryQuery.slug) {
+      where.push(`slug(${locale.language}="${categoryQuery.slug}")`);
+    }
 
-      if (categoryQuery.parentId) {
-        where.push(`parent(id="${categoryQuery.parentId}")`);
-      }
+    const methodArgs = {
+      queryArgs: {
+        limit: limit,
+        offset: this.getOffsetFromCursor(categoryQuery.cursor),
+        where: where.length > 0 ? where : undefined,
+        expand: ['ancestors[*]'],
+      },
+    };
 
-      const methodArgs = {
-        queryArgs: {
-          limit: limit,
-          offset: this.getOffsetFromCursor(categoryQuery.cursor),
-          where: where.length > 0 ? where : undefined,
-        },
+    return await this.getCommercetoolsCategoryPagedQueryResponse(methodArgs).then((response) => {
+      const items = response.body.results.map((category) =>
+        ProductMapper.commercetoolsCategoryToCategory(category, this.categoryIdField, locale),
+      );
+
+      const result: Result = {
+        total: response.body.total,
+        items: items,
+        count: response.body.count,
+        previousCursor: ProductMapper.calculatePreviousCursor(response.body.offset, response.body.count),
+        nextCursor: ProductMapper.calculateNextCursor(response.body.offset, response.body.count, response.body.total),
+        query: categoryQuery,
       };
 
-      return await this.requestBuilder()
-        .categories()
-        .get(methodArgs)
-        .execute()
-        .then((response) => {
-          const categories = response.body.results;
-
-          const nodes = {};
-
-          for (let i = 0; i < categories.length; i++) {
-            (categories[i] as any).subCategories = [];
-            nodes[categories[i].id] = categories[i];
-          }
-
-          for (let i = 0; i < categories.length; i++) {
-            if (categories[i].parent && nodes[categories[i].parent.id]?.subCategories) {
-              nodes[categories[i].parent.id].subCategories.push(categories[i]);
-            }
-          }
-          const nodesQueue = [categories];
-
-          while (nodesQueue.length > 0) {
-            const currentCategories = nodesQueue.pop();
-            currentCategories.sort((a, b) => +b.orderHint - +a.orderHint);
-            currentCategories.forEach(
-              (category) => !!nodes[category.id]?.subCategories && nodesQueue.push(nodes[category.id].subCategories),
-            );
-          }
-
-          const items = categories.map((category) => ProductMapper.commercetoolsCategoryToCategory(category, locale));
-
-          const result: Result = {
-            total: response.body.total,
-            items: items,
-            count: response.body.count,
-            previousCursor: ProductMapper.calculatePreviousCursor(response.body.offset, response.body.count),
-            nextCursor: ProductMapper.calculateNextCursor(
-              response.body.offset,
-              response.body.count,
-              response.body.total,
-            ),
-            query: categoryQuery,
-          };
-
-          return result;
-        })
-        .catch((error) => {
-          throw error;
-        });
-    } catch (error) {
-      //TODO: better error, get status code etc...
-      throw new Error(`queryCategories failed. ${error}`);
-    }
+      return result;
+    });
   };
+
+  protected async getCommercetoolsCategoryPagedQueryResponse(methodArgs: object) {
+    return await this.requestBuilder()
+      .categories()
+      .get(methodArgs)
+      .execute()
+      .catch((error) => {
+        throw new ExternalError({ status: error.code, message: error.message, body: error.body });
+      });
+  }
 }
