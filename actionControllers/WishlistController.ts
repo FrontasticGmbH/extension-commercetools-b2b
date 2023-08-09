@@ -6,7 +6,6 @@ import { WishlistApi } from '../apis/WishlistApi';
 import { getCurrency, getLocale } from '../utils/Request';
 import { Account } from '@Types/account/Account';
 import handleError from '@Commerce-commercetools/utils/handleError';
-import { Address } from '@Types/account/Address';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
 
