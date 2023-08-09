@@ -15,6 +15,9 @@ import { AssociateRole } from '@Types/business-unit/Associate';
 const MAX_LIMIT = 50;
 
 export class BusinessUnitApi extends BaseApi {
+  /**
+   * @deprecated
+   */
   getOrganizationByBusinessUnit = async (businessUnit: BusinessUnit): Promise<Organization> => {
     const organization: Organization = {} as Organization;
     organization.businessUnit = businessUnit;
@@ -30,6 +33,9 @@ export class BusinessUnitApi extends BaseApi {
     return organization;
   };
 
+  /**
+   * @deprecated
+   */
   getOrganization: (account: Account, businessUnitKey?: string) => Promise<Organization> = async (
     account: Account,
     businessUnitKey?: string,

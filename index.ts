@@ -22,7 +22,7 @@ export default {
   ): Promise<DynamicPageSuccessResult | DynamicPageRedirectResult | null> => {
     // Identify static page
     const staticPageMatch = getPath(request)?.match(
-      /^\/(cart|checkout|wishlist|account|login|register|reset-password|thank-you)/,
+      /^\/(cart|checkout|wishlist|account|login|register|reset-password|thank-you|quote-thank-you)/,
     );
 
     if (staticPageMatch) {
@@ -33,7 +33,11 @@ export default {
       } as DynamicPageSuccessResult;
     }
 
-    // Identify businessUnit page
+    /**
+     * Identify businessUnit page
+     *
+     * @deprecated
+     */
     const b2bPageMatch = getPath(request)?.match(/^\/(business-unit)/);
     if (b2bPageMatch) {
       let organization = request.sessionData?.organization;
@@ -55,15 +59,7 @@ export default {
         },
       } as DynamicPageSuccessResult;
     }
-    // Identify quote page
-    const quotePageMatch = getPath(request)?.match(/^\/(quote-thank-you)/);
-    if (quotePageMatch) {
-      return {
-        dynamicPageType: `b2b${quotePageMatch[0]}`,
-        dataSourcePayload: {},
-        pageMatchingPayload: {},
-      } as DynamicPageSuccessResult;
-    }
+
     // Identify Product Preview
     if (ProductRouter.identifyPreviewFrom(request)) {
       return ProductRouter.loadPreviewFor(request, context.frontasticContext).then((product: Product) => {
@@ -185,6 +181,10 @@ export default {
         return null;
       });
     }
+
+    /**
+     * @deprecated
+     */
     const homePageMatch = getPath(request)?.match(/^\//);
     if (homePageMatch) {
       let organization = request.sessionData?.organization;
