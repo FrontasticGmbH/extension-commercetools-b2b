@@ -116,45 +116,52 @@ export class BusinessUnitApi extends BaseApi {
       });
   };
 
-  delete: (key: string) => Promise<any> = async (key: string) => {
-    try {
-      return this.getCommercetoolsBusinessUnitByKey(key).then((bu) => {
-        return this.requestBuilder()
-          .businessUnits()
-          .withKey({ key })
-          .delete({
-            queryArgs: {
-              version: bu.version,
-            },
-          })
-          .execute()
-          .then((res) => res.body);
-      });
-    } catch (e) {
-      throw e;
-    }
+  delete: (businessUnitKey: string) => Promise<BusinessUnit> = async (businessUnitKey: string) => {
+    const locale = await this.getCommercetoolsLocal();
+
+    return this.getByKey(businessUnitKey).then((businessUnit) => {
+      return this.requestBuilder()
+        .businessUnits()
+        .withKey({ key: businessUnitKey })
+        .delete({
+          queryArgs: {
+            version: businessUnit.version,
+          },
+        })
+        .execute()
+        .then((response) => {
+          return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(response.body, locale);
+        })
+        .catch((error) => {
+          throw new ExternalError({ status: error.code, message: error.message, body: error.body });
+        });
+    });
   };
 
-  update: (key: string, actions: any[]) => Promise<any> = async (key: string, actions: any[]) => {
-    try {
-      return this.getCommercetoolsBusinessUnitByKey(key).then((res) => {
-        return this.requestBuilder()
-          .businessUnits()
-          .withKey({ key })
-          .post({
-            body: {
-              version: res.version,
-              actions,
-            },
-          })
-          .execute()
-          .then((res) => res.body);
-      });
-    } catch (e) {
-      console.log(e);
+  update: (businessUnitKey: string, actions: any[]) => Promise<any> = async (
+    businessUnitKey: string,
+    actions: any[],
+  ) => {
+    const locale = await this.getCommercetoolsLocal();
 
-      throw e;
-    }
+    return this.getByKey(businessUnitKey).then((businessUnit) => {
+      return this.requestBuilder()
+        .businessUnits()
+        .withKey({ key: businessUnitKey })
+        .post({
+          body: {
+            version: businessUnit.version,
+            actions,
+          },
+        })
+        .execute()
+        .then((response) => {
+          return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(response.body, locale);
+        })
+        .catch((error) => {
+          throw new ExternalError({ status: error.code, message: error.message, body: error.body });
+        });
+    });
   };
 
   query: (where: string | string[], expand?: string | string[]) => Promise<BusinessUnitPagedQueryResponse> = async (
@@ -178,7 +185,6 @@ export class BusinessUnitApi extends BaseApi {
     }
   };
 
-  // TODO: this method should be protected
   /**
    * @deprecated Use getRootBusinessUnitsForAssociate instead
    */

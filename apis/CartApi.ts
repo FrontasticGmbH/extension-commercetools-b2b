@@ -391,7 +391,6 @@ export class CartApi extends BaseCartApi {
     if (!isReadyForCheckout(cart)) {
       throw new Error('Cart not complete yet.');
     }
-    const config = this.frontasticContext?.project?.configuration?.preBuy;
 
     return await this.associateEndpoints(account, organization, businessUnitKey)
       .orders()
@@ -406,7 +405,7 @@ export class CartApi extends BaseCartApi {
         body: orderFromCartDraft,
       })
       .execute()
-      .then((response) => CartMapper.commercetoolsOrderToOrder(response.body, locale, config))
+      .then((response) => CartMapper.commercetoolsOrderToOrder(response.body, locale))
       .catch((error) => {
         throw new ExternalError({ status: error.code, message: error.message, body: error.body });
       });
@@ -417,7 +416,6 @@ export class CartApi extends BaseCartApi {
     organization?: Organization,
   ) => {
     const locale = await this.getCommercetoolsLocal();
-    const config = this.frontasticContext?.project?.configuration?.preBuy;
 
     return await this.associateEndpoints(account, organization)
       .orders()
@@ -434,9 +432,7 @@ export class CartApi extends BaseCartApi {
         },
       })
       .execute()
-      .then((response) =>
-        response.body.results.map((order) => CartMapper.commercetoolsOrderToOrder(order, locale, config)),
-      )
+      .then((response) => response.body.results.map((order) => CartMapper.commercetoolsOrderToOrder(order, locale)))
       .catch((error) => {
         throw new ExternalError({ status: error.code, message: error.message, body: error.body });
       });
@@ -448,7 +444,6 @@ export class CartApi extends BaseCartApi {
     organization?: Organization,
   ) => {
     const locale = await this.getCommercetoolsLocal();
-    const config = this.frontasticContext?.project?.configuration?.preBuy;
 
     return await this.associateEndpoints(account, organization)
       .orders()
@@ -464,7 +459,7 @@ export class CartApi extends BaseCartApi {
         },
       })
       .execute()
-      .then((response) => CartMapper.commercetoolsOrderToOrder(response.body, locale, config))
+      .then((response) => CartMapper.commercetoolsOrderToOrder(response.body, locale))
       .catch((error) => {
         throw new ExternalError({ status: error.code, message: error.message, body: error.body });
       });
@@ -532,7 +527,6 @@ export class CartApi extends BaseCartApi {
     businessUnitKey?: string,
   ) => {
     const locale = await this.getCommercetoolsLocal();
-    const config = this.frontasticContext?.project?.configuration?.preBuy;
     const returnItems = CartMapper.returnLineItemToCommercetoolsReturnItemDraft(returnLineItems);
 
     return await this.getOrder(orderId).then((order) => {
@@ -553,7 +547,7 @@ export class CartApi extends BaseCartApi {
           },
         })
         .execute()
-        .then((response) => CartMapper.commercetoolsOrderToOrder(response.body, locale, config))
+        .then((response) => CartMapper.commercetoolsOrderToOrder(response.body, locale))
         .catch((error) => {
           throw new ExternalError({ status: error.code, message: error.message, body: error.body });
         });
@@ -565,7 +559,6 @@ export class CartApi extends BaseCartApi {
     account?: Account,
   ) => {
     const locale = await this.getCommercetoolsLocal();
-    const config = this.frontasticContext?.project?.configuration?.preBuy;
 
     const endpoint = account
       ? this.requestBuilder()
@@ -584,9 +577,7 @@ export class CartApi extends BaseCartApi {
         },
       })
       .execute()
-      .then((response) =>
-        response.body.results.map((order) => CartMapper.commercetoolsOrderToOrder(order, locale, config)),
-      )
+      .then((response) => response.body.results.map((order) => CartMapper.commercetoolsOrderToOrder(order, locale)))
       .catch((error) => {
         throw new ExternalError({ status: error.code, message: error.message, body: error.body });
       });
@@ -632,8 +623,6 @@ export class CartApi extends BaseCartApi {
       return this.recreate(commercetoolsCart, locale);
     }
 
-    const config = this.frontasticContext?.project?.configuration?.preBuy;
-
     if (this.doesCartNeedLocaleUpdate(commercetoolsCart, locale)) {
       const cartUpdate: CartUpdate = {
         version: commercetoolsCart.version,
@@ -651,10 +640,10 @@ export class CartApi extends BaseCartApi {
 
       commercetoolsCart = await this.updateCart(commercetoolsCart.id, cartUpdate, locale, account, organization);
 
-      return CartMapper.commercetoolsCartToCart(commercetoolsCart, locale, config) as Cart;
+      return CartMapper.commercetoolsCartToCart(commercetoolsCart, locale) as Cart;
     }
 
-    return CartMapper.commercetoolsCartToCart(commercetoolsCart, locale, config) as Cart;
+    return CartMapper.commercetoolsCartToCart(commercetoolsCart, locale) as Cart;
   };
 
   assertCartForBusinessUnitAndStore: (

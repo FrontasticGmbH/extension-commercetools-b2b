@@ -18,11 +18,7 @@ import {
 } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/order';
 
 export class CartMapper extends BaseCartMapper {
-  static commercetoolsCartToCart(
-    commercetoolsCart: CommercetoolsCart,
-    locale: Locale,
-    config?: Record<string, string>,
-  ): Cart {
+  static commercetoolsCartToCart(commercetoolsCart: CommercetoolsCart, locale: Locale): Cart {
     return {
       cartId: commercetoolsCart.id,
       accountId: commercetoolsCart.customerId,
@@ -92,11 +88,7 @@ export class CartMapper extends BaseCartMapper {
     return lineItems;
   }
 
-  static commercetoolsOrderToOrder(
-    commercetoolsOrder: CommercetoolsOrder,
-    locale: Locale,
-    config?: Record<string, string>,
-  ): Order {
+  static commercetoolsOrderToOrder(commercetoolsOrder: CommercetoolsOrder, locale: Locale): Order {
     return {
       cartId: commercetoolsOrder.id,
       accountId: commercetoolsOrder.customerId,

@@ -12,7 +12,6 @@ import { CartMapper } from '../mappers/CartMapper';
 import { Cart as CommercetoolsCart } from '@commercetools/platform-sdk';
 import {
   CartAddDiscountCodeAction,
-  CartAddLineItemAction,
   CartChangeLineItemQuantityAction,
   CartRemoveLineItemAction,
   CartSetCountryAction,
@@ -21,12 +20,7 @@ import {
 } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/cart';
 import { Address } from '@Types/account/Address';
 import { Order } from '@Types/cart/Order';
-import {
-  OrderFromCartDraft,
-  OrderState,
-  OrderUpdateAction,
-  PaymentState,
-} from '@commercetools/platform-sdk/dist/declarations/src/generated/models/order';
+import { OrderFromCartDraft } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/order';
 import { Guid } from '../utils/Guid';
 import { BaseApi } from './BaseApi';
 import { ShippingMethod } from '@Types/cart/ShippingMethod';
