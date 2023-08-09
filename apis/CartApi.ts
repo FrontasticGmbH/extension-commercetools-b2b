@@ -5,11 +5,14 @@ import { Order, OrderState, ReturnLineItem } from '@Types/cart/Order';
 import { Account } from '@Types/account/Account';
 import { Cart as CommercetoolsCart, CartDraft } from '@commercetools/platform-sdk';
 import {
+  CartAddItemShippingAddressAction,
   CartRemoveLineItemAction,
   CartSetCountryAction,
   CartSetCustomerIdAction,
+  CartSetLineItemShippingDetailsAction,
   CartSetLocaleAction,
   CartUpdate,
+  ItemShippingTarget,
 } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/cart';
 import { OrderFromCartDraft } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/order';
 import { isReadyForCheckout } from '../utils/Cart';
@@ -267,34 +270,6 @@ export class CartApi extends BaseCartApi {
     );
 
     return await this.buildCartWithAvailableShippingMethods(commercetoolsCart, locale);
-  };
-
-  removeAllLineItems: (cart: Cart, account?: Account, organization?: Organization) => Promise<Cart> = async (
-    cart: Cart,
-    account?: Account,
-    organization?: Organization,
-  ) => {
-    try {
-      const locale = await this.getCommercetoolsLocal();
-
-      const cartUpdate: CartUpdate = {
-        version: +cart.cartVersion,
-        actions: cart.lineItems.map((lineItem) => ({
-          action: 'removeLineItem',
-          lineItemId: lineItem.lineItemId,
-        })),
-      };
-
-      const commercetoolsCart = await this.updateCart(cart.cartId, cartUpdate, locale, account, organization);
-
-      return this.buildCartWithAvailableShippingMethods(commercetoolsCart, locale);
-    } catch (error) {
-      throw new ExternalError({
-        status: 400,
-        message: 'removeLineItem failed',
-        body: `removeLineItem failed. ${error}`,
-      });
-    }
   };
 
   setCustomerId: (
@@ -798,8 +773,6 @@ export class CartApi extends BaseCartApi {
     account?: Account,
     organization?: Organization,
   ) => {
-    const primaryCartId = primaryCommercetoolsCart.id;
-    const cartVersion = primaryCommercetoolsCart.version;
     const lineItems = primaryCommercetoolsCart.lineItems;
 
     const cartDraft: CartDraft = {
@@ -946,72 +919,78 @@ export class CartApi extends BaseCartApi {
       });
   }
 
-  addItemShippingAddress: (
-    originalCart: Cart,
-    address: Address,
-    account?: Account,
-    organization?: Organization,
-    businessUnitKey?: string,
-  ) => Promise<CommercetoolsCart> = async (
-    originalCart: Cart,
-    address: Address,
-    account?: Account,
-    organization?: Organization,
-    businessUnitKey?: string,
-  ) => {
-    const locale = await this.getCommercetoolsLocal();
-
-    const commercetoolsAddress = AccountMapper.addressToCommercetoolsAddress(address);
-
-    const cartUpdate: CartUpdate = {
-      version: +originalCart.cartVersion,
-      actions: [
-        {
-          action: 'addItemShippingAddress',
-          address: commercetoolsAddress,
-        },
-      ],
-    };
-
-    return this.updateCart(originalCart.cartId, cartUpdate, locale, account, organization, businessUnitKey);
-  };
-
-  updateLineItemShippingDetails: (
+  splitLineItem: (
     cart: Cart,
     lineItemId: string,
-    targets?: { addressKey: string; quantity: number }[],
+    shippingAddresses?: { address: Address; count: number }[],
     account?: Account,
     organization?: Organization,
     businessUnitKey?: string,
   ) => Promise<Cart> = async (
     cart: Cart,
     lineItemId: string,
-    targets?: { addressKey: string; quantity: number }[],
+    shippingAddresses?: { address: Address; count: number }[],
     account?: Account,
     organization?: Organization,
     businessUnitKey?: string,
   ) => {
     const locale = await this.getCommercetoolsLocal();
 
+    const cartItemsShippingAddresses = cart.itemShippingAddresses || [];
+    const remainingAddresses = shippingAddresses
+      .map((shippingAddress) => shippingAddress.address)
+      .filter(
+        (addressSplit) =>
+          cartItemsShippingAddresses.findIndex((address: Address) => address.addressId === addressSplit.addressId) ===
+          -1,
+      );
+
     const cartUpdate: CartUpdate = {
       version: +cart.cartVersion,
-      actions: [
-        {
-          action: 'setLineItemShippingDetails',
-          lineItemId,
-          shippingDetails: targets?.length ? { targets } : null,
-        },
-      ],
+      actions: [],
     };
 
-    const commercetoolsCart = await this.updateCart(
-      cart.cartId,
-      cartUpdate,
-      locale,
-      account,
-      organization,
-      businessUnitKey,
-    );
-    return (await this.buildCartWithAvailableShippingMethods(commercetoolsCart, locale)) as Cart;
+    if (remainingAddresses.length) {
+      remainingAddresses.map((address) => {
+        const cartAddItemShippingAddressAction: CartAddItemShippingAddressAction = {
+          action: 'addItemShippingAddress',
+          address: AccountMapper.addressToCommercetoolsAddress(address),
+        };
+
+        cartUpdate.actions.push(cartAddItemShippingAddressAction);
+      });
+    }
+
+    if (shippingAddresses.length) {
+      const targets: ItemShippingTarget[] = shippingAddresses.map((shippingAddress) => ({
+        addressKey: shippingAddress.address.addressId,
+        quantity: shippingAddress.count,
+      }));
+
+      const cartSetLineItemShippingDetailsAction: CartSetLineItemShippingDetailsAction = {
+        action: 'setLineItemShippingDetails',
+        lineItemId,
+        shippingDetails: {
+          targets: targets,
+        },
+      };
+
+      cartUpdate.actions.push(cartSetLineItemShippingDetailsAction);
+    }
+
+    if (cartUpdate.actions.length) {
+      const commercetoolsCart = await this.updateCart(
+        cart.cartId,
+        cartUpdate,
+        locale,
+        account,
+        organization,
+        businessUnitKey,
+      );
+
+      cart = await this.buildCartWithAvailableShippingMethods(commercetoolsCart, locale);
+    }
+
+    return cart;
   };
 }

@@ -206,7 +206,6 @@ export const replicateCart: ActionHook = async (request: Request, actionContext:
 
 export const splitLineItem: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-  const cart = await CartFetcher.fetchCart(request, actionContext);
 
   const body: {
     lineItemId?: string;
@@ -214,35 +213,13 @@ export const splitLineItem: ActionHook = async (request: Request, actionContext:
     shippingAddresses: { address: Address; count: number }[];
   } = JSON.parse(request.body);
 
-  const cartItemsShippingAddresses = cart.itemShippingAddresses || [];
-  const remainingAddresses = body.shippingAddresses
-    .map((item) => item.address)
-    .filter(
-      (addressSplit) =>
-        cartItemsShippingAddresses.findIndex((address: Address) => address.addressId === addressSplit.addressId) === -1,
-    );
-
+  let cart = await CartFetcher.fetchCart(request, actionContext);
   const account = fetchAccountFromSession(request);
 
-  if (remainingAddresses.length) {
-    for await (const address of remainingAddresses) {
-      await cartApi.addItemShippingAddress(
-        cart,
-        address,
-        account,
-        request.sessionData?.organization,
-        body?.businessUnitKey,
-      );
-    }
-  }
-
-  // TODO: move this logic to the API
-  const target = body.shippingAddresses.map((item) => ({ addressKey: item.address.addressId, quantity: item.count }));
-
-  const cartData = await cartApi.updateLineItemShippingDetails(
+  cart = await cartApi.splitLineItem(
     cart,
     body.lineItemId,
-    target,
+    body.shippingAddresses,
     account,
     request.sessionData?.organization,
     body.businessUnitKey,
@@ -250,7 +227,7 @@ export const splitLineItem: ActionHook = async (request: Request, actionContext:
 
   return {
     statusCode: 200,
-    body: JSON.stringify(cartData),
+    body: JSON.stringify(cart),
     sessionData: {
       ...request.sessionData,
       cartId: cart.cartId,
