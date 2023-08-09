@@ -6,6 +6,7 @@ import { WishlistApi } from '../apis/WishlistApi';
 import { getCurrency, getLocale } from '../utils/Request';
 import { Account } from '@Types/account/Account';
 import handleError from '@Commerce-commercetools/utils/handleError';
+import { Address } from '@Types/account/Address';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
 
@@ -106,15 +107,20 @@ export const deleteWishlist: ActionHook = async (request, actionContext) => {
   }
 };
 
-export const renameWishlist: ActionHook = async (request, actionContext) => {
+export const updateWishlist: ActionHook = async (request, actionContext) => {
   try {
-    const { name } = JSON.parse(request.body);
+    const body: {
+      name?: string;
+      description?: string;
+    } = JSON.parse(request.body);
 
     const wishlistApi = getWishlistApi(request, actionContext);
 
     let wishlist = await fetchWishlist(request, wishlistApi);
 
-    wishlist = await wishlistApi.rename(wishlist, name);
+    if (body?.name !== undefined) {
+      wishlist = await wishlistApi.setNameAndDescription(wishlist, body.name, body.description);
+    }
 
     return {
       statusCode: 200,

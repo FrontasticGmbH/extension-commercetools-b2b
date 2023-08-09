@@ -3,6 +3,7 @@ import { BaseWishlistApi } from './BaseWishlistApi';
 import { WishlistMapper } from '../mappers/WishlistMapper';
 import { ExternalError } from '@Commerce-commercetools/utils/Errors';
 import { Account } from '@Types/account/Account';
+import { ShoppingListUpdateAction } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/shopping-list';
 
 const expandVariants = ['lineItems[*].variant', 'store'];
 
@@ -109,8 +110,28 @@ export class WishlistApi extends BaseWishlistApi {
       });
   };
 
-  rename = async (wishlist: Wishlist, name: string) => {
+  setNameAndDescription = async (wishlist: Wishlist, name?: string, description?: string) => {
     const locale = await this.getCommercetoolsLocal();
+
+    const updateActions: ShoppingListUpdateAction[] = [];
+
+    if (name) {
+      updateActions.push({
+        action: 'changeName',
+        name: {
+          [locale.language]: name,
+        },
+      });
+    }
+
+    if (description) {
+      updateActions.push({
+        action: 'setDescription',
+        description: {
+          [locale.language]: description,
+        },
+      });
+    }
 
     return await this.requestBuilder()
       .shoppingLists()
@@ -118,14 +139,7 @@ export class WishlistApi extends BaseWishlistApi {
       .post({
         body: {
           version: +wishlist.wishlistVersion,
-          actions: [
-            {
-              action: 'changeName',
-              name: {
-                [locale.language]: name,
-              },
-            },
-          ],
+          actions: updateActions,
         },
         queryArgs: {
           expand: expandVariants,
