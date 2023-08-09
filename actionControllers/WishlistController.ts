@@ -23,11 +23,13 @@ function fetchAccountFromSessionEnsureLoggedIn(request: Request): Account {
 
 async function fetchWishlist(request: Request, wishlistApi: WishlistApi) {
   const account = fetchAccountFromSessionEnsureLoggedIn(request);
-  const wishlistId = request.query.id;
+  const wishlistId = request.query?.id ?? request.sessionData?.wishlistId ?? undefined;
+
   if (wishlistId !== undefined) {
     return await wishlistApi.getByIdForAccount(wishlistId, account);
   }
-  return null;
+
+  return undefined;
 }
 
 export const getWishlists: ActionHook = async (request, actionContext) => {
@@ -67,10 +69,11 @@ export const createWishlist: ActionHook = async (request, actionContext) => {
   }
 
   try {
-    const wishlist = await wishlistApi.create(
-      { accountId: account.accountId, name: body.name ?? 'Wishlist' },
-      storeKey,
-    );
+    const wishlist = await wishlistApi.create({
+      accountId: account.accountId,
+      name: body.name ?? 'Wishlist',
+      store: { key: storeKey },
+    });
 
     return {
       statusCode: 200,

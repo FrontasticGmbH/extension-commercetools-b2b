@@ -75,6 +75,7 @@ export class BaseWishlistApi extends BaseApi {
   create = async (wishlist: Wishlist) => {
     const locale = await this.getCommercetoolsLocal();
     const body = BaseWishlistMapper.wishlistToCommercetoolsShoppingListDraft(wishlist, locale);
+
     return await this.requestBuilder()
       .shoppingLists()
       .post({

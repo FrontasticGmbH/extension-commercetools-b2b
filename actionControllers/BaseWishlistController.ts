@@ -43,7 +43,7 @@ async function fetchWishlist(request: Request, wishlistApi: WishlistApi) {
     return await wishlistApi.create({ accountId: account.accountId, name: 'Wishlist' });
   }
 
-  return await wishlistApi.create({ anonymousId: Guid.newGuid(), name: 'Wishlist' });
+  return undefined;
 }
 
 export const getWishlist: ActionHook = async (request, actionContext) => {

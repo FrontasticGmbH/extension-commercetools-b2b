@@ -9,7 +9,6 @@ const expandVariants = ['lineItems[*].variant', 'store'];
 export class WishlistApi extends BaseWishlistApi {
   getForAccount = async (account: Account) => {
     const locale = await this.getCommercetoolsLocal();
-    const config = this.frontasticContext?.project?.configuration?.wishlistSharing;
 
     return await this.requestBuilder()
       .shoppingLists()
@@ -22,7 +21,7 @@ export class WishlistApi extends BaseWishlistApi {
       .execute()
       .then((response) => {
         return response.body.results.map((shoppingList) =>
-          WishlistMapper.commercetoolsShoppingListToWishlist(shoppingList, locale, config),
+          WishlistMapper.commercetoolsShoppingListToWishlist(shoppingList, locale),
         );
       })
       .catch((error) => {
@@ -54,7 +53,6 @@ export class WishlistApi extends BaseWishlistApi {
 
   getByIdForAccount = async (wishlistId: string, account: Account) => {
     const locale = await this.getCommercetoolsLocal();
-    const config = this.frontasticContext?.project?.configuration?.wishlistSharing;
 
     return await this.requestBuilder()
       .shoppingLists()
@@ -67,18 +65,18 @@ export class WishlistApi extends BaseWishlistApi {
       })
       .execute()
       .then((response) => {
-        return WishlistMapper.commercetoolsShoppingListToWishlist(response.body, locale, config);
+        return WishlistMapper.commercetoolsShoppingListToWishlist(response.body, locale);
       })
       .catch((error) => {
         throw new ExternalError({ status: error.code, message: error.message, body: error.body });
       });
   };
 
-  create = async (wishlist: Wishlist, storeKey?: string) => {
+  create = async (wishlist: Wishlist) => {
     const locale = await this.getCommercetoolsLocal();
     const body = WishlistMapper.wishlistToCommercetoolsShoppingListDraft(wishlist, locale);
     return await this.requestBuilder()
-      .inStoreKeyWithStoreKeyValue({ storeKey })
+      .inStoreKeyWithStoreKeyValue({ storeKey: wishlist?.store?.key })
       .shoppingLists()
       .post({
         body: body,

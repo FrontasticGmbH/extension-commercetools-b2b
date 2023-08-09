@@ -11,7 +11,6 @@ export class BaseWishlistMapper {
     return {
       wishlistId: commercetoolsShoppingList.id,
       wishlistVersion: commercetoolsShoppingList.version.toString(),
-      anonymousId: commercetoolsShoppingList.anonymousId,
       accountId: commercetoolsShoppingList.customer?.id ?? undefined,
       name: commercetoolsShoppingList.name[locale.language],
       lineItems: (commercetoolsShoppingList.lineItems || []).map((lineItem) =>
@@ -23,6 +22,7 @@ export class BaseWishlistMapper {
   static commercetoolsLineItemToLineItem(commercetoolsLineItem: ShoppingListLineItem, locale: Locale): LineItem {
     const lineItem: LineItem = {
       lineItemId: commercetoolsLineItem.id,
+      productId: commercetoolsLineItem.productId,
       name: commercetoolsLineItem.name[locale.language],
       type: 'variant',
       addedAt: new Date(commercetoolsLineItem.addedAt),
@@ -34,12 +34,8 @@ export class BaseWishlistMapper {
     return lineItem;
   }
 
-  static wishlistToCommercetoolsShoppingListDraft(
-    wishlist: Omit<Wishlist, 'wishlistId'>,
-    locale: Locale,
-  ): ShoppingListDraft {
+  static wishlistToCommercetoolsShoppingListDraft(wishlist: Wishlist, locale: Locale): ShoppingListDraft {
     return {
-      anonymousId: wishlist.anonymousId,
       customer: wishlist.accountId === undefined ? undefined : { typeId: 'customer', id: wishlist.accountId },
       name: { [locale.language]: wishlist.name || '' },
     };
