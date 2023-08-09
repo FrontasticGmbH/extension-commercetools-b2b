@@ -1,19 +1,20 @@
 import {
   Cart as CommercetoolsCart,
+  CartOrigin as CommercetoolsCartOrigin,
   LineItem as CommercetoolsLineItem,
   Order as CommercetoolsOrder,
   ReturnItemDraft,
-  StateReference,
 } from '@commercetools/platform-sdk';
 import { BaseCartMapper } from './BaseCartMapper';
 import { Locale } from '@Commerce-commercetools/interfaces/Locale';
 import { ProductMapper } from './ProductMapper';
 import { ProductRouter } from '../utils/ProductRouter';
 import { LineItem, LineItemShippingAddress } from '@Types/cart/LineItem';
-import { Cart } from '@Types/cart/Cart';
-import { Order, ReturnInfo, ReturnLineItem } from '@Types/cart/Order';
+import { Cart, CartOrigin } from '@Types/cart/Cart';
+import { Order, OrderState, ReturnInfo, ReturnLineItem } from '@Types/cart/Order';
 import {
   LineItemReturnItem,
+  OrderState as CommercetoolsOrderState,
   ReturnInfo as CommercetoolsReturnInfo,
 } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/order';
 
@@ -33,7 +34,7 @@ export class CartMapper extends BaseCartMapper {
       discountCodes: this.commercetoolsDiscountCodesInfoToDiscountCodes(commercetoolsCart.discountCodes, locale),
       taxed: this.commercetoolsTaxedPriceToTaxed(commercetoolsCart.taxedPrice, locale),
       itemShippingAddresses: commercetoolsCart.itemShippingAddresses,
-      origin: commercetoolsCart.origin,
+      origin: this.commercetoolsCartOriginToCartOrigin(commercetoolsCart.origin),
       businessUnitKey: commercetoolsCart.businessUnit?.key,
       storeKey: commercetoolsCart.store?.key,
     };
@@ -92,8 +93,8 @@ export class CartMapper extends BaseCartMapper {
     return {
       cartId: commercetoolsOrder.id,
       accountId: commercetoolsOrder.customerId,
-      origin: commercetoolsOrder.origin,
-      orderState: commercetoolsOrder.orderState,
+      origin: this.commercetoolsCartOriginToCartOrigin(commercetoolsOrder.origin),
+      orderState: this.commercetoolsOrderStateToOrderState(commercetoolsOrder.orderState),
       orderId: commercetoolsOrder.orderNumber,
       orderVersion: commercetoolsOrder.version.toString(),
       lineItems: this.commercetoolsLineItemsToLineItems(commercetoolsOrder.lineItems, locale),
@@ -106,22 +107,49 @@ export class CartMapper extends BaseCartMapper {
       createdAt: new Date(commercetoolsOrder.createdAt),
       shippingInfo: this.commercetoolsShippingInfoToShippingInfo(commercetoolsOrder.shippingInfo, locale),
       returnInfo: this.commercetoolsReturnInfoToReturnInfo(commercetoolsOrder.returnInfo),
-      state: this.commercetoolsOrderStateToState(commercetoolsOrder.state, locale),
+      // state: this.commercetoolsOrderStateToState(commercetoolsOrder.state, locale),
     };
   }
 
-  static commercetoolsOrderStateToState(commercetoolsStateRef: StateReference, locale: Locale): any {
-    if (commercetoolsStateRef) {
-      return commercetoolsStateRef.obj
-        ? {
-            key: commercetoolsStateRef.obj?.key,
-            name: commercetoolsStateRef.obj?.name[locale.language],
-          }
-        : {
-            id: commercetoolsStateRef.id,
-          };
+  static commercetoolsCartOriginToCartOrigin(commercetoolsCartOrigin: CommercetoolsCartOrigin): CartOrigin {
+    let cartOrigin: CartOrigin;
+
+    switch (true) {
+      case commercetoolsCartOrigin === 'Merchant':
+        cartOrigin = CartOrigin.Merchant;
+        break;
+      case commercetoolsCartOrigin === 'Quote':
+        cartOrigin = CartOrigin.Quote;
+        break;
+      case commercetoolsCartOrigin === 'Customer':
+      default:
+        cartOrigin = CartOrigin.Customer;
+        break;
     }
-    return null;
+
+    return cartOrigin;
+  }
+
+  static commercetoolsOrderStateToOrderState(commercetoolsOrderState: CommercetoolsOrderState): OrderState {
+    let orderState: OrderState;
+
+    switch (true) {
+      case commercetoolsOrderState === 'Cancelled':
+        orderState = OrderState.Cancelled;
+        break;
+      case commercetoolsOrderState === 'Complete':
+        orderState = OrderState.Complete;
+        break;
+      case commercetoolsOrderState === 'Confirmed':
+        orderState = OrderState.Confirmed;
+        break;
+      case commercetoolsOrderState === 'Open':
+      default:
+        orderState = OrderState.Open;
+        break;
+    }
+
+    return orderState;
   }
 
   static commercetoolsReturnInfoToReturnInfo(commercetoolsReturnInfo: CommercetoolsReturnInfo[]): ReturnInfo[] {
