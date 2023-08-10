@@ -1,5 +1,4 @@
 import { ActionContext, Request, Response } from '@frontastic/extension-types';
-import { Guid } from '../utils/Guid';
 import { Account } from '@Types/account/Account';
 import { getCurrency, getLocale } from '../utils/Request';
 import { BaseWishlistApi as WishlistApi } from '../apis/BaseWishlistApi';
