@@ -26,13 +26,13 @@ export class BusinessUnitMapper {
       key: commercetoolsBusinessUnit.key,
       name: commercetoolsBusinessUnit.name,
       status: commercetoolsBusinessUnit.status,
-      stores: commercetoolsBusinessUnit.stores.map((commercetoolsStoreKeyReference) => {
+      stores: commercetoolsBusinessUnit.stores?.map((commercetoolsStoreKeyReference) => {
         return this.mapCommercetoolsStoreKeyReferencesToStore(commercetoolsStoreKeyReference);
       }),
       storeMode: commercetoolsBusinessUnit.storeMode,
       unitType: commercetoolsBusinessUnit.unitType,
       contactEmail: commercetoolsBusinessUnit.contactEmail,
-      addresses: commercetoolsBusinessUnit.addresses.map((commercetoolsAddress) => {
+      addresses: commercetoolsBusinessUnit.addresses?.map((commercetoolsAddress) => {
         return AccountMapper.commercetoolsAddressToAddress(commercetoolsAddress);
       }),
       defaultShippingAddressId: commercetoolsBusinessUnit.defaultShippingAddressId,
