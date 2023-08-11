@@ -39,8 +39,6 @@ export class ProductMapper extends BaseProductMapper {
     categoryIdField: string,
     locale: Locale,
   ) => Category = (commercetoolsCategory: CommercetoolsCategory, categoryIdField: string, locale: Locale) => {
-    console.debug('commercetoolsCategory:: ', commercetoolsCategory);
-
     return {
       categoryId: commercetoolsCategory?.[categoryIdField] ?? commercetoolsCategory.id,
       parentId: commercetoolsCategory.parent?.obj?.[categoryIdField] ?? commercetoolsCategory.parent?.id,
