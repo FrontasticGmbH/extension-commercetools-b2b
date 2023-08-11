@@ -64,11 +64,7 @@ export class CartMapper extends BaseCartMapper {
           locale,
         ),
         totalPrice: ProductMapper.commercetoolsMoneyToMoney(commercetoolsLineItem.totalPrice),
-        variant: ProductMapper.commercetoolsProductVariantToVariant(
-          commercetoolsLineItem.variant,
-          locale,
-          commercetoolsLineItem.price,
-        ),
+        variant: ProductMapper.commercetoolsProductVariantToVariant(commercetoolsLineItem.variant, locale),
         isGift:
           commercetoolsLineItem?.lineItemMode !== undefined && commercetoolsLineItem.lineItemMode === 'GiftLineItem',
         shippingDetails: {

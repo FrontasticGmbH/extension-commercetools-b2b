@@ -2,7 +2,6 @@ import { Category } from '@Types/product/Category';
 import { Variant } from '@Types/product/Variant';
 import {
   Category as CommercetoolsCategory,
-  Price,
   ProductVariant as CommercetoolsProductVariant,
 } from '@commercetools/platform-sdk';
 import { Locale } from '@Commerce-commercetools/interfaces/Locale';
@@ -12,7 +11,6 @@ export class ProductMapper extends BaseProductMapper {
   static commercetoolsProductVariantToVariant(
     commercetoolsVariant: CommercetoolsProductVariant,
     locale: Locale,
-    productPrice?: Price,
   ): Variant {
     const attributes = this.commercetoolsAttributesToAttributes(commercetoolsVariant.attributes, locale);
     const { price, discountedPrice, discounts } = this.extractPriceAndDiscounts(commercetoolsVariant, locale);
