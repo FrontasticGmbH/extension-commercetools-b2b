@@ -21,8 +21,6 @@ import { Locale } from '@Commerce-commercetools/interfaces/Locale';
 import { Organization } from '@Commerce-commercetools/interfaces/Organization';
 import { CartMapper } from '../mappers/CartMapper';
 import { BaseCartApi } from '@Commerce-commercetools/apis/BaseCartApi';
-import { ByProjectKeyAsAssociateByAssociateIdInBusinessUnitKeyByBusinessUnitKeyRequestBuilder } from '@commercetools/platform-sdk/dist/declarations/src/generated/client/in-business-unit/by-project-key-as-associate-by-associate-id-in-business-unit-key-by-business-unit-key-request-builder';
-import { ByProjectKeyRequestBuilder } from '@commercetools/platform-sdk/dist/declarations/src/generated/client/by-project-key-request-builder';
 import { ExternalError } from '@Commerce-commercetools/utils/Errors';
 import { AccountMapper } from '@Commerce-commercetools/mappers/AccountMapper';
 
@@ -34,13 +32,7 @@ export class CartApi extends BaseCartApi {
   protected organization?: Organization;
   protected account?: Account;
 
-  protected associateEndpoints: (
-    account?: Account,
-    organization?: Organization,
-    businessUnitKey?: string,
-  ) =>
-    | ByProjectKeyAsAssociateByAssociateIdInBusinessUnitKeyByBusinessUnitKeyRequestBuilder
-    | ByProjectKeyRequestBuilder = (account?: Account, organization?: Organization, businessUnitKey?: string) => {
+  protected associateEndpoints(account?: Account, organization?: Organization, businessUnitKey?: string) {
     return account && (businessUnitKey || organization)
       ? this.requestBuilder()
           .asAssociate()
@@ -49,7 +41,7 @@ export class CartApi extends BaseCartApi {
             businessUnitKey: businessUnitKey ?? organization.businessUnit.key,
           })
       : this.requestBuilder();
-  };
+  }
 
   getForUser: (
     account?: Account,
