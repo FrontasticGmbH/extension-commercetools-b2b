@@ -320,7 +320,7 @@ export const removeAssociate: ActionHook = async (request: Request, actionContex
       action: 'removeAssociate',
       customer: {
         typeId: 'customer',
-        accountId,
+        id: accountId,
       },
     },
   ]);
@@ -349,7 +349,7 @@ export const updateAssociate: ActionHook = async (request: Request, actionContex
       associate: {
         customer: {
           typeId: 'customer',
-          accountId: accountId,
+          id: accountId,
         },
         associateRoleAssignments: roleKeys.map((roleKey) => ({
           associateRole: {

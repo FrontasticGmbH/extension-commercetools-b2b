@@ -2,7 +2,11 @@ import { BusinessUnit, BusinessUnitStatus, BusinessUnitType, StoreMode } from '@
 import { StoreApi } from './StoreApi';
 import { Organization } from '@Commerce-commercetools/interfaces/Organization';
 import { StoreMapper } from '../mappers/StoreMapper';
-import { BusinessUnit as CommercetoolsBusinessUnit, BusinessUnitPagedQueryResponse } from '@commercetools/platform-sdk';
+import {
+  BusinessUnit as CommercetoolsBusinessUnit,
+  BusinessUnitPagedQueryResponse,
+  BusinessUnitUpdateAction,
+} from '@commercetools/platform-sdk';
 import { BusinessUnitMapper } from '../mappers/BusinessUnitMapper';
 import { BaseApi } from '@Commerce-commercetools/apis/BaseApi';
 import { Store } from '@Types/store/Store';
@@ -138,31 +142,29 @@ export class BusinessUnitApi extends BaseApi {
     });
   };
 
-  update: (businessUnitKey: string, actions: any[]) => Promise<any> = async (
-    businessUnitKey: string,
-    actions: any[],
-  ) => {
-    const locale = await this.getCommercetoolsLocal();
+  update: (businessUnitKey: string, actions: BusinessUnitUpdateAction[]) => Promise<BusinessUnit | BusinessUnit[]> =
+    async (businessUnitKey: string, actions: BusinessUnitUpdateAction[]) => {
+      const locale = await this.getCommercetoolsLocal();
 
-    return this.getByKey(businessUnitKey).then((businessUnit) => {
-      return this.requestBuilder()
-        .businessUnits()
-        .withKey({ key: businessUnitKey })
-        .post({
-          body: {
-            version: businessUnit.version,
-            actions,
-          },
-        })
-        .execute()
-        .then((response) => {
-          return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(response.body, locale);
-        })
-        .catch((error) => {
-          throw new ExternalError({ status: error.code, message: error.message, body: error.body });
-        });
-    });
-  };
+      return this.getByKey(businessUnitKey).then((businessUnit) =>
+        this.requestBuilder()
+          .businessUnits()
+          .withKey({ key: businessUnitKey })
+          .post({
+            body: {
+              version: businessUnit.version,
+              actions,
+            },
+          })
+          .execute()
+          .then((response) => {
+            return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(response.body, locale);
+          })
+          .catch((error) => {
+            throw new ExternalError({ status: error.code, message: error.message, body: error.body });
+          }),
+      );
+    };
 
   query: (where: string | string[], expand?: string | string[]) => Promise<BusinessUnitPagedQueryResponse> = async (
     where: string | string[],
