@@ -3,9 +3,10 @@ import { LineItem } from '@Types/cart/LineItem';
 import { Address } from '@Types/account/Address';
 import { Order, OrderState, ReturnLineItem } from '@Types/cart/Order';
 import { Account } from '@Types/account/Account';
-import { Cart as CommercetoolsCart, CartDraft } from '@commercetools/platform-sdk';
 import {
+  Cart as CommercetoolsCart,
   CartAddItemShippingAddressAction,
+  CartDraft,
   CartRemoveLineItemAction,
   CartSetCountryAction,
   CartSetCustomerIdAction,
@@ -13,8 +14,8 @@ import {
   CartSetLocaleAction,
   CartUpdate,
   ItemShippingTarget,
-} from '@commercetools/platform-sdk/dist/declarations/src/generated/models/cart';
-import { OrderFromCartDraft } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/order';
+  OrderFromCartDraft,
+} from '@commercetools/platform-sdk';
 import { isReadyForCheckout } from '../utils/Cart';
 import { Locale } from '@Commerce-commercetools/interfaces/Locale';
 import { Organization } from '@Commerce-commercetools/interfaces/Organization';
