@@ -369,6 +369,43 @@ export const updateAssociate: ActionHook = async (request: Request, actionContex
 
   return response;
 };
+export const updateBusinessUnit: ActionHook = async (request: Request, actionContext: ActionContext) => {
+  const businessUnitApi = new BusinessUnitApi(
+    actionContext.frontasticContext,
+    getLocale(request),
+    getCurrency(request),
+  );
+
+  const { id, roleKeys }: { id: string; roleKeys: string[] } = JSON.parse(request.body);
+
+  try {
+    const businessUnit = await businessUnitApi.update(request.query['key'], [
+      {
+        action: 'changeAssociate',
+        associate: {
+          customer: {
+            typeId: 'customer',
+            id,
+          },
+          associateRoleAssignments: roleKeys.map((roleKey) => ({
+            associateRole: {
+              typeId: 'associate-role',
+              key: roleKey,
+            },
+          })),
+        },
+      },
+    ]);
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify(businessUnit),
+      sessionData: request.sessionData,
+    };
+  } catch (error) {
+    return handleError(error, request);
+  }
+};
 
 /**
  * @deprecated
