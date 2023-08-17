@@ -11,6 +11,9 @@ import { fetchAccountFromSession } from '@Commerce-commercetools/utils/fetchAcco
 import { AccountAuthenticationError } from '@Commerce-commercetools/errors/AccountAuthenticationError';
 import { Account } from '@Types/account/Account';
 import handleError from '@Commerce-commercetools/utils/handleError';
+import { Address } from '@Types/account/Address';
+import { BaseAccountMapper } from '@Commerce-commercetools/mappers/BaseAccountMapper';
+import parseRequestBody from '@Commerce-commercetools/utils/parseRequestBody';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
 
@@ -24,6 +27,14 @@ export interface BusinessUnitRequestBody {
   customer: {
     accountId: string;
   };
+
+  id?: string;
+  roleKeys?: string[];
+  address?: Address;
+  addressKey?: string;
+  addressId?: string;
+  name?: string;
+  email?: string;
 }
 
 export const getBusinessUnits: ActionHook = async (request: Request, actionContext: ActionContext) => {
@@ -376,24 +387,109 @@ export const updateBusinessUnit: ActionHook = async (request: Request, actionCon
     getCurrency(request),
   );
 
-  const { id, roleKeys }: { id: string; roleKeys: string[] } = JSON.parse(request.body);
+  const requestData = parseRequestBody<BusinessUnitRequestBody>(request.body);
+
+  try {
+    let businessUnit;
+
+    if (requestData.name) {
+      businessUnit = await businessUnitApi.update(request.query['key'], [
+        {
+          action: 'changeName',
+          name: requestData.name,
+        },
+      ]);
+    } else if (requestData.email) {
+      businessUnit = await businessUnitApi.update(request.query['key'], [
+        {
+          action: 'setContactEmail',
+          contactEmail: requestData.email,
+        },
+      ]);
+    }
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify(businessUnit),
+      sessionData: request.sessionData,
+    };
+  } catch (error) {
+    return handleError(error, request);
+  }
+};
+export const addBusinessUnitAddress: ActionHook = async (request: Request, actionContext: ActionContext) => {
+  const businessUnitApi = new BusinessUnitApi(
+    actionContext.frontasticContext,
+    getLocale(request),
+    getCurrency(request),
+  );
+
+  const requestData = parseRequestBody<BusinessUnitRequestBody>(request.body);
+
+  const addressData = BaseAccountMapper.addressToCommercetoolsAddress(requestData.address);
 
   try {
     const businessUnit = await businessUnitApi.update(request.query['key'], [
       {
-        action: 'changeAssociate',
-        associate: {
-          customer: {
-            typeId: 'customer',
-            id,
-          },
-          associateRoleAssignments: roleKeys.map((roleKey) => ({
-            associateRole: {
-              typeId: 'associate-role',
-              key: roleKey,
-            },
-          })),
-        },
+        action: 'addAddress',
+        address: addressData,
+      },
+    ]);
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify(businessUnit),
+      sessionData: request.sessionData,
+    };
+  } catch (error) {
+    return handleError(error, request);
+  }
+};
+export const updateBusinessUnitAddress: ActionHook = async (request: Request, actionContext: ActionContext) => {
+  const businessUnitApi = new BusinessUnitApi(
+    actionContext.frontasticContext,
+    getLocale(request),
+    getCurrency(request),
+  );
+
+  const requestData = parseRequestBody<BusinessUnitRequestBody>(request.body);
+
+  const addressData = BaseAccountMapper.addressToCommercetoolsAddress(requestData.address);
+
+  try {
+    const businessUnit = await businessUnitApi.update(request.query['key'], [
+      {
+        action: 'changeAddress',
+        addressId: requestData.addressId,
+        addressKey: requestData.addressKey,
+        address: addressData,
+      },
+    ]);
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify(businessUnit),
+      sessionData: request.sessionData,
+    };
+  } catch (error) {
+    return handleError(error, request);
+  }
+};
+export const removeBusinessUnitAddress: ActionHook = async (request: Request, actionContext: ActionContext) => {
+  const businessUnitApi = new BusinessUnitApi(
+    actionContext.frontasticContext,
+    getLocale(request),
+    getCurrency(request),
+  );
+
+  const requestData = parseRequestBody<BusinessUnitRequestBody>(request.body);
+
+  try {
+    const businessUnit = await businessUnitApi.update(request.query['key'], [
+      {
+        action: 'removeAddress',
+        addressId: requestData.addressId,
+        addressKey: requestData.addressKey,
       },
     ]);
 
