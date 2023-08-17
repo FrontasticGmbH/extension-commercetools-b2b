@@ -11,6 +11,7 @@ import { fetchAccountFromSession } from '@Commerce-commercetools/utils/fetchAcco
 import { AccountAuthenticationError } from '@Commerce-commercetools/errors/AccountAuthenticationError';
 import { Account } from '@Types/account/Account';
 import handleError from '@Commerce-commercetools/utils/handleError';
+import { EmailApiFactory } from '@Commerce-commercetools/utils/EmailApiFactory';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
 
@@ -262,6 +263,9 @@ export const create: ActionHook = async (request: Request, actionContext: Action
 };
 
 export const addAssociate: ActionHook = async (request: Request, actionContext: ActionContext) => {
+  const locale = getLocale(request);
+  const emailApi = EmailApiFactory.getDefaultApi(actionContext.frontasticContext, locale);
+
   const businessUnitApi = new BusinessUnitApi(
     actionContext.frontasticContext,
     getLocale(request),
@@ -270,13 +274,16 @@ export const addAssociate: ActionHook = async (request: Request, actionContext: 
   const accountApi = new AccountApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
   const addUserBody: { email: string; roleKeys: string[] } = JSON.parse(request.body);
 
-  const account = await accountApi.getCustomerByEmail(addUserBody.email);
+  let account = await accountApi.getAccountByEmail(addUserBody.email);
   if (!account) {
-    return {
-      statusCode: 400,
-      body: JSON.stringify({ error: 'User not found' }),
-      sessionData: request.sessionData,
+    const accountData = {
+      email: addUserBody.email,
+      password: Math.random().toString(36).slice(-8),
     };
+    account = await accountApi.create(accountData);
+
+    const passwordResetToken = await accountApi.generatePasswordResetToken(account.email);
+    emailApi.sendAccountVerificationAndPasswordResetEmail(account, passwordResetToken);
   }
 
   const businessUnit = await businessUnitApi.update(request.query['key'], [
@@ -285,7 +292,7 @@ export const addAssociate: ActionHook = async (request: Request, actionContext: 
       associate: {
         customer: {
           typeId: 'customer',
-          id: account.id,
+          id: account.accountId,
         },
         associateRoleAssignments: addUserBody.roleKeys.map((roleKey) => ({
           associateRole: {
@@ -296,6 +303,8 @@ export const addAssociate: ActionHook = async (request: Request, actionContext: 
       },
     },
   ]);
+
+  emailApi.sendWelcomeAssociateEmail(account, businessUnit);
 
   const response: Response = {
     statusCode: 200,
