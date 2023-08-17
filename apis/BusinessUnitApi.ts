@@ -142,29 +142,31 @@ export class BusinessUnitApi extends BaseApi {
     });
   };
 
-  update: (businessUnitKey: string, actions: BusinessUnitUpdateAction[]) => Promise<BusinessUnit | BusinessUnit[]> =
-    async (businessUnitKey: string, actions: BusinessUnitUpdateAction[]) => {
-      const locale = await this.getCommercetoolsLocal();
+  update: (businessUnitKey: string, actions: BusinessUnitUpdateAction[]) => Promise<BusinessUnit> = async (
+    businessUnitKey: string,
+    actions: BusinessUnitUpdateAction[],
+  ) => {
+    const locale = await this.getCommercetoolsLocal();
 
-      return this.getByKey(businessUnitKey).then((businessUnit) =>
-        this.requestBuilder()
-          .businessUnits()
-          .withKey({ key: businessUnitKey })
-          .post({
-            body: {
-              version: businessUnit.version,
-              actions,
-            },
-          })
-          .execute()
-          .then((response) => {
-            return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(response.body, locale);
-          })
-          .catch((error) => {
-            throw new ExternalError({ status: error.code, message: error.message, body: error.body });
-          }),
-      );
-    };
+    return this.getByKey(businessUnitKey).then((businessUnit) =>
+      this.requestBuilder()
+        .businessUnits()
+        .withKey({ key: businessUnitKey })
+        .post({
+          body: {
+            version: businessUnit.version,
+            actions,
+          },
+        })
+        .execute()
+        .then((response) => {
+          return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(response.body, locale);
+        })
+        .catch((error) => {
+          throw new ExternalError({ status: error.code, message: error.message, body: error.body });
+        }),
+    );
+  };
 
   query: (where: string | string[], expand?: string | string[]) => Promise<BusinessUnitPagedQueryResponse> = async (
     where: string | string[],
