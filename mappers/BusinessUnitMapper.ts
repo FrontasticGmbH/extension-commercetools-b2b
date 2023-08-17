@@ -44,6 +44,7 @@ export class BusinessUnitMapper {
       topLevelUnit: commercetoolsBusinessUnit.topLevelUnit
         ? this.commercetoolsBusinessUnitKeyReferenceToBusinessUnit(commercetoolsBusinessUnit.topLevelUnit)
         : undefined,
+      version: commercetoolsBusinessUnit.version,
     };
 
     if (allStores) {

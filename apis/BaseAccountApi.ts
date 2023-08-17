@@ -154,6 +154,10 @@ export class BaseAccountApi extends BaseApi {
         throw new ExternalError({ status: error.code, message: error.message, body: error.body });
       });
 
+    if (!account.confirmed) {
+      account.confirmationToken = await this.getConfirmationToken(account);
+    }
+
     return account;
   };
 
@@ -444,7 +448,7 @@ export class BaseAccountApi extends BaseApi {
     let defaultBillingAddress: number | undefined;
     let defaultShippingAddress: number | undefined;
 
-    account.addresses.forEach((address, key) => {
+    account.addresses?.forEach((address, key) => {
       const addressData = BaseAccountMapper.addressToCommercetoolsAddress(address);
 
       commercetoolsAddresses.push(addressData);
