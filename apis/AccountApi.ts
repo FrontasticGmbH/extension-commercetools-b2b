@@ -80,6 +80,9 @@ export class AccountApi extends BaseAccountApi {
     return account;
   };
 
+  /**
+   * @deprecated
+   */
   getCustomerByEmail: (email: string) => Promise<Customer | null> = async (email: string) => {
     const {
       body: { results },
