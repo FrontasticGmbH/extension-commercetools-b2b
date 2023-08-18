@@ -1,8 +1,11 @@
-import { Customer as commercetoolsCustomer, Address as CommercetoolsAddress } from '@commercetools/platform-sdk';
+import {
+  Address as CommercetoolsAddress,
+  BaseAddress,
+  Customer as commercetoolsCustomer,
+} from '@commercetools/platform-sdk';
 import { Locale } from '@Commerce-commercetools/interfaces/Locale';
 import { Account } from '@Types/account/Account';
 import { Address } from '@Types/account/Address';
-import { BaseAddress } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/common';
 import { AccountRegisterBody } from '@Commerce-commercetools/actionControllers/AccountController';
 import { parseBirthday } from '@Commerce-commercetools/utils/parseBirthday';
 import { Request } from '@frontastic/extension-types';
