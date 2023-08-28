@@ -6,9 +6,9 @@ import { Cart } from '@Types/cart/Cart';
 import { ExternalError } from '@Commerce-commercetools/utils/Errors';
 
 export class AccountApi extends BaseAccountApi {
-  create: (account: Account, cart: Cart | undefined) => Promise<Account> = async (
+  create: (account: Account, cart?: Cart | undefined) => Promise<Account> = async (
     account: Account,
-    cart: Cart | undefined,
+    cart?: Cart | undefined,
   ) => {
     const locale = await this.getCommercetoolsLocal();
 
@@ -78,6 +78,9 @@ export class AccountApi extends BaseAccountApi {
     return account;
   };
 
+  /**
+   * @deprecated
+   */
   getCustomerByEmail: (email: string) => Promise<Customer | null> = async (email: string) => {
     const {
       body: { results },
@@ -91,5 +94,26 @@ export class AccountApi extends BaseAccountApi {
       })
       .execute();
     return results.length ? results[0] : null;
+  };
+
+  getAccountByEmail: (email: string) => Promise<Account | null> = async (email: string) => {
+    const locale = await this.getCommercetoolsLocal();
+
+    return this.requestBuilder()
+      .customers()
+      .get({
+        queryArgs: {
+          where: `email="${email}"`,
+          limit: 1,
+        },
+      })
+      .execute()
+      .then((response) => {
+        if (!response.body.results.length) {
+          return null;
+        }
+
+        return AccountMapper.commercetoolsCustomerToAccount(response.body.results[0], locale);
+      });
   };
 }

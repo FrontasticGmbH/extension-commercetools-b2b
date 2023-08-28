@@ -59,6 +59,24 @@ async function loginAccount(request: Request, actionContext: ActionContext, acco
     throw error;
   }
 
+  if (!account.confirmed && account.confirmationToken) {
+    const locale = getLocale(request);
+
+    const emailApi = EmailApiFactory.getDefaultApi(actionContext.frontasticContext, locale);
+    emailApi.sendAccountVerificationEmail(account);
+
+    const response: Response = {
+      statusCode: 401,
+      body: JSON.stringify(`Your email address "${account.email}" was not yet verified. Please check your inbox.`),
+      sessionData: {
+        ...request.sessionData,
+        account: account,
+      },
+    };
+
+    return response;
+  }
+
   const response: Response = {
     statusCode: 200,
     body: JSON.stringify(account),
