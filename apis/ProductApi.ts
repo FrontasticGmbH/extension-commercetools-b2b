@@ -1,12 +1,10 @@
 import { Result } from '@Types/product/Result';
 import { ProductQuery } from '@Types/query/ProductQuery';
-import { FilterField, FilterFieldTypes } from '@Types/product/FilterField';
 import { FilterTypes } from '@Types/query/Filter';
 import { TermFilter } from '@Types/query/TermFilter';
 import { RangeFilter } from '@Types/query/RangeFilter';
 import { FacetDefinition } from '@Types/product/FacetDefinition';
 import { ProductMapper } from '../mappers/ProductMapper';
-import { Category } from '@Types/product/Category';
 import { CategoryQuery } from '@Types/query/CategoryQuery';
 import { BaseProductApi } from '@Commerce-commercetools/apis/BaseProductApi';
 import { Product } from '@Types/product/Product';

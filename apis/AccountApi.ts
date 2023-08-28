@@ -1,7 +1,5 @@
 import { Account } from '@Types/account/Account';
-import { Customer } from '@commercetools/platform-sdk';
-import { CustomerDraft } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/customer';
-import { CartResourceIdentifier } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/cart';
+import { CartResourceIdentifier, Customer, CustomerDraft } from '@commercetools/platform-sdk';
 import { BaseAccountApi } from './BaseAccountApi';
 import { AccountMapper } from '../mappers/AccountMapper';
 import { Cart } from '@Types/cart/Cart';

@@ -3,7 +3,6 @@ import { ClientFactory } from '../ClientFactory';
 import { Context } from '@frontastic/extension-types';
 import { getConfig } from '../utils/GetConfig';
 import { Locale } from '@Commerce-commercetools/interfaces/Locale';
-import { ByProjectKeyRequestBuilder } from '@commercetools/platform-sdk/dist/declarations/src/generated/client/by-project-key-request-builder';
 import { LocaleError } from '../errors/LocaleError';
 import { ExternalError } from '../utils/Errors';
 import { TokenCache, TokenStore } from '@commercetools/sdk-client-v2';
@@ -500,7 +499,7 @@ export abstract class BaseApi {
     return this.apiRoot;
   }
 
-  protected requestBuilder(): ByProjectKeyRequestBuilder {
+  protected requestBuilder() {
     return this.getApiRoot().withProjectKey({ projectKey: this.projectKey });
   }
 
