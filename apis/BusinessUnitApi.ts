@@ -6,10 +6,6 @@ import {
   BusinessUnit as CommercetoolsBusinessUnit,
   BusinessUnitDraft,
   BusinessUnitPagedQueryResponse,
-} from '@commercetools/platform-sdk';
-import {
-  BusinessUnit as CommercetoolsBusinessUnit,
-  BusinessUnitPagedQueryResponse,
   BusinessUnitUpdateAction,
 } from '@commercetools/platform-sdk';
 import { BusinessUnitMapper } from '../mappers/BusinessUnitMapper';
