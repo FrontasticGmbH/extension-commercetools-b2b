@@ -8,3 +8,11 @@ export function fetchAccountFromSession(request: Request): Account | undefined {
 
   return undefined;
 }
+
+export function fetchAccountFromSessionEnsureLoggedIn(request: Request): Account {
+  const account = fetchAccountFromSession(request);
+  if (!account) {
+    throw new Error('Not logged in.');
+  }
+  return account;
+}

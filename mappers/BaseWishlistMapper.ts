@@ -12,6 +12,7 @@ export class BaseWishlistMapper {
       wishlistVersion: commercetoolsShoppingList.version.toString(),
       accountId: commercetoolsShoppingList.customer?.id ?? undefined,
       name: commercetoolsShoppingList.name[locale.language],
+      description: commercetoolsShoppingList.description[locale.language],
       lineItems: (commercetoolsShoppingList.lineItems || []).map((lineItem) =>
         this.commercetoolsLineItemToLineItem(lineItem, locale),
       ),
@@ -37,6 +38,7 @@ export class BaseWishlistMapper {
     return {
       customer: wishlist.accountId === undefined ? undefined : { typeId: 'customer', id: wishlist.accountId },
       name: { [locale.language]: wishlist.name || '' },
+      description: { [locale.language]: wishlist.description || '' },
     };
   }
 }
