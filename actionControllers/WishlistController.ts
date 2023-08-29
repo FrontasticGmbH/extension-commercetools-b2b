@@ -1,35 +1,16 @@
-import { fetchAccountFromSession } from '@Commerce-commercetools/utils/fetchAccountFromSession';
+import { fetchAccountFromSessionEnsureLoggedIn } from '@Commerce-commercetools/utils/fetchAccountFromSession';
 
 export * from './BaseWishlistController';
 import { ActionContext, Request, Response } from '@frontastic/extension-types';
 import { WishlistApi } from '../apis/WishlistApi';
 import { getCurrency, getLocale } from '../utils/Request';
-import { Account } from '@Types/account/Account';
 import handleError from '@Commerce-commercetools/utils/handleError';
+import { WishlistFetcher } from '@Commerce-commercetools/utils/WishlistFetcher';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
 
 function getWishlistApi(request: Request, actionContext: ActionContext) {
   return new WishlistApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-}
-
-function fetchAccountFromSessionEnsureLoggedIn(request: Request): Account {
-  const account = fetchAccountFromSession(request);
-  if (!account) {
-    throw new Error('Not logged in.');
-  }
-  return account;
-}
-
-async function fetchWishlist(request: Request, wishlistApi: WishlistApi) {
-  const account = fetchAccountFromSessionEnsureLoggedIn(request);
-  const wishlistId = request.query?.id ?? request.sessionData?.wishlistId ?? undefined;
-
-  if (wishlistId !== undefined) {
-    return await wishlistApi.getByIdForAccount(wishlistId, account);
-  }
-
-  return undefined;
 }
 
 export const getWishlists: ActionHook = async (request, actionContext) => {
@@ -58,6 +39,7 @@ export const createWishlist: ActionHook = async (request, actionContext) => {
 
   const body: {
     name?: string;
+    description?: string;
   } = JSON.parse(request.body);
 
   const account = fetchAccountFromSessionEnsureLoggedIn(request);
@@ -72,6 +54,7 @@ export const createWishlist: ActionHook = async (request, actionContext) => {
     const wishlist = await wishlistApi.create({
       accountId: account.accountId,
       name: body.name ?? 'Wishlist',
+      description: body.description ?? undefined,
       store: { key: storeKey },
     });
 
@@ -88,7 +71,8 @@ export const createWishlist: ActionHook = async (request, actionContext) => {
 export const deleteWishlist: ActionHook = async (request, actionContext) => {
   try {
     const wishlistApi = getWishlistApi(request, actionContext);
-    const wishlist = await fetchWishlist(request, wishlistApi);
+    const wishlist = await WishlistFetcher.fetchWishlist(request, actionContext);
+
     const storeKey = request.query?.['storeKey'] ?? request.sessionData?.organization?.store?.key;
 
     if (!storeKey) {
@@ -99,6 +83,7 @@ export const deleteWishlist: ActionHook = async (request, actionContext) => {
 
     return {
       statusCode: 200,
+      body: '',
       sessionData: request.sessionData,
     };
   } catch (error) {
@@ -115,7 +100,7 @@ export const updateWishlist: ActionHook = async (request, actionContext) => {
 
     const wishlistApi = getWishlistApi(request, actionContext);
 
-    let wishlist = await fetchWishlist(request, wishlistApi);
+    let wishlist = await WishlistFetcher.fetchWishlist(request, actionContext);
 
     if (body?.name !== undefined) {
       wishlist = await wishlistApi.setNameAndDescription(wishlist, body.name, body.description);
@@ -125,6 +110,84 @@ export const updateWishlist: ActionHook = async (request, actionContext) => {
       statusCode: 200,
       body: JSON.stringify(wishlist),
       sessionData: request.sessionData,
+    };
+  } catch (error) {
+    return handleError(error, request);
+  }
+};
+
+export const addToWishlist: ActionHook = async (request, actionContext) => {
+  const wishlistApi = getWishlistApi(request, actionContext);
+  const wishlist = await WishlistFetcher.fetchWishlist(request, actionContext);
+
+  const body: {
+    variant?: { sku?: string };
+    count?: number;
+  } = JSON.parse(request.body);
+
+  try {
+    const updatedWishlist = await wishlistApi.addToWishlist(wishlist, {
+      sku: body?.variant?.sku || undefined,
+      count: body.count || 1,
+    });
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify(updatedWishlist),
+      sessionData: {
+        ...request.sessionData,
+      },
+    };
+  } catch (error) {
+    return handleError(error, request);
+  }
+};
+
+export const removeLineItem: ActionHook = async (request, actionContext) => {
+  const wishlistApi = getWishlistApi(request, actionContext);
+  const wishlist = await WishlistFetcher.fetchWishlist(request, actionContext);
+
+  const body: {
+    lineItem?: { id?: string };
+  } = JSON.parse(request.body);
+
+  try {
+    const updatedWishlist = await wishlistApi.removeLineItem(wishlist, body.lineItem?.id ?? undefined);
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify(updatedWishlist),
+      sessionData: {
+        ...request.sessionData,
+      },
+    };
+  } catch (error) {
+    return handleError(error, request);
+  }
+};
+
+export const updateLineItemCount: ActionHook = async (request, actionContext) => {
+  const wishlistApi = getWishlistApi(request, actionContext);
+  const wishlist = await WishlistFetcher.fetchWishlist(request, actionContext);
+
+  const body: {
+    lineItem?: { id?: string };
+    count?: number;
+  } = JSON.parse(request.body);
+
+  try {
+    const updatedWishlist = await wishlistApi.updateLineItemCount(
+      wishlist,
+      body.lineItem?.id ?? undefined,
+      body.count || 1,
+    );
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify(updatedWishlist),
+      sessionData: {
+        ...request.sessionData,
+      },
     };
   } catch (error) {
     return handleError(error, request);

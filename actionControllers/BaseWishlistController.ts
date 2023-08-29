@@ -1,9 +1,9 @@
 import { ActionContext, Request, Response } from '@frontastic/extension-types';
-import { Guid } from '../utils/Guid';
-import { Account } from '@Types/account/Account';
 import { getCurrency, getLocale } from '../utils/Request';
 import { BaseWishlistApi as WishlistApi } from '../apis/BaseWishlistApi';
 import handleError from '@Commerce-commercetools/utils/handleError';
+import { Wishlist } from '@Types/wishlist/Wishlist';
+import { Account } from '@Types/account/Account';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
 
@@ -23,27 +23,21 @@ function fetchAccountFromSessionEnsureLoggedIn(request: Request): Account {
   return account;
 }
 
-async function fetchWishlist(request: Request, wishlistApi: WishlistApi) {
-  if (request.sessionData?.wishlistId !== undefined) {
-    return await wishlistApi.getById(request.sessionData?.wishlistId);
+async function fetchWishlist(request: Request, wishlistApi: WishlistApi): Promise<Wishlist> {
+  const account = fetchAccountFromSessionEnsureLoggedIn(request);
+
+  const wishlistId = request.sessionData?.wishlistId ?? undefined;
+
+  if (wishlistId !== undefined) {
+    return await wishlistApi.getByIdForAccount(wishlistId, account);
   }
 
-  const account = fetchAccountFromSession(request);
-  if (account) {
-    const wishlistId = request.query.id;
-    if (wishlistId !== undefined) {
-      return await wishlistApi.getByIdForAccount(wishlistId, account);
-    }
-
-    const accountWishlists = await wishlistApi.getForAccount(account);
-    if (accountWishlists.length > 0) {
-      return accountWishlists[0];
-    }
-
-    return await wishlistApi.create({ accountId: account.accountId, name: 'Wishlist' });
+  const accountWishlists = await wishlistApi.getForAccount(account);
+  if (accountWishlists.length > 0) {
+    return accountWishlists[0];
   }
 
-  return undefined;
+  return await wishlistApi.create({ accountId: account.accountId, name: 'Wishlist' });
 }
 
 export const getWishlist: ActionHook = async (request, actionContext) => {

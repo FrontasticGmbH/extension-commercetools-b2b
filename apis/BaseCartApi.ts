@@ -1,26 +1,26 @@
 import { Cart } from '@Types/cart/Cart';
 import {
+  Cart as CommercetoolsCart,
+  CartAddDiscountCodeAction,
   CartAddPaymentAction,
+  CartChangeLineItemQuantityAction,
   CartDraft,
   CartRemoveDiscountCodeAction,
+  CartRemoveLineItemAction,
   CartSetBillingAddressAction,
+  CartSetCountryAction,
+  CartSetCustomerEmailAction,
   CartSetLocaleAction,
   CartSetShippingAddressAction,
   CartSetShippingMethodAction,
+  CartUpdate,
+  OrderFromCartDraft,
+  PaymentDraft,
+  PaymentUpdateAction,
 } from '@commercetools/platform-sdk';
 import { CartMapper } from '../mappers/CartMapper';
-import { Cart as CommercetoolsCart } from '@commercetools/platform-sdk';
-import {
-  CartAddDiscountCodeAction,
-  CartChangeLineItemQuantityAction,
-  CartRemoveLineItemAction,
-  CartSetCountryAction,
-  CartSetCustomerEmailAction,
-  CartUpdate,
-} from '@commercetools/platform-sdk/dist/declarations/src/generated/models/cart';
 import { Address } from '@Types/account/Address';
 import { Order } from '@Types/cart/Order';
-import { OrderFromCartDraft } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/order';
 import { Guid } from '../utils/Guid';
 import { BaseApi } from './BaseApi';
 import { ShippingMethod } from '@Types/cart/ShippingMethod';
@@ -28,10 +28,6 @@ import { LineItem } from '@Types/cart/LineItem';
 import { Discount } from '@Types/cart/Discount';
 import { Locale } from '@Commerce-commercetools/interfaces/Locale';
 import { Payment } from '@Types/cart/Payment';
-import {
-  PaymentDraft,
-  PaymentUpdateAction,
-} from '@commercetools/platform-sdk/dist/declarations/src/generated/models/payment';
 import { Account } from '@Types/account/Account';
 import { isReadyForCheckout } from '../utils/Cart';
 import { ExternalError } from '../utils/Errors';

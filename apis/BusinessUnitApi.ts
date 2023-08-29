@@ -2,12 +2,15 @@ import { BusinessUnit, BusinessUnitStatus, BusinessUnitType, StoreMode } from '@
 import { StoreApi } from './StoreApi';
 import { Organization } from '@Commerce-commercetools/interfaces/Organization';
 import { StoreMapper } from '../mappers/StoreMapper';
-import { BusinessUnit as CommercetoolsBusinessUnit, BusinessUnitPagedQueryResponse } from '@commercetools/platform-sdk';
+import {
+  BusinessUnit as CommercetoolsBusinessUnit,
+  BusinessUnitDraft,
+  BusinessUnitPagedQueryResponse,
+} from '@commercetools/platform-sdk';
 import { BusinessUnitMapper } from '../mappers/BusinessUnitMapper';
 import { BaseApi } from '@Commerce-commercetools/apis/BaseApi';
 import { Store } from '@Types/store/Store';
 import { Account } from '@Types/account/Account';
-import { BusinessUnitDraft } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/business-unit';
 import { ExternalError } from '@Commerce-commercetools/utils/Errors';
 import { businessUnitKeyFormatter } from '@Commerce-commercetools/utils/BussinessUnitFormatter';
 import { AssociateRole } from '@Types/business-unit/Associate';

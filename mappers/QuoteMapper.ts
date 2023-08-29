@@ -1,16 +1,16 @@
 import {
-  QuoteRequest as CommercetoolsQuoteRequest,
-  StagedQuote as CommercetoolsStagedQuote,
   Quote as CommercetoolsQuote,
+  QuoteRequest as CommercetoolsQuoteRequest,
+  QuoteRequestState as CommercetoolsQuoteRequestState,
   QuoteState as CommercetoolsQuoteState,
+  StagedQuote as CommercetoolsStagedQuote,
+  StagedQuoteState as CommercetoolsStagedQuoteState,
 } from '@commercetools/platform-sdk';
 import { Locale } from '@Commerce-commercetools/interfaces/Locale';
 import { CartMapper } from './CartMapper';
 import { AccountMapper } from '@Commerce-commercetools/mappers/AccountMapper';
 import { QuoteRequest, QuoteRequestState } from '@Types/quote/QuoteRequest';
 import { ProductMapper } from '@Commerce-commercetools/mappers/ProductMapper';
-import { QuoteRequestState as CommercetoolsQuoteRequestState } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/quote-request';
-import { StagedQuoteState as CommercetoolsStagedQuoteState } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/staged-quote';
 import { Quote, QuoteState } from '@Types/quote/Quote';
 
 export class QuoteMapper {
