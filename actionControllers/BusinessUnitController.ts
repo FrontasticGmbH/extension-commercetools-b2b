@@ -12,9 +12,9 @@ import { AccountAuthenticationError } from '@Commerce-commercetools/errors/Accou
 import { Account } from '@Types/account/Account';
 import handleError from '@Commerce-commercetools/utils/handleError';
 import { EmailApiFactory } from '@Commerce-commercetools/utils/EmailApiFactory';
-import { Address } from '@Types/account/Address';
 import { BaseAccountMapper } from '@Commerce-commercetools/mappers/BaseAccountMapper';
 import parseRequestBody from '@Commerce-commercetools/utils/parseRequestBody';
+import { Address } from '@Types/account/Address';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
 
@@ -28,7 +28,9 @@ export interface BusinessUnitRequestBody {
   customer: {
     accountId: string;
   };
+}
 
+interface BusinessUpdateRequestBody {
   id?: string;
   roleKeys?: string[];
   address?: Address;
@@ -397,7 +399,7 @@ export const updateBusinessUnit: ActionHook = async (request: Request, actionCon
     getCurrency(request),
   );
 
-  const requestData = parseRequestBody<BusinessUnitRequestBody>(request.body);
+  const requestData = parseRequestBody<BusinessUpdateRequestBody>(request.body);
 
   try {
     let businessUnit;
@@ -435,7 +437,7 @@ export const addBusinessUnitAddress: ActionHook = async (request: Request, actio
     getCurrency(request),
   );
 
-  const requestData = parseRequestBody<BusinessUnitRequestBody>(request.body);
+  const requestData = parseRequestBody<BusinessUpdateRequestBody>(request.body);
 
   const addressData = BaseAccountMapper.addressToCommercetoolsAddress(requestData.address);
 
@@ -464,7 +466,7 @@ export const updateBusinessUnitAddress: ActionHook = async (request: Request, ac
     getCurrency(request),
   );
 
-  const requestData = parseRequestBody<BusinessUnitRequestBody>(request.body);
+  const requestData = parseRequestBody<BusinessUpdateRequestBody>(request.body);
 
   const addressData = BaseAccountMapper.addressToCommercetoolsAddress(requestData.address);
 
@@ -495,7 +497,7 @@ export const removeBusinessUnitAddress: ActionHook = async (request: Request, ac
     getCurrency(request),
   );
 
-  const requestData = parseRequestBody<BusinessUnitRequestBody>(request.body);
+  const requestData = parseRequestBody<BusinessUpdateRequestBody>(request.body);
 
   try {
     const businessUnit = await businessUnitApi.update(request.query['key'], [
