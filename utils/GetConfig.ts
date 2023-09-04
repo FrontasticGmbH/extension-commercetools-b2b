@@ -3,7 +3,7 @@ import { ClientConfig } from '../interfaces/ClientConfig';
 import { getFromProjectConfig } from './Context';
 
 export const getConfig = (context: Context, engine: string, locale: string | null): ClientConfig => {
-  const prefix = `EXTENSION_${engine}`;
+  const prefix = `EXTENSION_${engine.toUpperCase()}`;
 
   const clientConfig: ClientConfig = {
     authUrl: getFromProjectConfig(`${prefix}_AUTH_URL`, context),
