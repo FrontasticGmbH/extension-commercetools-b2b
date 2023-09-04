@@ -389,6 +389,7 @@ export const updateAssociate: ActionHook = async (request: Request, actionContex
 
   return response;
 };
+
 export const updateBusinessUnit: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const businessUnitApi = new BusinessUnitApi(
     actionContext.frontasticContext,
@@ -426,6 +427,7 @@ export const updateBusinessUnit: ActionHook = async (request: Request, actionCon
     return handleError(error, request);
   }
 };
+
 export const addBusinessUnitAddress: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const businessUnitApi = new BusinessUnitApi(
     actionContext.frontasticContext,
@@ -454,6 +456,7 @@ export const addBusinessUnitAddress: ActionHook = async (request: Request, actio
     return handleError(error, request);
   }
 };
+
 export const updateBusinessUnitAddress: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const businessUnitApi = new BusinessUnitApi(
     actionContext.frontasticContext,
@@ -484,6 +487,7 @@ export const updateBusinessUnitAddress: ActionHook = async (request: Request, ac
     return handleError(error, request);
   }
 };
+
 export const removeBusinessUnitAddress: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const businessUnitApi = new BusinessUnitApi(
     actionContext.frontasticContext,
