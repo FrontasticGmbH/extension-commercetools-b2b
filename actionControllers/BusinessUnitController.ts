@@ -292,7 +292,6 @@ export const addAssociate: ActionHook = async (request: Request, actionContext: 
     emailApi.sendAccountVerificationAndPasswordResetEmail(account, passwordResetToken);
   }
 
-
   const businessUnit = await businessUnitApi.addAssociate(
     request.query['key'],
     account.accountId,
