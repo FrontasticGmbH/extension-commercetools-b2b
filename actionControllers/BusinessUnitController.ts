@@ -15,6 +15,7 @@ import { EmailApiFactory } from '@Commerce-commercetools/utils/EmailApiFactory';
 import { BaseAccountMapper } from '@Commerce-commercetools/mappers/BaseAccountMapper';
 import parseRequestBody from '@Commerce-commercetools/utils/parseRequestBody';
 import { Address } from '@Types/account/Address';
+import { BusinessUnit } from '@Types/business-unit/BusinessUnit';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
 
@@ -28,9 +29,11 @@ export interface BusinessUnitRequestBody {
   customer: {
     accountId: string;
   };
+  name?: string;
+  contactEmail?: string;
 }
 
-interface BusinessUpdateRequestBody {
+export interface BusinessUpdateRequestBody {
   id?: string;
   roleKeys?: string[];
   address?: Address;
@@ -399,26 +402,16 @@ export const updateBusinessUnit: ActionHook = async (request: Request, actionCon
     getCurrency(request),
   );
 
-  const requestData = parseRequestBody<BusinessUpdateRequestBody>(request.body);
+  const requestData = parseRequestBody<BusinessUnitRequestBody>(request.body);
+  const businessUnitRequestData: BusinessUnit = {
+    ...requestData,
+    contactEmail: requestData.contactEmail,
+    name: requestData.name,
+    key: request.query['key'],
+  };
 
   try {
-    let businessUnit;
-
-    if (requestData.name) {
-      businessUnit = await businessUnitApi.update(request.query['key'], [
-        {
-          action: 'changeName',
-          name: requestData.name,
-        },
-      ]);
-    } else if (requestData.email) {
-      businessUnit = await businessUnitApi.update(request.query['key'], [
-        {
-          action: 'setContactEmail',
-          contactEmail: requestData.email,
-        },
-      ]);
-    }
+    const businessUnit = await businessUnitApi.updateBusinessUnit(businessUnitRequestData);
 
     return {
       statusCode: 200,
@@ -442,12 +435,7 @@ export const addBusinessUnitAddress: ActionHook = async (request: Request, actio
   const addressData = BaseAccountMapper.addressToCommercetoolsAddress(requestData.address);
 
   try {
-    const businessUnit = await businessUnitApi.update(request.query['key'], [
-      {
-        action: 'addAddress',
-        address: addressData,
-      },
-    ]);
+    const businessUnit = await businessUnitApi.addBusinessUnitAddress(request.query['key'], addressData);
 
     return {
       statusCode: 200,
@@ -470,15 +458,10 @@ export const updateBusinessUnitAddress: ActionHook = async (request: Request, ac
 
   const addressData = BaseAccountMapper.addressToCommercetoolsAddress(requestData.address);
 
+  const businessUnitKey = request.query['key'];
+
   try {
-    const businessUnit = await businessUnitApi.update(request.query['key'], [
-      {
-        action: 'changeAddress',
-        addressId: requestData.addressId,
-        addressKey: requestData.addressKey,
-        address: addressData,
-      },
-    ]);
+    const businessUnit = await businessUnitApi.updateBusinessUnitAddress(businessUnitKey, addressData);
 
     return {
       statusCode: 200,
@@ -499,14 +482,10 @@ export const removeBusinessUnitAddress: ActionHook = async (request: Request, ac
 
   const requestData = parseRequestBody<BusinessUpdateRequestBody>(request.body);
 
+  const addressData = BaseAccountMapper.addressToCommercetoolsAddress(requestData.address);
+
   try {
-    const businessUnit = await businessUnitApi.update(request.query['key'], [
-      {
-        action: 'removeAddress',
-        addressId: requestData.addressId,
-        addressKey: requestData.addressKey,
-      },
-    ]);
+    const businessUnit = await businessUnitApi.removeBusinessUnitAddress(request.query['key'], addressData);
 
     return {
       statusCode: 200,

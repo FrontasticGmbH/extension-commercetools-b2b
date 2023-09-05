@@ -3,6 +3,7 @@ import { StoreApi } from './StoreApi';
 import { Organization } from '@Commerce-commercetools/interfaces/Organization';
 import { StoreMapper } from '../mappers/StoreMapper';
 import {
+  BaseAddress,
   BusinessUnit as CommercetoolsBusinessUnit,
   BusinessUnitDraft,
   BusinessUnitPagedQueryResponse,
@@ -526,4 +527,54 @@ export class BusinessUnitApi extends BaseApi {
       throw '';
     }
   };
+
+  async updateBusinessUnit(requestData: BusinessUnit) {
+    let businessUnit;
+
+    if (requestData.name) {
+      businessUnit = await this.update(requestData.key, [
+        {
+          action: 'changeName',
+          name: requestData.name,
+        },
+      ]);
+    } else if (requestData.contactEmail) {
+      businessUnit = await this.update(requestData.key, [
+        {
+          action: 'setContactEmail',
+          contactEmail: requestData.contactEmail,
+        },
+      ]);
+    }
+
+    return businessUnit;
+  }
+
+  async updateBusinessUnitAddress(businessUnitKey: string, address: BaseAddress) {
+    return await this.update(businessUnitKey, [
+      {
+        action: 'changeAddress',
+        addressId: address.id,
+        address: address,
+      },
+    ]);
+  }
+
+  async addBusinessUnitAddress(businessUnitKey: string, address: BaseAddress) {
+    return await this.update(businessUnitKey, [
+      {
+        action: 'addAddress',
+        address: address,
+      },
+    ]);
+  }
+
+  async removeBusinessUnitAddress(businessUnitKey: string, address: BaseAddress) {
+    return await this.update(businessUnitKey, [
+      {
+        action: 'removeAddress',
+        addressId: address.id,
+      },
+    ]);
+  }
 }
