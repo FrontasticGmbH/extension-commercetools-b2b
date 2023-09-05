@@ -33,16 +33,6 @@ export interface BusinessUnitRequestBody {
   contactEmail?: string;
 }
 
-export interface BusinessUpdateRequestBody {
-  id?: string;
-  roleKeys?: string[];
-  address?: Address;
-  addressKey?: string;
-  addressId?: string;
-  name?: string;
-  email?: string;
-}
-
 export const getBusinessUnits: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const account = fetchAccountFromSession(request);
 
@@ -302,23 +292,12 @@ export const addAssociate: ActionHook = async (request: Request, actionContext: 
     emailApi.sendAccountVerificationAndPasswordResetEmail(account, passwordResetToken);
   }
 
-  const businessUnit = await businessUnitApi.update(request.query['key'], [
-    {
-      action: 'addAssociate',
-      associate: {
-        customer: {
-          typeId: 'customer',
-          id: account.accountId,
-        },
-        associateRoleAssignments: addUserBody.roleKeys.map((roleKey) => ({
-          associateRole: {
-            typeId: 'associate-role',
-            key: roleKey,
-          },
-        })),
-      },
-    },
-  ]);
+
+  const businessUnit = await businessUnitApi.addAssociate(
+    request.query['key'],
+    account.accountId,
+    addUserBody.roleKeys,
+  );
 
   emailApi.sendWelcomeAssociateEmail(account, businessUnit);
 
@@ -339,24 +318,17 @@ export const removeAssociate: ActionHook = async (request: Request, actionContex
   );
 
   const { accountId } = JSON.parse(request.body);
+  try {
+    const businessUnit = await businessUnitApi.removeAssociate(request.query['key'], accountId);
 
-  const businessUnit = await businessUnitApi.update(request.query['key'], [
-    {
-      action: 'removeAssociate',
-      customer: {
-        typeId: 'customer',
-        id: accountId,
-      },
-    },
-  ]);
-
-  const response: Response = {
-    statusCode: 200,
-    body: JSON.stringify(businessUnit),
-    sessionData: request.sessionData,
-  };
-
-  return response;
+    return {
+      statusCode: 200,
+      body: JSON.stringify(businessUnit),
+      sessionData: request.sessionData,
+    };
+  } catch (error) {
+    return handleError(error, request);
+  }
 };
 
 export const updateAssociate: ActionHook = async (request: Request, actionContext: ActionContext) => {
@@ -367,32 +339,17 @@ export const updateAssociate: ActionHook = async (request: Request, actionContex
   );
 
   const { accountId, roleKeys }: { accountId: string; roleKeys: string[] } = JSON.parse(request.body);
+  try {
+    const businessUnit = await businessUnitApi.updateAssociate(request.query['key'], accountId, roleKeys);
 
-  const businessUnit = await businessUnitApi.update(request.query['key'], [
-    {
-      action: 'changeAssociate',
-      associate: {
-        customer: {
-          typeId: 'customer',
-          id: accountId,
-        },
-        associateRoleAssignments: roleKeys.map((roleKey) => ({
-          associateRole: {
-            typeId: 'associate-role',
-            key: roleKey,
-          },
-        })),
-      },
-    },
-  ]);
-
-  const response: Response = {
-    statusCode: 200,
-    body: JSON.stringify(businessUnit),
-    sessionData: request.sessionData,
-  };
-
-  return response;
+    return {
+      statusCode: 200,
+      body: JSON.stringify(businessUnit),
+      sessionData: request.sessionData,
+    };
+  } catch (error) {
+    return handleError(error, request);
+  }
 };
 
 export const updateBusinessUnit: ActionHook = async (request: Request, actionContext: ActionContext) => {
@@ -430,7 +387,7 @@ export const addBusinessUnitAddress: ActionHook = async (request: Request, actio
     getCurrency(request),
   );
 
-  const requestData = parseRequestBody<BusinessUpdateRequestBody>(request.body);
+  const requestData = parseRequestBody<{ address: Address }>(request.body);
 
   const addressData = BaseAccountMapper.addressToCommercetoolsAddress(requestData.address);
 
@@ -454,7 +411,7 @@ export const updateBusinessUnitAddress: ActionHook = async (request: Request, ac
     getCurrency(request),
   );
 
-  const requestData = parseRequestBody<BusinessUpdateRequestBody>(request.body);
+  const requestData = parseRequestBody<{ address: Address }>(request.body);
 
   const addressData = BaseAccountMapper.addressToCommercetoolsAddress(requestData.address);
 
@@ -480,7 +437,7 @@ export const removeBusinessUnitAddress: ActionHook = async (request: Request, ac
     getCurrency(request),
   );
 
-  const requestData = parseRequestBody<BusinessUpdateRequestBody>(request.body);
+  const requestData = parseRequestBody<{ address: Address }>(request.body);
 
   const addressData = BaseAccountMapper.addressToCommercetoolsAddress(requestData.address);
 

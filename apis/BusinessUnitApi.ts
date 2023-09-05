@@ -577,4 +577,56 @@ export class BusinessUnitApi extends BaseApi {
       },
     ]);
   }
+
+  async updateAssociate(businessUnitKey: string, accountId: string, associateRoleKeys: string[]) {
+    return await this.update(businessUnitKey, [
+      {
+        action: 'changeAssociate',
+        associate: {
+          customer: {
+            typeId: 'customer',
+            id: accountId,
+          },
+          associateRoleAssignments: associateRoleKeys.map((roleKey) => ({
+            associateRole: {
+              typeId: 'associate-role',
+              key: roleKey,
+            },
+          })),
+        },
+      },
+    ]);
+  }
+
+  async removeAssociate(businessUnitKey: string, accountId: string) {
+    return await this.update(businessUnitKey, [
+      {
+        action: 'removeAssociate',
+        customer: {
+          typeId: 'customer',
+          id: accountId,
+        },
+      },
+    ]);
+  }
+
+  async addAssociate(businessUnitKey: string, accountId: string, associateRoleKeys: string[]) {
+    return await this.update(businessUnitKey, [
+      {
+        action: 'addAssociate',
+        associate: {
+          customer: {
+            typeId: 'customer',
+            id: accountId,
+          },
+          associateRoleAssignments: associateRoleKeys.map((roleKey) => ({
+            associateRole: {
+              typeId: 'associate-role',
+              key: roleKey,
+            },
+          })),
+        },
+      },
+    ]);
+  }
 }
