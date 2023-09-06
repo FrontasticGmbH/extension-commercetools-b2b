@@ -38,8 +38,8 @@ export class ProductMapper extends BaseProductMapper {
     locale: Locale,
   ) => Category = (commercetoolsCategory: CommercetoolsCategory, categoryIdField: string, locale: Locale) => {
     return {
-      categoryId: commercetoolsCategory.id ?? commercetoolsCategory?.[categoryIdField],
-      parentId: commercetoolsCategory.parent?.id ?? commercetoolsCategory.parent?.obj?.[categoryIdField],
+      categoryId: commercetoolsCategory?.[categoryIdField] ?? commercetoolsCategory.id,
+      parentId: commercetoolsCategory.parent?.obj?.[categoryIdField] ?? commercetoolsCategory.parent?.id,
       name: commercetoolsCategory.name?.[locale.language] ?? undefined,
       slug: commercetoolsCategory.slug?.[locale.language] ?? undefined,
       depth: commercetoolsCategory.ancestors.length,
