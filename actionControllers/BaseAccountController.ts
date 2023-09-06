@@ -23,6 +23,7 @@ export type AccountRegisterBody = {
   birthdayDay?: string;
   billingAddress?: Address;
   shippingAddress?: Address;
+  vatNumber?: string;
 };
 
 export type AccountLoginBody = {

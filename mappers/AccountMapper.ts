@@ -17,6 +17,7 @@ export class AccountMapper extends BaseAccountMapper {
       companyName: commercetoolsCustomer?.companyName,
       birthday: commercetoolsCustomer?.dateOfBirth ? new Date(commercetoolsCustomer.dateOfBirth) : undefined,
       confirmed: commercetoolsCustomer.isEmailVerified,
+      vatNumber: commercetoolsCustomer?.vatId,
       addresses: this.commercetoolsCustomerToAddresses(commercetoolsCustomer, locale),
     } as Account;
   }
@@ -44,6 +45,7 @@ export class AccountMapper extends BaseAccountMapper {
       lastName: accountRegisterBody?.lastName,
       companyName: accountRegisterBody?.companyName,
       birthday: parseBirthday(accountRegisterBody),
+      vatNumber: accountRegisterBody?.vatNumber,
       addresses: [],
     };
 

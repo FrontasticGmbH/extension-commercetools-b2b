@@ -3,9 +3,11 @@ import { StoreApi } from './StoreApi';
 import { Organization } from '@Commerce-commercetools/interfaces/Organization';
 import { StoreMapper } from '../mappers/StoreMapper';
 import {
+  BaseAddress,
   BusinessUnit as CommercetoolsBusinessUnit,
   BusinessUnitDraft,
   BusinessUnitPagedQueryResponse,
+  BusinessUnitUpdateAction,
 } from '@commercetools/platform-sdk';
 import { BusinessUnitMapper } from '../mappers/BusinessUnitMapper';
 import { BaseApi } from '@Commerce-commercetools/apis/BaseApi';
@@ -141,14 +143,14 @@ export class BusinessUnitApi extends BaseApi {
     });
   };
 
-  update: (businessUnitKey: string, actions: any[]) => Promise<any> = async (
+  update: (businessUnitKey: string, actions: BusinessUnitUpdateAction[]) => Promise<BusinessUnit> = async (
     businessUnitKey: string,
-    actions: any[],
+    actions: BusinessUnitUpdateAction[],
   ) => {
     const locale = await this.getCommercetoolsLocal();
 
-    return this.getByKey(businessUnitKey).then((businessUnit) => {
-      return this.requestBuilder()
+    return this.getByKey(businessUnitKey).then((businessUnit) =>
+      this.requestBuilder()
         .businessUnits()
         .withKey({ key: businessUnitKey })
         .post({
@@ -163,8 +165,8 @@ export class BusinessUnitApi extends BaseApi {
         })
         .catch((error) => {
           throw new ExternalError({ status: error.code, message: error.message, body: error.body });
-        });
-    });
+        }),
+    );
   };
 
   query: (where: string | string[], expand?: string | string[]) => Promise<BusinessUnitPagedQueryResponse> = async (
@@ -525,4 +527,106 @@ export class BusinessUnitApi extends BaseApi {
       throw '';
     }
   };
+
+  async updateBusinessUnit(requestData: BusinessUnit) {
+    let businessUnit;
+
+    if (requestData.name) {
+      businessUnit = await this.update(requestData.key, [
+        {
+          action: 'changeName',
+          name: requestData.name,
+        },
+      ]);
+    } else if (requestData.contactEmail) {
+      businessUnit = await this.update(requestData.key, [
+        {
+          action: 'setContactEmail',
+          contactEmail: requestData.contactEmail,
+        },
+      ]);
+    }
+
+    return businessUnit;
+  }
+
+  async updateBusinessUnitAddress(businessUnitKey: string, address: BaseAddress) {
+    return await this.update(businessUnitKey, [
+      {
+        action: 'changeAddress',
+        addressId: address.id,
+        address: address,
+      },
+    ]);
+  }
+
+  async addBusinessUnitAddress(businessUnitKey: string, address: BaseAddress) {
+    return await this.update(businessUnitKey, [
+      {
+        action: 'addAddress',
+        address: address,
+      },
+    ]);
+  }
+
+  async removeBusinessUnitAddress(businessUnitKey: string, address: BaseAddress) {
+    return await this.update(businessUnitKey, [
+      {
+        action: 'removeAddress',
+        addressId: address.id,
+      },
+    ]);
+  }
+
+  async updateAssociate(businessUnitKey: string, accountId: string, associateRoleKeys: string[]) {
+    return await this.update(businessUnitKey, [
+      {
+        action: 'changeAssociate',
+        associate: {
+          customer: {
+            typeId: 'customer',
+            id: accountId,
+          },
+          associateRoleAssignments: associateRoleKeys.map((roleKey) => ({
+            associateRole: {
+              typeId: 'associate-role',
+              key: roleKey,
+            },
+          })),
+        },
+      },
+    ]);
+  }
+
+  async removeAssociate(businessUnitKey: string, accountId: string) {
+    return await this.update(businessUnitKey, [
+      {
+        action: 'removeAssociate',
+        customer: {
+          typeId: 'customer',
+          id: accountId,
+        },
+      },
+    ]);
+  }
+
+  async addAssociate(businessUnitKey: string, accountId: string, associateRoleKeys: string[]) {
+    return await this.update(businessUnitKey, [
+      {
+        action: 'addAssociate',
+        associate: {
+          customer: {
+            typeId: 'customer',
+            id: accountId,
+          },
+          associateRoleAssignments: associateRoleKeys.map((roleKey) => ({
+            associateRole: {
+              typeId: 'associate-role',
+              key: roleKey,
+            },
+          })),
+        },
+      },
+    ]);
+  }
 }
