@@ -1,5 +1,5 @@
 import { DataSourceConfiguration, Request } from '@frontastic/extension-types';
-import { SortAttributes, SortOrder } from '@Types/query/ProductQuery';
+import { ProductQuery, SortAttributes, SortOrder } from '@Types/query/ProductQuery';
 import { Filter, FilterTypes } from '@Types/query/Filter';
 import { RangeFilter } from '@Types/query/RangeFilter';
 import { TermFilter } from '@Types/query/TermFilter';
@@ -7,7 +7,6 @@ import { FilterFieldTypes } from '@Types/product/FilterField';
 import { Facet } from '@Types/query/Facet';
 import { TermFacet } from '@Types/query/TermFacet';
 import { RangeFacet } from '@Types/query/RangeFacet';
-import { ProductQuery } from '@Types/query/ProductQuery';
 
 export class ProductQueryFactory {
   static queryFromParams: (request: Request, config?: DataSourceConfiguration) => ProductQuery = (
@@ -17,11 +16,13 @@ export class ProductQueryFactory {
     let queryParams;
     const filters: Filter[] = [];
     const productQuery: ProductQuery = {
+      categories: [],
       productIds: [],
       skus: [],
     };
 
     // Selected ID/SKUs filter from the studio
+    const categories = config?.configuration?.categories?.split(',').map((val: string) => val.trim());
     const productIds = config?.configuration?.productIds?.split(',').map((val: string) => val.trim());
     const productSkus = config?.configuration?.productSkus?.split(',').map((val: string) => val.trim());
 
@@ -40,6 +41,7 @@ export class ProductQueryFactory {
     }
 
     // Add SKUs and IDs if they are there
+    if (categories && categories.length > 0) queryParams.categories = categories;
     if (productSkus && productSkus.length > 0) queryParams.skus = productSkus;
     if (productIds && productIds.length > 0) queryParams.productIds = productIds;
 
@@ -49,11 +51,19 @@ export class ProductQueryFactory {
     productQuery.query = queryParams?.query || undefined;
 
     /**
-     * Map Category
+     * Map Categories
      *
-     * Category could be overwritten by category configuration from Frontastic Studio
+     * Categories could be overwritten by categories configuration from Frontastic Studio
      */
-    productQuery.category = queryParams?.category || undefined;
+    if (queryParams?.categories && Array.isArray(queryParams?.categories)) {
+      queryParams.categories.map((category: string | number) => {
+        productQuery.categories.push(category.toString());
+      });
+    }
+    // Support also queries with a single category
+    if (queryParams?.category) {
+      productQuery.categories.push(queryParams.category);
+    }
 
     /**
      * Map productIds
@@ -83,6 +93,22 @@ export class ProductQueryFactory {
     configFiltersData.push(...ProductQueryFactory.mergeProductFiltersAndValues(queryParams));
     configFiltersData.push(...ProductQueryFactory.mergeCategoryFiltersAndValues(queryParams));
 
+    /**
+     * Map price filter
+     */
+    if (queryParams.minPrice || queryParams.maxPrice) {
+      configFiltersData.push({
+        type: FilterFieldTypes.MONEY,
+        field: 'price',
+        values: [
+          {
+            min: queryParams?.minPrice,
+            max: queryParams?.maxPrice,
+          },
+        ],
+      });
+    }
+
     let key: any;
     let configFilterData: any;
 
@@ -90,7 +116,7 @@ export class ProductQueryFactory {
       for ([key, configFilterData] of Object.entries(configFiltersData)) {
         if (configFilterData?.field === 'categoryId') {
           // Overwrite category with any value that has been set from Frontastic Studio
-          productQuery.category = configFilterData.values[0]; // TODO: should change if category is a single value
+          productQuery.categories = configFilterData.values[0]; // TODO: should change if category is a single value
           continue;
         }
 
