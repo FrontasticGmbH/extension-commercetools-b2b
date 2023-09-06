@@ -112,6 +112,25 @@ export const declineQuote: ActionHook = async (request: Request, actionContext: 
   return response;
 };
 
+export const renegotiateQuote: ActionHook = async (request: Request, actionContext: ActionContext) => {
+  const quoteApi = new QuoteApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
+
+  const quoteId = request.query?.['id'];
+  const buyerComment = JSON.parse(request.body).comment;
+
+  const quote = await quoteApi.renegotiateQuote(quoteId, buyerComment);
+
+  const response: Response = {
+    statusCode: 200,
+    body: JSON.stringify(quote),
+    sessionData: {
+      ...request.sessionData,
+    },
+  };
+
+  return response;
+};
+
 export const cancelQuoteRequest: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const quoteApi = new QuoteApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 

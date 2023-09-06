@@ -99,8 +99,11 @@ export class QuoteMapper {
   }
 
   static updateQuotesFromCommercetoolsQuotes(quotes: Quote[], commercetoolsQuote: CommercetoolsQuote, locale: Locale) {
+    // CoCo returns duplicated quotes when a renegotiation has been requested and addressed by the seller. We need to filter out the quotes with state "RenegotiationAddressed".
     const quoteToUpdate = quotes.find(
-      (quote) => quote.quotedRequested.quoteRequestId === commercetoolsQuote.quoteRequest.id,
+      (quote) =>
+        quote.quotedRequested.quoteRequestId === commercetoolsQuote.quoteRequest.id &&
+        commercetoolsQuote.quoteState !== 'RenegotiationAddressed',
     );
     if (quoteToUpdate) {
       quoteToUpdate.quoteId = commercetoolsQuote.id;

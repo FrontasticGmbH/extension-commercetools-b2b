@@ -213,6 +213,40 @@ export class QuoteApi extends BaseApi {
     });
   };
 
+  renegotiateQuote: (quoteId: string, buyerComment?: string) => Promise<Quote> = async (
+    quoteId: string,
+    buyerComment?: string,
+  ) => {
+    const locale = await this.getCommercetoolsLocal();
+
+    return this.getQuote(quoteId).then((quote) => {
+      return this.requestBuilder()
+        .quotes()
+        .withId({ ID: quoteId })
+        .post({
+          queryArgs: {
+            expand: ['quoteRequest', 'quoteRequest.customer'],
+          },
+          body: {
+            actions: [
+              {
+                action: 'requestQuoteRenegotiation',
+                buyerComment: buyerComment,
+              },
+            ],
+            version: parseInt(quote.quoteVersion, 10),
+          },
+        })
+        .execute()
+        .then((response) => {
+          return QuoteMapper.commercetoolsQuoteToQuote(response.body, locale);
+        })
+        .catch((error) => {
+          throw new ExternalError({ status: error.code, message: error.message, body: error.body });
+        });
+    });
+  };
+
   cancelQuoteRequest: (quoteRequestId: string) => Promise<QuoteRequest> = async (quoteRequestId: string) => {
     const locale = await this.getCommercetoolsLocal();
 
