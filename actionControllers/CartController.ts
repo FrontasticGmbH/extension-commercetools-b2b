@@ -15,11 +15,6 @@ export * from './BaseCartController';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
 
-interface LineItemVariant {
-  sku?: string;
-  count: number;
-}
-
 async function updateCartFromRequest(request: Request, actionContext: ActionContext): Promise<Cart> {
   const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
   let cart = await CartFetcher.fetchCart(request, actionContext);
@@ -52,22 +47,15 @@ async function updateCartFromRequest(request: Request, actionContext: ActionCont
 export const addToCart: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
   const body: {
-    variants?: LineItemVariant[];
+    lineItems?: LineItem[];
     businessUnitKey?: string;
   } = JSON.parse(request.body);
-
-  const lineItems: LineItem[] = body.variants?.map((lineItemVariant) => ({
-    variant: {
-      sku: lineItemVariant?.sku || undefined,
-    },
-    count: lineItemVariant?.count || 1,
-  }));
 
   const account = fetchAccountFromSession(request);
 
   let cart = await CartFetcher.fetchCart(request, actionContext);
 
-  cart = await cartApi.addToCart(cart, lineItems, account, request.sessionData?.organization, body.businessUnitKey);
+  cart = await cartApi.addToCart(cart, body.lineItems, account, request.sessionData?.organization, body.businessUnitKey);
 
   const cartId = cart.cartId;
 
