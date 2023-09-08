@@ -435,13 +435,11 @@ export const removeBusinessUnitAddress: ActionHook = async (request: Request, ac
     getLocale(request),
     getCurrency(request),
   );
-
-  const requestData = parseRequestBody<{ address: Address }>(request.body);
-
-  const addressData = BaseAccountMapper.addressToCommercetoolsAddress(requestData.address);
+  const requestData = parseRequestBody<{ addressId: string }>(request.body);
+  const addressId = requestData.addressId;
 
   try {
-    const businessUnit = await businessUnitApi.removeBusinessUnitAddress(request.query['key'], addressData);
+    const businessUnit = await businessUnitApi.removeBusinessUnitAddress(request.query['key'], addressId);
 
     return {
       statusCode: 200,
