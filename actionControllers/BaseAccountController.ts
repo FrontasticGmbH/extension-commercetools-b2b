@@ -9,7 +9,6 @@ import { AccountApi } from '../apis/AccountApi';
 import { EmailApiFactory } from '../utils/EmailApiFactory';
 import { AccountMapper } from '@Commerce-commercetools/mappers/AccountMapper';
 import { Account } from '@Types/account/Account';
-import handleError from '@Commerce-commercetools/utils/handleError';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
 
@@ -357,28 +356,6 @@ export const addAddress: ActionHook = async (request: Request, actionContext: Ac
       account,
     },
   } as Response;
-};
-
-export const deleteAccount: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  assertIsAuthenticated(request);
-
-  try {
-    let account = fetchAccountFromSession(request);
-
-    const accountApi = new AccountApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-    account = await accountApi.deleteAccount(account);
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify(account),
-      sessionData: {
-        ...request.sessionData,
-        account,
-      },
-    };
-  } catch (error) {
-    return handleError(error, request);
-  }
 };
 
 export const addShippingAddress: ActionHook = async (request: Request, actionContext: ActionContext) => {
