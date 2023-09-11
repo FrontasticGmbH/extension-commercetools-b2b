@@ -115,17 +115,7 @@ export const deleteAccount: ActionHook = async (request: Request, actionContext:
     const accountFromSession = fetchAccountFromSession(request);
 
     const accountApi = new AccountApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-    const accountInfo = await accountApi.getAccountByEmail(accountFromSession.email);
-
-    if (!accountInfo) {
-      return {
-        statusCode: 404,
-        body: JSON.stringify({ message: `Account was not found` }),
-        sessionData: request.sessionData,
-      };
-    }
-
-    const account = await accountApi.deleteAccount(accountInfo);
+    const account = await accountApi.deleteAccount(accountFromSession);
 
     return {
       statusCode: 200,
