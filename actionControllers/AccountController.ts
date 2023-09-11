@@ -120,7 +120,7 @@ export const deleteAccount: ActionHook = async (request: Request, actionContext:
     if (!accountInfo) {
       return {
         statusCode: 404,
-        body: JSON.stringify({ message: `Account not found` }),
+        body: JSON.stringify({ message: `Account was not found` }),
         sessionData: request.sessionData,
       };
     }
