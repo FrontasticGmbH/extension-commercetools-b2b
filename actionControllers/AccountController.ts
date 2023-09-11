@@ -112,10 +112,10 @@ export const deleteAccount: ActionHook = async (request: Request, actionContext:
   assertIsAuthenticated(request);
 
   try {
-    const accountFromSession = fetchAccountFromSession(request);
+    let account = fetchAccountFromSession(request);
 
     const accountApi = new AccountApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-    const account = await accountApi.deleteAccount(accountFromSession);
+    account = await accountApi.deleteAccount(account);
 
     return {
       statusCode: 200,
