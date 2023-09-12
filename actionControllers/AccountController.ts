@@ -127,11 +127,11 @@ export const deleteAccount: ActionHook = async (request: Request, actionContext:
 
     account = await accountApi.login(account, undefined);
 
-    account = await accountApi.delete(account);
+    await accountApi.delete(account);
 
     return {
       statusCode: 200,
-      body: JSON.stringify(account),
+      body: '',
       sessionData: {
         ...request.sessionData,
         account: null,
