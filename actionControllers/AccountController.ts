@@ -131,7 +131,7 @@ export const deleteAccount: ActionHook = async (request: Request, actionContext:
 
     return {
       statusCode: 200,
-      body: JSON.stringify(`Account with ID:${account.accountId} deleted successfully`),
+      body: JSON.stringify(account),
       sessionData: {
         ...request.sessionData,
         account: null,
