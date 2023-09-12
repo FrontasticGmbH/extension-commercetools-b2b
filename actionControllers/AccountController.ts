@@ -1,7 +1,4 @@
 import { ActionContext, Request, Response } from '@frontastic/extension-types';
-
-export * from './BaseAccountController';
-
 import { AccountRegisterBody as BaseAccountRegisterBody } from './BaseAccountController';
 import { getCurrency, getLocale } from '@Commerce-commercetools/utils/Request';
 import { AccountApi } from '@Commerce-commercetools/apis/AccountApi';
@@ -16,6 +13,11 @@ import {
   businessUnitNameNormalizer,
 } from '@Commerce-commercetools/utils/BussinessUnitFormatter';
 import { AccountMapper } from '@Commerce-commercetools/mappers/AccountMapper';
+import { assertIsAuthenticated } from '@Commerce-commercetools/utils/assertIsAuthenticated';
+import { fetchAccountFromSession } from '@Commerce-commercetools/utils/fetchAccountFromSession';
+import handleError from '@Commerce-commercetools/utils/handleError';
+
+export * from './BaseAccountController';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
 
@@ -104,4 +106,26 @@ export const register: ActionHook = async (request: Request, actionContext: Acti
   };
 
   return response;
+};
+
+export const deleteAccount: ActionHook = async (request: Request, actionContext: ActionContext) => {
+  assertIsAuthenticated(request);
+
+  try {
+    let account = fetchAccountFromSession(request);
+
+    const accountApi = new AccountApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
+    account = await accountApi.deleteAccount(account);
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify(account),
+      sessionData: {
+        ...request.sessionData,
+        account,
+      },
+    };
+  } catch (error) {
+    return handleError(error, request);
+  }
 };

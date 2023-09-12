@@ -569,11 +569,11 @@ export class BusinessUnitApi extends BaseApi {
     ]);
   }
 
-  async removeBusinessUnitAddress(businessUnitKey: string, address: BaseAddress) {
+  async removeBusinessUnitAddress(businessUnitKey: string, addressId: string) {
     return await this.update(businessUnitKey, [
       {
         action: 'removeAddress',
-        addressId: address.id,
+        addressId,
       },
     ]);
   }

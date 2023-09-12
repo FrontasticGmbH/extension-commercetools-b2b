@@ -18,6 +18,7 @@ export class AccountMapper extends BaseAccountMapper {
       birthday: commercetoolsCustomer?.dateOfBirth ? new Date(commercetoolsCustomer.dateOfBirth) : undefined,
       confirmed: commercetoolsCustomer.isEmailVerified,
       vatNumber: commercetoolsCustomer?.vatId,
+      version: commercetoolsCustomer.version,
       addresses: this.commercetoolsCustomerToAddresses(commercetoolsCustomer, locale),
     } as Account;
   }
