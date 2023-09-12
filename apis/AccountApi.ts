@@ -118,7 +118,6 @@ export class AccountApi extends BaseAccountApi {
   };
 
   async delete(account: Account) {
-    const locale = await this.getCommercetoolsLocal();
     return this.requestBuilder()
       .customers()
       .withId({ ID: account.accountId })
@@ -129,9 +128,7 @@ export class AccountApi extends BaseAccountApi {
         },
       })
       .execute()
-      .then((response) => {
-        return AccountMapper.commercetoolsCustomerToAccount(response.body, locale);
-      })
+      .then((response) => response.body)
       .catch((error) => {
         throw new ExternalError({ status: error.code, message: error.message, body: error.body });
       });
