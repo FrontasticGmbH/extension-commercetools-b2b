@@ -55,7 +55,13 @@ export const addToCart: ActionHook = async (request: Request, actionContext: Act
 
   let cart = await CartFetcher.fetchCart(request, actionContext);
 
-  cart = await cartApi.addToCart(cart, body.lineItems, account, request.sessionData?.organization, body.businessUnitKey);
+  cart = await cartApi.addToCart(
+    cart,
+    body.lineItems,
+    account,
+    request.sessionData?.organization,
+    body.businessUnitKey,
+  );
 
   const cartId = cart.cartId;
 
