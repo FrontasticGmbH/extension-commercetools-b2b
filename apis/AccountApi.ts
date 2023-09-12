@@ -117,19 +117,18 @@ export class AccountApi extends BaseAccountApi {
       });
   };
 
-  async deleteAccount(account: Account) {
+  async delete(account: Account) {
     return this.requestBuilder()
       .customers()
       .withId({ ID: account.accountId })
       .delete({
         queryArgs: {
           version: account.version,
+          dataErasure: true,
         },
       })
       .execute()
-      .then((response) => {
-        return response.body;
-      })
+      .then((response) => response.body)
       .catch((error) => {
         throw new ExternalError({ status: error.code, message: error.message, body: error.body });
       });

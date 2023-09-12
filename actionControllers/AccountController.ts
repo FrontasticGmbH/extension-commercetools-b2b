@@ -1,5 +1,6 @@
 import { ActionContext, Request, Response } from '@frontastic/extension-types';
 import { AccountRegisterBody as BaseAccountRegisterBody } from './BaseAccountController';
+import { Account } from '@Types/account/Account';
 import { getCurrency, getLocale } from '@Commerce-commercetools/utils/Request';
 import { AccountApi } from '@Commerce-commercetools/apis/AccountApi';
 import { CartFetcher } from '@Commerce-commercetools/utils/CartFetcher';
@@ -16,6 +17,7 @@ import { AccountMapper } from '@Commerce-commercetools/mappers/AccountMapper';
 import { assertIsAuthenticated } from '@Commerce-commercetools/utils/assertIsAuthenticated';
 import { fetchAccountFromSession } from '@Commerce-commercetools/utils/fetchAccountFromSession';
 import handleError from '@Commerce-commercetools/utils/handleError';
+import parseRequestBody from '@Commerce-commercetools/utils/parseRequestBody';
 
 export * from './BaseAccountController';
 
@@ -114,15 +116,25 @@ export const deleteAccount: ActionHook = async (request: Request, actionContext:
   try {
     let account = fetchAccountFromSession(request);
 
+    const accountDeleteBody = parseRequestBody<{ password: string }>(request.body);
+
     const accountApi = new AccountApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-    account = await accountApi.deleteAccount(account);
+
+    account = {
+      email: account.email,
+      password: accountDeleteBody.password,
+    } as Account;
+
+    account = await accountApi.login(account, undefined);
+
+    await accountApi.delete(account);
 
     return {
       statusCode: 200,
-      body: JSON.stringify(account),
+      body: '',
       sessionData: {
         ...request.sessionData,
-        account,
+        account: null,
       },
     };
   } catch (error) {
