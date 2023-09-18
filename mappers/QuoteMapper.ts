@@ -15,6 +15,14 @@ import { Quote, QuoteState } from '@Types/quote/Quote';
 
 export class QuoteMapper {
   static commercetoolsQuoteToQuote(commercetoolsQuote: CommercetoolsQuote, locale: Locale): Quote {
+    const quoteRequest = commercetoolsQuote.quoteRequest?.obj
+      ? this.commercetoolsQuoteRequestToQuoteRequest(commercetoolsQuote.quoteRequest.obj, locale)
+      : undefined;
+
+    commercetoolsQuote.stagedQuote?.obj
+      ? this.updateQuoteRequestFromCommercetoolsStagedQuote(quoteRequest, commercetoolsQuote.stagedQuote.obj)
+      : undefined;
+
     return {
       quoteId: commercetoolsQuote.id,
       key: commercetoolsQuote.key,
@@ -27,17 +35,7 @@ export class QuoteMapper {
       buyerComment: commercetoolsQuote.buyerComment,
       sellerComment: commercetoolsQuote.sellerComment,
       expirationDate: new Date(commercetoolsQuote.validTo),
-      quotedRequested: {
-        ...(commercetoolsQuote.quoteRequest?.obj
-          ? this.commercetoolsQuoteRequestToQuoteRequest(commercetoolsQuote.quoteRequest.obj, locale)
-          : undefined),
-      },
-      quotationCart: {
-        cartId: commercetoolsQuote.stagedQuote?.obj?.quotationCart?.id,
-        ...(commercetoolsQuote.stagedQuote?.obj?.quotationCart?.obj
-          ? CartMapper.commercetoolsCartToCart(commercetoolsQuote.stagedQuote.obj.quotationCart.obj, locale)
-          : undefined),
-      },
+      quoteRequest: quoteRequest,
       quoteVersion: commercetoolsQuote.version.toString(),
     };
   }
@@ -53,9 +51,6 @@ export class QuoteMapper {
       lastModifiedAt: new Date(commercetoolsQuoteRequest.lastModifiedAt),
       account: {
         accountId: commercetoolsQuoteRequest.customer.id,
-        ...(commercetoolsQuoteRequest.customer?.obj
-          ? AccountMapper.commercetoolsCustomerToAccount(commercetoolsQuoteRequest.customer.obj, locale)
-          : undefined),
       },
       buyerComment: commercetoolsQuoteRequest.comment,
       store: { key: commercetoolsQuoteRequest.store.key },
@@ -73,52 +68,19 @@ export class QuoteMapper {
     };
   }
 
-  static updateQuotesFromCommercetoolsStagedQuotes(
-    quotes: Quote[],
+  static updateQuoteRequestFromCommercetoolsStagedQuote(
+    quoteRequest: QuoteRequest,
     commercetoolsStagedQuote: CommercetoolsStagedQuote,
-    locale: Locale,
   ) {
-    const quoteToUpdate = quotes.find(
-      (quote) => quote.quotedRequested.quoteRequestId === commercetoolsStagedQuote.quoteRequest.id,
+    quoteRequest.sellerComment = commercetoolsStagedQuote.sellerComment;
+    quoteRequest.quoteRequestState = this.commercetoolsQuoteStateToQuoteDraftState(
+      commercetoolsStagedQuote.stagedQuoteState,
     );
-    if (quoteToUpdate) {
-      quoteToUpdate.quotedRequested.sellerComment = commercetoolsStagedQuote.sellerComment;
-      quoteToUpdate.quotedRequested.quoteRequestState = this.commercetoolsQuoteStateToQuoteDraftState(
-        commercetoolsStagedQuote.stagedQuoteState,
-      );
-      quoteToUpdate.quotedRequested.lastModifiedAt = new Date(commercetoolsStagedQuote.lastModifiedAt);
-      quoteToUpdate.quotedRequested.expirationDate = new Date(commercetoolsStagedQuote.validTo);
-      quoteToUpdate.quotationCart = {
-        cartId: commercetoolsStagedQuote.quotationCart?.id,
-        ...(commercetoolsStagedQuote.quotationCart?.obj
-          ? CartMapper.commercetoolsCartToCart(commercetoolsStagedQuote.quotationCart.obj, locale)
-          : undefined),
-      };
-      quoteToUpdate.quotedRequested.quoteRequestVersion = commercetoolsStagedQuote.version.toString();
-    }
-  }
-
-  static updateQuotesFromCommercetoolsQuotes(quotes: Quote[], commercetoolsQuote: CommercetoolsQuote, locale: Locale) {
-    // CoCo returns duplicated quotes when a renegotiation has been requested and addressed by the seller. We need to filter out the quotes with state "RenegotiationAddressed".
-    const quoteToUpdate = quotes.find(
-      (quote) =>
-        quote.quotedRequested.quoteRequestId === commercetoolsQuote.quoteRequest.id &&
-        commercetoolsQuote.quoteState !== 'RenegotiationAddressed',
-    );
-    if (quoteToUpdate) {
-      quoteToUpdate.quoteId = commercetoolsQuote.id;
-      quoteToUpdate.key = commercetoolsQuote.key;
-      quoteToUpdate.quoteState = this.commercetoolsQuoteStateToQuoteState(commercetoolsQuote.quoteState);
-      quoteToUpdate.createdAt = new Date(commercetoolsQuote.createdAt);
-      quoteToUpdate.lastModifiedAt = new Date(commercetoolsQuote.lastModifiedAt);
-      quoteToUpdate.lineItems = CartMapper.commercetoolsLineItemsToLineItems(commercetoolsQuote.lineItems, locale);
-      quoteToUpdate.sum = ProductMapper.commercetoolsMoneyToMoney(commercetoolsQuote.totalPrice);
-      quoteToUpdate.tax = CartMapper.commercetoolsTaxedPriceToTaxed(commercetoolsQuote.taxedPrice, locale);
-      quoteToUpdate.buyerComment = commercetoolsQuote.buyerComment;
-      quoteToUpdate.sellerComment = commercetoolsQuote.sellerComment;
-      quoteToUpdate.expirationDate = new Date(commercetoolsQuote.validTo);
-      quoteToUpdate.quoteVersion = commercetoolsQuote.version.toString();
-    }
+    quoteRequest.lastModifiedAt = new Date(commercetoolsStagedQuote.lastModifiedAt);
+    quoteRequest.expirationDate = new Date(commercetoolsStagedQuote.validTo);
+    quoteRequest.quotationCart = {
+      cartId: commercetoolsStagedQuote.quotationCart?.id,
+    };
   }
 
   static commercetoolsQuoteStateToQuoteDraftState(

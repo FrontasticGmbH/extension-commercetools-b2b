@@ -3,9 +3,12 @@ import { BaseApi } from './BaseApi';
 import { QuoteMapper } from '../mappers/QuoteMapper';
 import { Cart } from '@Types/cart/Cart';
 import { QuoteRequest, QuoteRequestState } from '@Types/quote/QuoteRequest';
-import { Account } from '@Types/account/Account';
 import { Quote, QuoteState } from '@Types/quote/Quote';
 import { ExternalError } from '@Commerce-commercetools/utils/Errors';
+import { QuoteQuery } from '@Types/query/QuoteQuery';
+import { getOffsetFromCursor } from '@Commerce-commercetools/utils/Pagination';
+import { Result } from '@Types/quote/Result';
+import { ProductMapper } from '@Commerce-commercetools/mappers/ProductMapper';
 
 export class QuoteApi extends BaseApi {
   createQuoteRequest: (quoteDraft: QuoteRequest, cart: Cart) => Promise<QuoteRequest> = async (
@@ -82,73 +85,105 @@ export class QuoteApi extends BaseApi {
       });
   };
 
-  getQuotes: (account: Account) => Promise<Quote[]> = async (account: Account) => {
+  query: (quoteQuery: QuoteQuery) => Promise<Result> = async (quoteQuery: QuoteQuery) => {
     const locale = await this.getCommercetoolsLocal();
+    const limit = +quoteQuery.limit || undefined;
 
-    const quotes = await this.requestBuilder()
-      .quoteRequests()
+    return this.requestBuilder()
+      .quotes()
       .get({
         queryArgs: {
-          where: `customer(id="${account.accountId}")`,
-          expand: 'customer',
-          sort: 'createdAt desc',
-          limit: 50,
+          where: `customer(id="${quoteQuery.accountId}")`,
+          expand: ['quoteRequest', 'stagedQuote'],
+          sort: 'lastModifiedAt desc',
+          limit: limit,
+          offset: getOffsetFromCursor(quoteQuery.cursor),
         },
       })
       .execute()
       .then((response) => {
-        return response.body.results.map((commercetoolsQuoteRequest) => {
-          const quote: Quote = {
-            quotedRequested: QuoteMapper.commercetoolsQuoteRequestToQuoteRequest(commercetoolsQuoteRequest, locale),
-          };
-
-          return quote;
+        const quotes = response.body.results.map((commercetoolsQuote) => {
+          return QuoteMapper.commercetoolsQuoteToQuote(commercetoolsQuote, locale);
         });
+
+        const result: Result = {
+          total: response.body.total,
+          items: quotes,
+          count: response.body.count,
+          previousCursor: ProductMapper.calculatePreviousCursor(response.body.offset, response.body.count),
+          nextCursor: ProductMapper.calculateNextCursor(response.body.offset, response.body.count, response.body.total),
+          query: quoteQuery,
+        };
+        return result;
+      })
+      .catch((error) => {
+        throw new ExternalError({ status: error.code, message: error.message, body: error.body });
+      });
+  };
+
+  queryQuoteRequests: (quoteQuery: QuoteQuery) => Promise<Result> = async (quoteQuery: QuoteQuery) => {
+    const locale = await this.getCommercetoolsLocal();
+    const limit = +quoteQuery.limit || undefined;
+
+    const result = await this.requestBuilder()
+      .quoteRequests()
+      .get({
+        queryArgs: {
+          where: `customer(id="${quoteQuery.accountId}")`,
+          // where: [`customer(id="${quoteQuery.accountId}")`, 'quoteRequestState="Accepted"'],
+          sort: 'lastModifiedAt desc',
+          limit: limit,
+          offset: getOffsetFromCursor(quoteQuery.cursor),
+        },
+      })
+      .execute()
+      .then((response) => {
+        const quoteRequests = response.body.results.map((commercetoolsQuoteRequest) => {
+          return QuoteMapper.commercetoolsQuoteRequestToQuoteRequest(commercetoolsQuoteRequest, locale);
+        });
+
+        const result: Result = {
+          total: response.body.total,
+          items: quoteRequests,
+          count: response.body.count,
+          previousCursor: ProductMapper.calculatePreviousCursor(response.body.offset, response.body.count),
+          nextCursor: ProductMapper.calculateNextCursor(response.body.offset, response.body.count, response.body.total),
+          query: quoteQuery,
+        };
+        return result;
       })
       .catch((error) => {
         throw error;
       });
+
+    const quoteRequestIdsWhereClause = `quoteRequest(id in (${(result.items as QuoteRequest[])
+      .map((quoteRequest) => `"${quoteRequest.quoteRequestId}"`)
+      .join(' ,')}))`;
 
     await this.requestBuilder()
       .stagedQuotes()
       .get({
         queryArgs: {
-          where: `customer(id="${account.accountId}")`,
-          expand: ['quotationCart'],
-          sort: 'createdAt desc',
-          limit: 50,
+          where: quoteRequestIdsWhereClause,
         },
       })
       .execute()
       .then((response) => {
         return response.body.results.map((commercetoolsStagedQuote) => {
-          QuoteMapper.updateQuotesFromCommercetoolsStagedQuotes(quotes, commercetoolsStagedQuote, locale);
+          const quoteToUpdate = (result.items as QuoteRequest[]).find(
+            (quoteRequest) => quoteRequest.quoteRequestId === commercetoolsStagedQuote.quoteRequest.id,
+          );
+
+          if (quoteToUpdate) {
+            QuoteMapper.updateQuoteRequestFromCommercetoolsStagedQuote(quoteToUpdate, commercetoolsStagedQuote);
+          }
         });
       })
       .catch((error) => {
         throw error;
       });
 
-    await this.requestBuilder()
-      .quotes()
-      .get({
-        queryArgs: {
-          where: `customer(id="${account.accountId}")`,
-          sort: 'createdAt desc',
-          limit: 50,
-        },
-      })
-      .execute()
-      .then((response) => {
-        return response.body.results.map((commercetoolsQuote) => {
-          QuoteMapper.updateQuotesFromCommercetoolsQuotes(quotes, commercetoolsQuote, locale);
-        });
-      })
-      .catch((error) => {
-        throw new ExternalError({ status: error.code, message: error.message, body: error.body });
-      });
-
-    return quotes;
+    return result;
   };
 
   acceptQuote: (quoteId: string) => Promise<Quote> = async (quoteId: string) => {
