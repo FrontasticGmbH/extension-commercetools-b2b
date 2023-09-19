@@ -9,6 +9,9 @@ import { QuoteQuery } from '@Types/query/QuoteQuery';
 import { getOffsetFromCursor } from '@Commerce-commercetools/utils/Pagination';
 import { Result } from '@Types/quote/Result';
 import { ProductMapper } from '@Commerce-commercetools/mappers/ProductMapper';
+import { Account } from '@Types/account/Account';
+import { FilterTypes } from '@Types/query/Filter';
+import { TermFilter } from '@Types/query/TermFilter';
 
 export class QuoteApi extends BaseApi {
   createQuoteRequest: (quoteDraft: QuoteRequest, cart: Cart) => Promise<QuoteRequest> = async (
@@ -85,19 +88,110 @@ export class QuoteApi extends BaseApi {
       });
   };
 
+  getQuotes: (account: Account) => Promise<Quote[]> = async (account: Account) => {
+    const locale = await this.getCommercetoolsLocal();
+
+    const quotes = await this.requestBuilder()
+      .quoteRequests()
+      .get({
+        queryArgs: {
+          where: `customer(id="${account.accountId}")`,
+          expand: 'customer',
+          sort: 'createdAt desc',
+          limit: 50,
+        },
+      })
+      .execute()
+      .then((response) => {
+        return response.body.results.map((commercetoolsQuoteRequest) => {
+          const quote: Quote = {
+            quoteRequest: QuoteMapper.deprecatedCommercetoolsQuoteRequestToQuoteRequest(
+              commercetoolsQuoteRequest,
+              locale,
+            ),
+          };
+
+          return quote;
+        });
+      })
+      .catch((error) => {
+        throw error;
+      });
+
+    await this.requestBuilder()
+      .stagedQuotes()
+      .get({
+        queryArgs: {
+          where: `customer(id="${account.accountId}")`,
+          expand: ['quotationCart'],
+          sort: 'createdAt desc',
+          limit: 50,
+        },
+      })
+      .execute()
+      .then((response) => {
+        return response.body.results.map((commercetoolsStagedQuote) => {
+          QuoteMapper.deprecatedUpdateQuotesFromCommercetoolsStagedQuotes(quotes, commercetoolsStagedQuote, locale);
+        });
+      })
+      .catch((error) => {
+        throw error;
+      });
+
+    await this.requestBuilder()
+      .quotes()
+      .get({
+        queryArgs: {
+          where: `customer(id="${account.accountId}")`,
+          sort: 'createdAt desc',
+          limit: 50,
+        },
+      })
+      .execute()
+      .then((response) => {
+        return response.body.results.map((commercetoolsQuote) => {
+          QuoteMapper.deprecatedUpdateQuotesFromCommercetoolsQuotes(quotes, commercetoolsQuote, locale);
+        });
+      })
+      .catch((error) => {
+        throw new ExternalError({ status: error.code, message: error.message, body: error.body });
+      });
+
+    return quotes;
+  };
+
   query: (quoteQuery: QuoteQuery) => Promise<Result> = async (quoteQuery: QuoteQuery) => {
     const locale = await this.getCommercetoolsLocal();
     const limit = +quoteQuery.limit || undefined;
+    const sortAttributes: string[] = [];
+
+    if (quoteQuery.sortAttributes !== undefined) {
+      Object.keys(quoteQuery.sortAttributes).map((field, directionIndex) => {
+        sortAttributes.push(`${field} ${Object.values(quoteQuery.sortAttributes)[directionIndex]}`);
+      });
+    } else {
+      // default sort
+      sortAttributes.push(`lastModifiedAt desc`);
+    }
+
+    const whereClause = [`customer(id="${quoteQuery.accountId}")`];
+    if (quoteQuery.filters !== undefined) {
+      quoteQuery.filters.forEach((filter) => {
+        if (filter.type === FilterTypes.TERM) {
+          whereClause.push(`${filter.identifier} in ("${(filter as TermFilter).terms.join('","')}")`);
+        }
+      });
+    }
 
     return this.requestBuilder()
       .quotes()
       .get({
         queryArgs: {
-          where: `customer(id="${quoteQuery.accountId}")`,
+          where: whereClause,
           expand: ['quoteRequest', 'stagedQuote'],
-          sort: 'lastModifiedAt desc',
           limit: limit,
           offset: getOffsetFromCursor(quoteQuery.cursor),
+          sort: sortAttributes,
         },
       })
       .execute()
@@ -124,14 +218,32 @@ export class QuoteApi extends BaseApi {
   queryQuoteRequests: (quoteQuery: QuoteQuery) => Promise<Result> = async (quoteQuery: QuoteQuery) => {
     const locale = await this.getCommercetoolsLocal();
     const limit = +quoteQuery.limit || undefined;
+    const sortAttributes: string[] = [];
+
+    if (quoteQuery.sortAttributes !== undefined) {
+      Object.keys(quoteQuery.sortAttributes).map((field, directionIndex) => {
+        sortAttributes.push(`${field} ${Object.values(quoteQuery.sortAttributes)[directionIndex]}`);
+      });
+    } else {
+      // default sort
+      sortAttributes.push(`lastModifiedAt desc`);
+    }
+
+    const whereClause = [`customer(id="${quoteQuery.accountId}")`];
+    if (quoteQuery.filters !== undefined) {
+      quoteQuery.filters.forEach((filter) => {
+        if (filter.type === FilterTypes.TERM) {
+          whereClause.push(`${filter.identifier} in ("${(filter as TermFilter).terms.join('","')}")`);
+        }
+      });
+    }
 
     const result = await this.requestBuilder()
       .quoteRequests()
       .get({
         queryArgs: {
-          where: `customer(id="${quoteQuery.accountId}")`,
-          // where: [`customer(id="${quoteQuery.accountId}")`, 'quoteRequestState="Accepted"'],
-          sort: 'lastModifiedAt desc',
+          where: whereClause,
+          sort: sortAttributes,
           limit: limit,
           offset: getOffsetFromCursor(quoteQuery.cursor),
         },
