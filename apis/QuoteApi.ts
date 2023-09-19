@@ -10,8 +10,6 @@ import { getOffsetFromCursor } from '@Commerce-commercetools/utils/Pagination';
 import { Result } from '@Types/quote/Result';
 import { ProductMapper } from '@Commerce-commercetools/mappers/ProductMapper';
 import { Account } from '@Types/account/Account';
-import { FilterTypes } from '@Types/query/Filter';
-import { TermFilter } from '@Types/query/TermFilter';
 
 export class QuoteApi extends BaseApi {
   createQuoteRequest: (quoteDraft: QuoteRequest, cart: Cart) => Promise<QuoteRequest> = async (
@@ -175,12 +173,11 @@ export class QuoteApi extends BaseApi {
     }
 
     const whereClause = [`customer(id="${quoteQuery.accountId}")`];
-    if (quoteQuery.filters !== undefined) {
-      quoteQuery.filters.forEach((filter) => {
-        if (filter.type === FilterTypes.TERM) {
-          whereClause.push(`${filter.identifier} in ("${(filter as TermFilter).terms.join('","')}")`);
-        }
-      });
+    if (quoteQuery.quoteIds !== undefined && quoteQuery.quoteIds.length !== 0) {
+      whereClause.push(`id in ("${quoteQuery.quoteIds.join('","')}")`);
+    }
+    if (quoteQuery.quoteStates !== undefined && quoteQuery.quoteStates.length > 0) {
+      whereClause.push(`quoteState in ("${quoteQuery.quoteStates.join('","')}")`);
     }
 
     return this.requestBuilder()
@@ -230,12 +227,11 @@ export class QuoteApi extends BaseApi {
     }
 
     const whereClause = [`customer(id="${quoteQuery.accountId}")`];
-    if (quoteQuery.filters !== undefined) {
-      quoteQuery.filters.forEach((filter) => {
-        if (filter.type === FilterTypes.TERM) {
-          whereClause.push(`${filter.identifier} in ("${(filter as TermFilter).terms.join('","')}")`);
-        }
-      });
+    if (quoteQuery.quoteIds !== undefined && quoteQuery.quoteIds.length !== 0) {
+      whereClause.push(`id in ("${quoteQuery.quoteIds.join('","')}")`);
+    }
+    if (quoteQuery.quoteStates !== undefined && quoteQuery.quoteStates.length > 0) {
+      whereClause.push(`quoteRequestState in ("${quoteQuery.quoteStates.join('","')}")`);
     }
 
     const result = await this.requestBuilder()

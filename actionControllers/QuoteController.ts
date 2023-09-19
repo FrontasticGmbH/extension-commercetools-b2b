@@ -3,15 +3,13 @@ import { getCurrency, getLocale } from '../utils/Request';
 import { CartApi } from '../apis/CartApi';
 import { QuoteApi } from '../apis/QuoteApi';
 import { CartFetcher } from '@Commerce-commercetools/utils/CartFetcher';
-import { QuoteRequest } from '@Types/quote/QuoteRequest';
+import { QuoteRequest, QuoteRequestState } from '@Types/quote/QuoteRequest';
 import { fetchAccountFromSession } from '@Commerce-commercetools/utils/fetchAccountFromSession';
 import { AccountAuthenticationError } from '@Commerce-commercetools/errors/AccountAuthenticationError';
 import { QuoteQuery } from '@Types/query/QuoteQuery';
-import { FilterTypes } from '@Types/query/Filter';
-import { TermFilter } from '@Types/query/TermFilter';
-import { Filter } from '@Types/query/Filter';
 import { SortAttributes } from '@Types/query/ProductQuery';
 import { SortOrder } from '@Types/query/ProductQuery';
+import { QuoteState } from '@Types/quote/Quote';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
 
@@ -34,29 +32,34 @@ function queryParamsToSortAttributes(queryParams: any) {
   return sortAttributes;
 }
 
-function queryParamsToFilters(queryParams: any) {
-  const filters: Filter[] = [];
-  let key: any;
-  let filterData: any;
+function queryParamsToQuoteStates(queryParams: any) {
+  const quoteStates: (QuoteState | QuoteRequestState)[] = [];
 
-  if (queryParams.filters) {
-    for ([key, filterData] of Object.entries(queryParams.filters)) {
-      // Force terms as an array if exist
-      if (filterData?.terms && !Array.isArray(filterData.terms)) {
-        filterData.terms = Object.values(filterData.terms);
-      }
-
-      if (filterData.terms !== undefined) {
-        filters.push({
-          type: FilterTypes.TERM,
-          identifier: key,
-          terms: filterData.terms.map((facetValueData: string) => facetValueData),
-        } as TermFilter);
-      }
+  queryParams.quoteStates?.map((quoteState: string) => {
+    if (Object.values(QuoteState).includes(quoteState as any)) {
+      quoteStates.push(quoteState as QuoteState);
+      return;
     }
+
+    if (Object.values(QuoteRequestState).includes(quoteState as any)) {
+      quoteStates.push(quoteState as QuoteRequestState);
+      return;
+    }
+  });
+
+  return quoteStates;
+}
+
+function queryParamsToQuoteIds(queryParams: any) {
+  const quoteIds: string[] = [];
+
+  if (queryParams?.quoteIds && Array.isArray(queryParams?.quoteIds)) {
+    queryParams?.quoteIds.map((quoteId: string | number) => {
+      quoteIds.push(quoteId.toString());
+    });
   }
 
-  return filters;
+  return quoteIds;
 }
 
 export const createQuoteRequest: ActionHook = async (request: Request, actionContext: ActionContext) => {
@@ -125,7 +128,8 @@ export const query: ActionHook = async (request: Request, actionContext: ActionC
     accountId: account.accountId,
     limit: request.query?.limit ?? undefined,
     cursor: request.query?.cursor ?? undefined,
-    filters: queryParamsToFilters(request.query),
+    quoteIds: queryParamsToQuoteIds(request.query),
+    quoteStates: queryParamsToQuoteStates(request.query),
     sortAttributes: queryParamsToSortAttributes(request.query),
   };
 
@@ -152,7 +156,8 @@ export const queryQuoteRequests: ActionHook = async (request: Request, actionCon
     accountId: account.accountId,
     limit: request.query?.limit ?? undefined,
     cursor: request.query?.cursor ?? undefined,
-    filters: queryParamsToFilters(request.query),
+    quoteIds: queryParamsToQuoteIds(request.query),
+    quoteStates: queryParamsToQuoteStates(request.query),
     sortAttributes: queryParamsToSortAttributes(request.query),
   };
 
