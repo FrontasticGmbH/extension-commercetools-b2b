@@ -1,0 +1,19 @@
+{
+  "customDataSourceType": "frontastic/order",
+  "name": "Order Detail",
+  "category": "Orders",
+  "icon": "picture_in_picture",
+  "schema": [
+    {
+      "name": "Order Detail",
+      "fields": [
+        {
+          "label": "Order ID",
+          "field": "productId",
+          "type": "text",
+          "translatable": false
+        }
+      ]
+    }
+  ]
+}

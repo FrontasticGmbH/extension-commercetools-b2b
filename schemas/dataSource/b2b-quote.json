@@ -1,0 +1,7 @@
+{
+    "customDataSourceType": "b2b/quote",
+    "name": "B2B Quote",
+    "category": "Quote",
+    "icon": "paper",
+    "schema": []
+}

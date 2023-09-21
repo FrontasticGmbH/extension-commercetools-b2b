@@ -14,6 +14,13 @@ import { Result } from '@Types/product/Result';
 import { CategoryRouter } from './utils/CategoryRouter';
 import dataSources from './dataSources';
 import { actions } from './actionControllers';
+import WishlistRouter from '@Commerce-commercetools/utils/WishlistRouter';
+import QuoteRouter from '@Commerce-commercetools/utils/QuoteRouter';
+import CartRouter from '@Commerce-commercetools/utils/CartRouter';
+
+import { Wishlist } from '@Types/wishlist/Wishlist';
+import { Cart } from '@Types/cart/Cart';
+import { Quote } from '@Types/quote/Quote';
 
 export default {
   'dynamic-page-handler': async (
@@ -91,6 +98,125 @@ export default {
             },
             pageMatchingPayload: {
               product: product,
+            },
+          };
+        }
+
+        // FIXME: Return proper error result
+        return null;
+      });
+    }
+
+    // Identify Wishlist
+    if (WishlistRouter.identifyFrom(request)) {
+      return WishlistRouter.loadFor(request, context.frontasticContext).then((wishlist: Wishlist) => {
+        if (wishlist) {
+          return {
+            dynamicPageType: 'frontastic/wishlist-detail-page',
+            dataSourcePayload: {
+              wishlist: wishlist,
+            },
+            pageMatchingPayload: {
+              wishlist: wishlist,
+            },
+          };
+        }
+
+        // FIXME: Return proper error result
+        return null;
+      });
+    }
+
+    // Identify Preview Wishlist
+    if (WishlistRouter.identifyPreviewFrom(request)) {
+      return WishlistRouter.loadPreviewFor(request, context.frontasticContext).then((wishlist: Wishlist) => {
+        if (wishlist) {
+          return {
+            dynamicPageType: 'frontastic/wishlist-detail-page',
+            dataSourcePayload: {
+              wishlist: wishlist,
+            },
+            pageMatchingPayload: {
+              wishlist: wishlist,
+            },
+          };
+        }
+
+        // FIXME: Return proper error result
+        return null;
+      });
+    }
+
+    // Identify Order
+    if (CartRouter.identifyFrom(request)) {
+      return CartRouter.loadFor(request, context.frontasticContext).then((cart: Cart) => {
+        if (cart) {
+          return {
+            dynamicPageType: 'frontastic/order',
+            dataSourcePayload: {
+              cart,
+            },
+            pageMatchingPayload: {
+              cart,
+            },
+          };
+        }
+
+        // FIXME: Return proper error result
+        return null;
+      });
+    }
+    // Identify Preview Order
+    if (CartRouter.identifyPreviewFrom(request)) {
+      return CartRouter.loadPreviewFor(request, context.frontasticContext).then((cart: Cart) => {
+        if (cart) {
+          return {
+            dynamicPageType: 'frontastic/order',
+            dataSourcePayload: {
+              cart,
+            },
+            pageMatchingPayload: {
+              cart,
+            },
+          };
+        }
+
+        // FIXME: Return proper error result
+        return null;
+      });
+    }
+
+    // Identify Quote
+    if (QuoteRouter.identifyFrom(request)) {
+      return QuoteRouter.loadFor(request, context.frontasticContext).then((quote: Quote) => {
+        if (quote) {
+          return {
+            dynamicPageType: 'frontastic/order',
+            dataSourcePayload: {
+              quote,
+            },
+            pageMatchingPayload: {
+              quote,
+            },
+          };
+        }
+
+        // FIXME: Return proper error result
+        return null;
+      });
+    }
+
+    // Identify Preview Quote
+    if (QuoteRouter.identifyPreviewFrom(request)) {
+      return QuoteRouter.loadPreviewFor(request, context.frontasticContext).then((quote: Quote) => {
+        if (quote) {
+          return {
+            dynamicPageType: 'frontastic/order',
+            dataSourcePayload: {
+              quote,
+            },
+            pageMatchingPayload: {
+              quote,
             },
           };
         }
