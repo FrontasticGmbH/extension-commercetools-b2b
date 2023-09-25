@@ -6,7 +6,7 @@ import { fetchAccountFromSession } from '@Commerce-commercetools/utils/fetchAcco
 
 export default class WishlistRouter {
   static identifyFrom(request: Request) {
-    if (getPath(request)?.match(/\/w\/([^\/]+)/)) {
+    if (getPath(request)?.match(/\/purchase-list\/([^\/]+)/)) {
       return true;
     }
 
@@ -14,7 +14,7 @@ export default class WishlistRouter {
   }
 
   static identifyPreviewFrom(request: Request) {
-    if (getPath(request)?.match(/\/preview\/.+\/w\/([^\/]+)/)) {
+    if (getPath(request)?.match(/\/preview\/.+\/purchase-list\/([^\/]+)/)) {
       return true;
     }
 
@@ -24,7 +24,7 @@ export default class WishlistRouter {
   static loadFor = async (request: Request, frontasticContext: Context): Promise<Wishlist> => {
     const wishlistApi = new WishlistApi(frontasticContext, getLocale(request), getCurrency(request));
 
-    const urlMatches = getPath(request)?.match(/\/w\/([^\/]+)/);
+    const urlMatches = getPath(request)?.match(/\/purchase-list\/([^\/]+)/);
     const account = fetchAccountFromSession(request);
 
     if (urlMatches) {
@@ -37,7 +37,7 @@ export default class WishlistRouter {
   static loadPreviewFor = async (request: Request, frontasticContext: Context): Promise<Wishlist> => {
     const wishlistApi = new WishlistApi(frontasticContext, getLocale(request), getCurrency(request));
 
-    const urlMatches = getPath(request)?.match(/\/preview\/.+\/p\/([^\/]+)/);
+    const urlMatches = getPath(request)?.match(/\/preview\/.+\/purchase-list\/([^\/]+)/);
 
     const account = fetchAccountFromSession(request);
 

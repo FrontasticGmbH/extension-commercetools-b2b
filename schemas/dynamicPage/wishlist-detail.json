@@ -1,8 +1,0 @@
-{
-    "dynamicPageType": "frontastic/wishlist-detail-page",
-    "name": "Wishlist details page",
-    "category": "Wishlist",
-    "icon": "view_list",
-    "dataSourceType": "frontastic/wishlist",
-    "isMultiple": true
-}

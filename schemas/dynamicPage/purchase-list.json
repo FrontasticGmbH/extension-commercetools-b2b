@@ -1,0 +1,8 @@
+{
+  "dynamicPageType": "frontastic/product-list",
+  "name": "Purchase details page",
+  "category": "purchase-list",
+  "icon": "view_list",
+  "dataSourceType": "frontastic/wishlist",
+  "isMultiple": true
+}

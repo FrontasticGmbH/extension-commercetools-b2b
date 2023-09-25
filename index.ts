@@ -29,7 +29,7 @@ export default {
   ): Promise<DynamicPageSuccessResult | DynamicPageRedirectResult | null> => {
     // Identify static page
     const staticPageMatch = getPath(request)?.match(
-      /^\/(cart|checkout|wishlist|account|login|register|reset-password|thank-you|quote-thank-you)/,
+      /^\/(cart|checkout|wishlists|purchase-lists|account|login|register|reset-password|thank-you|quote-thank-you)/,
     );
 
     if (staticPageMatch) {
