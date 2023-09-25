@@ -112,7 +112,7 @@ export default {
       return WishlistRouter.loadFor(request, context.frontasticContext).then((wishlist: Wishlist) => {
         if (wishlist) {
           return {
-            dynamicPageType: 'frontastic/wishlist-detail-page',
+            dynamicPageType: 'frontastic/product-list',
             dataSourcePayload: {
               wishlist: wishlist,
             },
@@ -132,7 +132,7 @@ export default {
       return WishlistRouter.loadPreviewFor(request, context.frontasticContext).then((wishlist: Wishlist) => {
         if (wishlist) {
           return {
-            dynamicPageType: 'frontastic/wishlist-detail-page',
+            dynamicPageType: 'frontastic/product-list',
             dataSourcePayload: {
               wishlist: wishlist,
             },
@@ -152,7 +152,7 @@ export default {
       return CartRouter.loadFor(request, context.frontasticContext).then((cart: Cart) => {
         if (cart) {
           return {
-            dynamicPageType: 'frontastic/order',
+            dynamicPageType: 'frontastic/product-list',
             dataSourcePayload: {
               cart,
             },
@@ -171,7 +171,7 @@ export default {
       return CartRouter.loadPreviewFor(request, context.frontasticContext).then((cart: Cart) => {
         if (cart) {
           return {
-            dynamicPageType: 'frontastic/order',
+            dynamicPageType: 'frontastic/product-list',
             dataSourcePayload: {
               cart,
             },
@@ -191,7 +191,7 @@ export default {
       return QuoteRouter.loadFor(request, context.frontasticContext).then((quote: Quote) => {
         if (quote) {
           return {
-            dynamicPageType: 'frontastic/order',
+            dynamicPageType: 'frontastic/quote',
             dataSourcePayload: {
               quote,
             },
@@ -211,7 +211,7 @@ export default {
       return QuoteRouter.loadPreviewFor(request, context.frontasticContext).then((quote: Quote) => {
         if (quote) {
           return {
-            dynamicPageType: 'frontastic/order',
+            dynamicPageType: 'frontastic/quote',
             dataSourcePayload: {
               quote,
             },

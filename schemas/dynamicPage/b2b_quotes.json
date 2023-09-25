@@ -1,8 +1,8 @@
 {
-    "name": "Business Quotes",
-    "category": "Business Quotes",
-    "icon": "group",
-    "isMultiple": true,
-    "dynamicPageType": "b2b/quote",
-    "dataSourceType": "b2b/quote"
+  "name": "Business Quotes",
+  "category": "Business Quotes",
+  "icon": "group",
+  "isMultiple": true,
+  "dynamicPageType": "frontastic/quote",
+  "dataSourceType": "frontastic/quote"
 }
