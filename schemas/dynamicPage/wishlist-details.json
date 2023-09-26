@@ -3,6 +3,6 @@
   "name": "Purchase details page",
   "category": "purchase-list",
   "icon": "view_list",
-  "dataSourceType": "frontastic/product-list",
+  "dataSourceType": "frontastic/purchase-list",
   "isMultiple": true
 }
