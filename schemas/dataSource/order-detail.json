@@ -1,5 +1,5 @@
 {
-    "dynamicPageType": "frontastic/order-history",
+  "dynamicPageType": "frontastic/order",
     "name": "Order Details",
     "category": "Orders",
     "icon": "group",
