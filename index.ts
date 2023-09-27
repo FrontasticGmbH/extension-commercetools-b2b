@@ -17,7 +17,6 @@ import { actions } from './actionControllers';
 import WishlistRouter from '@Commerce-commercetools/utils/WishlistRouter';
 import QuoteRouter from '@Commerce-commercetools/utils/QuoteRouter';
 import CartRouter from '@Commerce-commercetools/utils/CartRouter';
-
 import { Wishlist } from '@Types/wishlist/Wishlist';
 import { Cart } from '@Types/cart/Cart';
 import { Quote } from '@Types/quote/Quote';
@@ -29,7 +28,7 @@ export default {
   ): Promise<DynamicPageSuccessResult | DynamicPageRedirectResult | null> => {
     // Identify static page
     const staticPageMatch = getPath(request)?.match(
-      /^\/(cart|checkout|wishlists|purchase-lists|account|login|register|reset-password|thank-you|quote-thank-you)/,
+      /^\/(cart|checkout|wishlists|account|login|register|reset-password|thank-you|quote-thank-you)/,
     );
 
     if (staticPageMatch) {
@@ -112,7 +111,7 @@ export default {
       return WishlistRouter.loadFor(request, context.frontasticContext).then((wishlist: Wishlist) => {
         if (wishlist) {
           return {
-            dynamicPageType: 'frontastic/product-list',
+            dynamicPageType: 'frontastic/wishlist-detail-page',
             dataSourcePayload: {
               wishlist: wishlist,
             },
@@ -132,7 +131,7 @@ export default {
       return WishlistRouter.loadPreviewFor(request, context.frontasticContext).then((wishlist: Wishlist) => {
         if (wishlist) {
           return {
-            dynamicPageType: 'frontastic/product-list',
+            dynamicPageType: 'frontastic/wishlist-detail-page',
             dataSourcePayload: {
               wishlist: wishlist,
             },

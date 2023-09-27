@@ -1,0 +1,8 @@
+{
+  "dynamicPageType": "frontastic/wishlist-detail-page",
+  "name": "Wishlist details page",
+  "category": "Wishlists",
+  "icon": "picture_in_picture",
+  "dataSourceType": "frontastic/product-list",
+  "isMultiple": true
+}
