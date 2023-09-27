@@ -1,6 +1,6 @@
 import { Context, Request } from '@frontastic/extension-types';
 import { getCurrency, getLocale, getPath } from './Request';
-import { Cart } from '@Types/cart';
+import { Cart } from '@Types/cart/Cart';
 import { CartApi } from '../apis/CartApi';
 import { fetchAccountFromSession } from './fetchAccountFromSession';
 
