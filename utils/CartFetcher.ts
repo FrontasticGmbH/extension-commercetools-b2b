@@ -6,8 +6,8 @@ import { BaseCartFetcher } from './BaseCartFetcher';
 
 export class CartFetcher extends BaseCartFetcher {
   static async fetchCart(request: Request, actionContext: ActionContext): Promise<Cart> | undefined {
-    const businessUnitKey = request?.query?.['businessUnitKey'];
-    const storeKey = request?.query?.['storeKey'];
+    const businessUnitKey = request?.query?.['businessUnitKey'] ?? request?.body?.['businessUnitKey'];
+    const storeKey = request?.query?.['storeKey'] ?? request?.body?.['storeKey'];
 
     const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 
@@ -33,7 +33,7 @@ export class CartFetcher extends BaseCartFetcher {
       );
     }
 
-    return undefined;
+    throw new Error('Cart cannot be fetched.');
   }
 }
 
