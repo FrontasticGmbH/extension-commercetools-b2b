@@ -28,7 +28,7 @@ export default {
   ): Promise<DynamicPageSuccessResult | DynamicPageRedirectResult | null> => {
     // Identify static page
     const staticPageMatch = getPath(request)?.match(
-      /^\/(cart|checkout|wishlists|account|login|register|reset-password|thank-you|quote-thank-you)/,
+      /^\/(cart|checkout|wishlists|shopping-lists|account|login|register|reset-password|thank-you|quote-thank-you)/,
     );
 
     if (staticPageMatch) {
@@ -111,7 +111,7 @@ export default {
       return WishlistRouter.loadFor(request, context.frontasticContext).then((wishlist: Wishlist) => {
         if (wishlist) {
           return {
-            dynamicPageType: 'frontastic/wishlist-detail-page',
+            dynamicPageType: 'frontastic/shopping-list-detail-page',
             dataSourcePayload: {
               wishlist: wishlist,
             },
@@ -131,7 +131,7 @@ export default {
       return WishlistRouter.loadPreviewFor(request, context.frontasticContext).then((wishlist: Wishlist) => {
         if (wishlist) {
           return {
-            dynamicPageType: 'frontastic/wishlist-detail-page',
+            dynamicPageType: 'frontastic/shopping-list-detail-page',
             dataSourcePayload: {
               wishlist: wishlist,
             },
