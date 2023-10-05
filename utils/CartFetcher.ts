@@ -33,7 +33,7 @@ export class CartFetcher extends BaseCartFetcher {
       );
     }
 
-    throw new Error('Cart cannot be fetched.');
+    return undefined;
   }
 }
 
