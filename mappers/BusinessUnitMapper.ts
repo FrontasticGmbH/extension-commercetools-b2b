@@ -110,22 +110,20 @@ export class BusinessUnitMapper {
     commercetoolsAssociates: CommercetoolsAssociate[],
     locale: Locale,
   ): Associate[] {
-    return commercetoolsAssociates?.map((commercetoolsAssociate) => {
-      if (!commercetoolsAssociate.customer?.obj) {
-        return undefined;
-      }
+    return commercetoolsAssociates
+      .filter((commercetoolsAssociate) => commercetoolsAssociate.customer?.obj)
+      .map((commercetoolsAssociate) => {
+        const associate: Associate = AccountMapper.commercetoolsCustomerToAccount(
+          commercetoolsAssociate.customer?.obj,
+          locale,
+        );
 
-      const associate: Associate = AccountMapper.commercetoolsCustomerToAccount(
-        commercetoolsAssociate.customer?.obj,
-        locale,
-      );
+        associate.roles = commercetoolsAssociate.associateRoleAssignments?.map((associateRoleAssigment) => {
+          return this.mapCommercetoolsAssociateRoleAssignmentToAssociateRole(associateRoleAssigment);
+        });
 
-      associate.roles = commercetoolsAssociate.associateRoleAssignments?.map((associateRoleAssigment) => {
-        return this.mapCommercetoolsAssociateRoleAssignmentToAssociateRole(associateRoleAssigment);
+        return associate;
       });
-
-      return associate;
-    });
   }
 
   static expandStores(stores: Store[], allStores: Store[]): Store[] {
