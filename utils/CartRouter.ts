@@ -1,11 +1,11 @@
 import { Context, Request } from '@frontastic/extension-types';
 import { getCurrency, getLocale, getPath } from './Request';
-import { Cart } from '@Types/cart/Cart';
 import { CartApi } from '../apis/CartApi';
 import { fetchAccountFromSession } from './fetchAccountFromSession';
+import { Order } from '@Types/cart/Order';
 
-export default class WishlistRouter {
-  static identifyFrom(request: Request) {
+export default class CartRouter {
+  static identifyOrderFrom(request: Request) {
     if (getPath(request)?.match(/\/order\/([^\/]+)/)) {
       return true;
     }
@@ -13,7 +13,7 @@ export default class WishlistRouter {
     return false;
   }
 
-  static identifyPreviewFrom(request: Request) {
+  static identifyOrderPreviewFrom(request: Request) {
     if (getPath(request)?.match(/\/preview\/.+\/order\/([^\/]+)/)) {
       return true;
     }
@@ -21,7 +21,7 @@ export default class WishlistRouter {
     return false;
   }
 
-  static loadFor = async (request: Request, frontasticContext: Context): Promise<Cart> => {
+  static loadOrderFor = async (request: Request, frontasticContext: Context): Promise<Order> => {
     const cartApi = new CartApi(frontasticContext, getLocale(request), getCurrency(request));
 
     const account = fetchAccountFromSession(request);
@@ -35,7 +35,7 @@ export default class WishlistRouter {
     return null;
   };
 
-  static loadPreviewFor = async (request: Request, frontasticContext: Context): Promise<Cart> => {
+  static loadOrderPreviewFor = async (request: Request, frontasticContext: Context): Promise<Order> => {
     const cartApi = new CartApi(frontasticContext, getLocale(request), getCurrency(request));
 
     const urlMatches = getPath(request)?.match(/\/preview\/.+\/order\/([^\/]+)/);

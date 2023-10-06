@@ -1,7 +1,0 @@
-{
-  "customDataSourceType": "frontastic/quote",
-  "name": "B2B Quote",
-  "category": "Quote",
-  "icon": "paper",
-  "schema": []
-}

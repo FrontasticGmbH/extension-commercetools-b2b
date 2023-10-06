@@ -18,9 +18,9 @@ import WishlistRouter from '@Commerce-commercetools/utils/WishlistRouter';
 import QuoteRouter from '@Commerce-commercetools/utils/QuoteRouter';
 import CartRouter from '@Commerce-commercetools/utils/CartRouter';
 import { Wishlist } from '@Types/wishlist/Wishlist';
-import { Cart } from '@Types/cart/Cart';
 import { Quote } from '@Types/quote/Quote';
 import { QuoteRequest } from '@Types/quote/QuoteRequest';
+import { Order } from '@Types/cart/Order';
 
 export default {
   'dynamic-page-handler': async (
@@ -29,7 +29,7 @@ export default {
   ): Promise<DynamicPageSuccessResult | DynamicPageRedirectResult | null> => {
     // Identify static page
     const staticPageMatch = getPath(request)?.match(
-      /^\/(cart|checkout|wishlists|shopping-lists|account|login|register|reset-password|thank-you|quote-thank-you|quotes)/,
+      /^\/(cart|checkout|wishlists|shopping-lists|account|login|register|reset-password|thank-you|quote-thank-you|quotes|orders)/,
     );
 
     if (staticPageMatch) {
@@ -148,16 +148,16 @@ export default {
     }
 
     // Identify Order
-    if (CartRouter.identifyFrom(request)) {
-      return CartRouter.loadFor(request, context.frontasticContext).then((cart: Cart) => {
-        if (cart) {
+    if (CartRouter.identifyOrderFrom(request)) {
+      return CartRouter.loadOrderFor(request, context.frontasticContext).then((order: Order) => {
+        if (order) {
           return {
-            dynamicPageType: 'frontastic/product-list',
+            dynamicPageType: 'frontastic/order-detail-page',
             dataSourcePayload: {
-              cart,
+              order,
             },
             pageMatchingPayload: {
-              cart,
+              order,
             },
           };
         }
@@ -166,17 +166,18 @@ export default {
         return null;
       });
     }
+
     // Identify Preview Order
-    if (CartRouter.identifyPreviewFrom(request)) {
-      return CartRouter.loadPreviewFor(request, context.frontasticContext).then((cart: Cart) => {
-        if (cart) {
+    if (CartRouter.identifyOrderPreviewFrom(request)) {
+      return CartRouter.loadOrderPreviewFor(request, context.frontasticContext).then((order: Order) => {
+        if (order) {
           return {
-            dynamicPageType: 'frontastic/product-list',
+            dynamicPageType: 'frontastic/order-detail-page',
             dataSourcePayload: {
-              cart,
+              order,
             },
             pageMatchingPayload: {
-              cart,
+              order,
             },
           };
         }
