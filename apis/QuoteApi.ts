@@ -1,4 +1,4 @@
-import { QuoteRequest as CommercetoolsQuoteRequest, QuoteRequestDraft } from '@commercetools/platform-sdk';
+import { QuoteRequestDraft } from '@commercetools/platform-sdk';
 import { BaseApi } from './BaseApi';
 import { QuoteMapper } from '../mappers/QuoteMapper';
 import { Cart } from '@Types/cart/Cart';
@@ -10,6 +10,7 @@ import { getOffsetFromCursor } from '@Commerce-commercetools/utils/Pagination';
 import { Result } from '@Types/quote/Result';
 import { ProductMapper } from '@Commerce-commercetools/mappers/ProductMapper';
 import { Account } from '@Types/account/Account';
+import { ResourceNotFoundError } from '@Commerce-commercetools/errors/ResourceNotFoundError';
 
 export class QuoteApi extends BaseApi {
   createQuoteRequest: (quoteDraft: QuoteRequest, cart: Cart) => Promise<QuoteRequest> = async (
@@ -44,27 +45,28 @@ export class QuoteApi extends BaseApi {
       });
   };
 
-  getQuoteRequest: (ID: string) => Promise<CommercetoolsQuoteRequest> = async (ID: string) => {
-    try {
-      return this.requestBuilder()
-        .quoteRequests()
-        .withId({ ID })
-        .get({
-          queryArgs: {
-            expand: ['customer'],
-            sort: 'createdAt desc',
-          },
-        })
-        .execute()
-        .then((response) => {
-          return response.body;
-        })
-        .catch((error) => {
-          throw error;
-        });
-    } catch {
-      throw '';
-    }
+  getQuoteRequest: (quoteRequestId: string) => Promise<QuoteRequest> = async (quoteRequestId: string) => {
+    const locale = await this.getCommercetoolsLocal();
+
+    return this.requestBuilder()
+      .quoteRequests()
+      .withId({ ID: quoteRequestId })
+      .get({
+        queryArgs: {
+          expand: ['customer'],
+        },
+      })
+      .execute()
+      .then((response) => {
+        return QuoteMapper.commercetoolsQuoteRequestToQuoteRequest(response.body, locale);
+      })
+      .catch((error) => {
+        if (error.code === 404) {
+          throw new ResourceNotFoundError({ message: error.message });
+        }
+
+        throw new ExternalError({ status: error.code, message: error.message, body: error.body });
+      });
   };
 
   getQuote: (quoteId: string) => Promise<Quote> = async (quoteId: string) => {
@@ -82,6 +84,10 @@ export class QuoteApi extends BaseApi {
         return QuoteMapper.commercetoolsQuoteToQuote(response.body, locale);
       })
       .catch((error) => {
+        if (error.code === 404) {
+          throw new ResourceNotFoundError({ message: error.message });
+        }
+
         throw new ExternalError({ status: error.code, message: error.message, body: error.body });
       });
   };
@@ -312,7 +318,7 @@ export class QuoteApi extends BaseApi {
                 quoteState: QuoteState.Accepted,
               },
             ],
-            version: parseInt(quote.quoteVersion, 10),
+            version: quote.quoteVersion,
           },
         })
         .execute()
@@ -343,7 +349,7 @@ export class QuoteApi extends BaseApi {
                 quoteState: QuoteState.Declined,
               },
             ],
-            version: parseInt(quote.quoteVersion, 10),
+            version: quote.quoteVersion,
           },
         })
         .execute()
@@ -377,7 +383,7 @@ export class QuoteApi extends BaseApi {
                 buyerComment: buyerComment,
               },
             ],
-            version: parseInt(quote.quoteVersion, 10),
+            version: quote.quoteVersion,
           },
         })
         .execute()
@@ -405,7 +411,7 @@ export class QuoteApi extends BaseApi {
                 quoteRequestState: QuoteRequestState.Cancelled,
               },
             ],
-            version: quoteRequest.version,
+            version: quoteRequest.quoteRequestVersion,
           },
         })
         .execute()

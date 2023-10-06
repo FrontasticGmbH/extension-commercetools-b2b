@@ -20,6 +20,7 @@ import CartRouter from '@Commerce-commercetools/utils/CartRouter';
 import { Wishlist } from '@Types/wishlist/Wishlist';
 import { Cart } from '@Types/cart/Cart';
 import { Quote } from '@Types/quote/Quote';
+import { QuoteRequest } from '@Types/quote/QuoteRequest';
 
 export default {
   'dynamic-page-handler': async (
@@ -28,7 +29,7 @@ export default {
   ): Promise<DynamicPageSuccessResult | DynamicPageRedirectResult | null> => {
     // Identify static page
     const staticPageMatch = getPath(request)?.match(
-      /^\/(cart|checkout|wishlists|shopping-lists|account|login|register|reset-password|thank-you|quote-thank-you)/,
+      /^\/(cart|checkout|wishlists|shopping-lists|account|login|register|reset-password|thank-you|quote-thank-you|quotes)/,
     );
 
     if (staticPageMatch) {
@@ -187,10 +188,10 @@ export default {
 
     // Identify Quote
     if (QuoteRouter.identifyFrom(request)) {
-      return QuoteRouter.loadFor(request, context.frontasticContext).then((quote: Quote) => {
+      return QuoteRouter.loadFor(request, context.frontasticContext).then((quote: Quote | QuoteRequest) => {
         if (quote) {
           return {
-            dynamicPageType: 'frontastic/quote',
+            dynamicPageType: 'frontastic/quote-detail-page',
             dataSourcePayload: {
               quote,
             },
@@ -207,10 +208,10 @@ export default {
 
     // Identify Preview Quote
     if (QuoteRouter.identifyPreviewFrom(request)) {
-      return QuoteRouter.loadPreviewFor(request, context.frontasticContext).then((quote: Quote) => {
+      return QuoteRouter.loadPreviewFor(request, context.frontasticContext).then((quote: Quote | QuoteRequest) => {
         if (quote) {
           return {
-            dynamicPageType: 'frontastic/quote',
+            dynamicPageType: 'frontastic/quote-detail-page',
             dataSourcePayload: {
               quote,
             },

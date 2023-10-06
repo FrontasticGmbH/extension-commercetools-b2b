@@ -1,8 +1,8 @@
 {
-  "name": "Business Quotes",
-  "category": "Business Quotes",
+  "dynamicPageType": "frontastic/quotes",
+  "name": "Quotes page",
+  "category": "Quotes",
   "icon": "group",
-  "isMultiple": true,
-  "dynamicPageType": "frontastic/quote",
-  "dataSourceType": "frontastic/quote"
+  "dataSourceType": "frontastic/product-list",
+  "isMultiple": true
 }

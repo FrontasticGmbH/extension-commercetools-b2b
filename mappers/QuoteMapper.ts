@@ -44,7 +44,7 @@ export class QuoteMapper {
       itemShippingAddresses: commercetoolsQuoteRequest.itemShippingAddresses.map((itemShippingAddress) =>
         AccountMapper.commercetoolsAddressToAddress(itemShippingAddress),
       ),
-      quoteRequestVersion: commercetoolsQuoteRequest.version.toString(),
+      quoteRequestVersion: commercetoolsQuoteRequest.version,
     };
   }
 
@@ -72,7 +72,7 @@ export class QuoteMapper {
           ? CartMapper.commercetoolsCartToCart(commercetoolsStagedQuote.quotationCart.obj, locale)
           : undefined),
       };
-      quoteToUpdate.quoteRequest.quoteRequestVersion = commercetoolsStagedQuote.version.toString();
+      quoteToUpdate.quoteRequest.quoteRequestVersion = commercetoolsStagedQuote.version;
     }
   }
 
@@ -99,7 +99,7 @@ export class QuoteMapper {
       quoteToUpdate.buyerComment = commercetoolsQuote.buyerComment;
       quoteToUpdate.sellerComment = commercetoolsQuote.sellerComment;
       quoteToUpdate.expirationDate = new Date(commercetoolsQuote.validTo);
-      quoteToUpdate.quoteVersion = commercetoolsQuote.version.toString();
+      quoteToUpdate.quoteVersion = commercetoolsQuote.version;
     }
   }
 
@@ -125,7 +125,7 @@ export class QuoteMapper {
       sellerComment: commercetoolsQuote.sellerComment,
       expirationDate: new Date(commercetoolsQuote.validTo),
       quoteRequest: quoteRequest,
-      quoteVersion: commercetoolsQuote.version.toString(),
+      quoteVersion: commercetoolsQuote.version,
     };
   }
 
@@ -153,7 +153,7 @@ export class QuoteMapper {
       itemShippingAddresses: commercetoolsQuoteRequest.itemShippingAddresses.map((itemShippingAddress) =>
         AccountMapper.commercetoolsAddressToAddress(itemShippingAddress),
       ),
-      quoteRequestVersion: commercetoolsQuoteRequest.version.toString(),
+      quoteRequestVersion: commercetoolsQuoteRequest.version,
     };
   }
 
