@@ -245,6 +245,9 @@ export class BusinessUnitApi extends BaseApi {
           );
   };
 
+  /**
+   * @deprecated
+   */
   protected getRootBusinessUnitsForAssociate: (businessUnits: BusinessUnit[], account: Account) => BusinessUnit[] = (
     businessUnits: BusinessUnit[],
     account: Account,
@@ -448,6 +451,9 @@ export class BusinessUnitApi extends BaseApi {
     return businessUnits;
   };
 
+  /**
+   * @deprecated
+   */
   getCompaniesForUser: (account: Account) => Promise<BusinessUnit[]> = async (account: Account) => {
     const locale = await this.getCommercetoolsLocal();
 

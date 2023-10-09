@@ -136,6 +136,9 @@ export const setMe: ActionHook = async (request: Request, actionContext: ActionC
   return response;
 };
 
+/**
+ * @deprecated
+ */
 export const getCompanies: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const account = fetchAccountFromSession(request);
 
