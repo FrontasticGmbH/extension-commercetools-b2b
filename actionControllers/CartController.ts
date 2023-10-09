@@ -1,6 +1,6 @@
 import { ActionContext, Request, Response } from '@frontastic/extension-types';
 import { LineItem } from '@Types/cart/LineItem';
-import { ReturnLineItem } from '@Types/cart/Order';
+import { OrderState, ReturnLineItem } from '@Types/cart/Order';
 import { getCurrency, getLocale } from '../utils/Request';
 import { Cart } from '@Types/cart/Cart';
 import { Address } from '@Types/account/Address';
@@ -9,11 +9,60 @@ import { CartApi } from '../apis/CartApi';
 import { EmailApiFactory } from '../utils/EmailApiFactory';
 import handleError from '@Commerce-commercetools/utils/handleError';
 import { fetchAccountFromSession } from '@Commerce-commercetools/utils/fetchAccountFromSession';
-import { OrderState } from '@Types/cart/Order';
+import { AccountAuthenticationError } from '@Commerce-commercetools/errors/AccountAuthenticationError';
+
+import { SortAttributes } from '@Types/query';
+
+import { SortOrder } from '@Types/query/ProductQuery';
+import { OrderQuery } from '../../../../types/cart/OrderQuery';
 
 export * from './BaseCartController';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
+
+function queryParamsToSortAttributes(queryParams: any) {
+  const sortAttributes: SortAttributes = {};
+
+  if (queryParams.sortAttributes) {
+    let sortAttribute;
+
+    for (sortAttribute of Object.values(queryParams.sortAttributes)) {
+      const key = Object.keys(sortAttribute)[0];
+      sortAttributes[key] = sortAttribute[key] ? sortAttribute[key] : SortOrder.ASCENDING;
+    }
+  }
+
+  return sortAttributes;
+}
+
+function queryParamsToOrderStates(queryParams: { orderStates?: OrderState[] }): OrderState[] {
+  const orderState: OrderState[] = [];
+
+  const requestOrderStates = queryParams?.orderStates;
+
+  if (requestOrderStates) {
+    if (Array.isArray(requestOrderStates)) {
+      orderState.push(...requestOrderStates);
+    } else {
+      orderState.push(requestOrderStates);
+    }
+  }
+
+  return orderState;
+}
+
+function queryParamsToOrderIds(queryParams: any) {
+  const orderIds: string[] = [];
+
+  if (queryParams?.orderIds && Array.isArray(queryParams?.orderIds)) {
+    queryParams?.orderIds.map((orderId: string | number) => {
+      orderIds.push(orderId.toString());
+    });
+  }
+
+  return orderIds;
+}
+
 
 async function updateCartFromRequest(request: Request, actionContext: ActionContext): Promise<Cart> {
   const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
@@ -333,6 +382,40 @@ export const checkout: ActionHook = async (request: Request, actionContext: Acti
         cartId,
       },
     };
+  } catch (error) {
+    return handleError(error, request);
+  }
+};
+
+export const queryOrders: ActionHook = async (request, actionContext) => {
+  const locale = getLocale(request);
+  const cartApi = new CartApi(actionContext.frontasticContext, locale, getCurrency(request));
+
+  const account = fetchAccountFromSession(request);
+  if (account === undefined) {
+    throw new AccountAuthenticationError({ message: 'Not logged in.' });
+  }
+
+  try {
+    const orderQuery: OrderQuery = {
+      accountId: account.accountId,
+      limit: request.query?.limit ?? undefined,
+      cursor: request.query?.cursor ?? undefined,
+      orderIds: queryParamsToOrderIds(request.query),
+      orderState: queryParamsToOrderStates(request.query),
+      sortAttributes: queryParamsToSortAttributes(request.query),
+      businessUnit: request.query?.businessUnit ?? undefined,
+    };
+
+    const queryResult = await cartApi.queryOrders(orderQuery);
+
+    const response: Response = {
+      statusCode: 200,
+      body: JSON.stringify(queryResult),
+      sessionData: request.sessionData,
+    };
+
+    return response;
   } catch (error) {
     return handleError(error, request);
   }

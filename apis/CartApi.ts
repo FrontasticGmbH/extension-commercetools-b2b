@@ -23,6 +23,10 @@ import { CartMapper } from '../mappers/CartMapper';
 import { BaseCartApi } from '@Commerce-commercetools/apis/BaseCartApi';
 import { ExternalError } from '@Commerce-commercetools/utils/Errors';
 import { AccountMapper } from '@Commerce-commercetools/mappers/AccountMapper';
+import { OrderQuery } from '../../../../types/cart/OrderQuery';
+import { OrderResult } from '../../../../types/cart/Order';
+import { getOffsetFromCursor } from '@Commerce-commercetools/utils/Pagination';
+import { ProductMapper } from '@Commerce-commercetools/mappers/ProductMapper';
 
 type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 
@@ -898,6 +902,71 @@ export class CartApi extends BaseCartApi {
       })
       .catch((error) => {
         throw new ExternalError({ status: error.code, message: error.message, body: error.body });
+      });
+  }
+
+  async queryOrders(oderQuery: OrderQuery): Promise<OrderResult> {
+    const locale = await this.getCommercetoolsLocal();
+    const limit = +oderQuery.limit || undefined;
+    const sortAttributes: string[] = [];
+
+    if (oderQuery.sortAttributes !== undefined) {
+      Object.keys(oderQuery.sortAttributes).map((field, directionIndex) => {
+        sortAttributes.push(`${field} ${Object.values(oderQuery.sortAttributes)[directionIndex]}`);
+      });
+    } else {
+      // default sort
+      sortAttributes.push(`lastModifiedAt desc`);
+    }
+
+    const whereClause = [`customerId="${oderQuery.accountId}"`];
+    if (oderQuery.orderIds !== undefined && oderQuery.orderIds.length !== 0) {
+      whereClause.push(`id in ("${oderQuery.orderIds.join('","')}")`);
+    }
+    if (oderQuery.orderState !== undefined && oderQuery.orderState.length > 0) {
+      whereClause.push(`orderState in ("${oderQuery.orderState.join('","')}")`);
+    }
+
+    // const keyInfo = {
+    //   key: oderQuery.businessUnit,
+    //   typeId: 'business-unit',
+    // };
+    //
+    // if (oderQuery.businessUnit !== undefined) {
+    //   whereClause.push(`businessUnit="${JSON.stringify(keyInfo)}"`);
+    // }
+    //
+    // console.log('whereClause', whereClause);
+
+    return this.requestBuilder()
+      .orders()
+      .get({
+        queryArgs: {
+          where: whereClause,
+          expand: ['orderState'],
+          limit: limit,
+          offset: getOffsetFromCursor(oderQuery.cursor),
+          sort: sortAttributes,
+        },
+      })
+      .execute()
+      .then((response) => {
+        const orders = response.body.results.map((commercetoolsQuote) => {
+          return CartMapper.commercetoolsOrderToOrder(commercetoolsQuote, locale);
+        });
+
+        const result: OrderResult = {
+          total: response.body.total,
+          items: orders,
+          count: response.body.count,
+          previousCursor: ProductMapper.calculatePreviousCursor(response.body.offset, response.body.count),
+          nextCursor: ProductMapper.calculateNextCursor(response.body.offset, response.body.count, response.body.total),
+          query: oderQuery,
+        };
+        return result;
+      })
+      .catch((error) => {
+        throw new ExternalError({status: error.code, message: error.message, body: error.body});
       });
   }
 
