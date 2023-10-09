@@ -408,6 +408,9 @@ export class CartApi extends BaseCartApi {
       });
   };
 
+  /**
+   * @deprecated
+   */
   getOrders: (account: Account, organization?: Organization) => Promise<Order[]> = async (
     account: Account,
     organization?: Organization,
@@ -966,7 +969,7 @@ export class CartApi extends BaseCartApi {
         return result;
       })
       .catch((error) => {
-        throw new ExternalError({status: error.code, message: error.message, body: error.body});
+        throw new ExternalError({ status: error.code, message: error.message, body: error.body });
       });
   }
 
