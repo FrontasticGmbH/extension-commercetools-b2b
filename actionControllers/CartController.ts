@@ -404,19 +404,17 @@ export const queryOrders: ActionHook = async (request, actionContext) => {
       orderIds: queryParamsToOrderIds(request.query),
       orderState: queryParamsToOrderStates(request.query),
       sortAttributes: queryParamsToSortAttributes(request.query),
-      businessUnitKey: request.query?.businessUnit ?? undefined,
+      businessUnitKey: request.query?.businessUnitKey ?? undefined,
       query: request.query?.query ?? undefined,
     };
 
     const queryResult = await cartApi.queryOrders(orderQuery);
 
-    const response: Response = {
+    return {
       statusCode: 200,
       body: JSON.stringify(queryResult),
       sessionData: request.sessionData,
     };
-
-    return response;
   } catch (error) {
     return handleError(error, request);
   }
