@@ -4,6 +4,7 @@ import { BaseAccountApi } from './BaseAccountApi';
 import { AccountMapper } from '../mappers/AccountMapper';
 import { Cart } from '@Types/cart/Cart';
 import { ExternalError } from '@Commerce-commercetools/utils/Errors';
+import { Guid } from '@Commerce-commercetools/utils/Guid';
 
 export class AccountApi extends BaseAccountApi {
   create: (account: Account, cart?: Cart | undefined) => Promise<Account> = async (
@@ -21,6 +22,7 @@ export class AccountApi extends BaseAccountApi {
     } = this.extractAddresses(account);
 
     const customerDraft: CustomerDraft = {
+      key: Guid.newGuid(),
       email: account.email,
       password: account.password,
       salutation: account?.salutation,
