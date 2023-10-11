@@ -2,7 +2,9 @@ import { Cart } from '@Types/cart/Cart';
 import { LineItem } from '@Types/cart/LineItem';
 import { Address } from '@Types/account/Address';
 import { Order, OrderState, ReturnLineItem } from '@Types/cart/Order';
+import { OrderQuery } from '@Types/cart/OrderQuery';
 import { Account } from '@Types/account/Account';
+import { PaginatedResult } from '@Types/result';
 import {
   Cart as CommercetoolsCart,
   CartAddItemShippingAddressAction,
@@ -23,8 +25,6 @@ import { CartMapper } from '../mappers/CartMapper';
 import { BaseCartApi } from '@Commerce-commercetools/apis/BaseCartApi';
 import { ExternalError } from '@Commerce-commercetools/utils/Errors';
 import { AccountMapper } from '@Commerce-commercetools/mappers/AccountMapper';
-import { OrderQuery } from '../../../../types/cart/OrderQuery';
-import { OrderResult } from '../../../../types/cart/Order';
 import { getOffsetFromCursor } from '@Commerce-commercetools/utils/Pagination';
 import { ProductMapper } from '@Commerce-commercetools/mappers/ProductMapper';
 
@@ -908,38 +908,33 @@ export class CartApi extends BaseCartApi {
       });
   }
 
-  async queryOrders(oderQuery: OrderQuery): Promise<OrderResult> {
+  async queryOrders(orderQuery: OrderQuery): Promise<PaginatedResult<Order>> {
     const locale = await this.getCommercetoolsLocal();
-    const limit = +oderQuery.limit || undefined;
+    const limit = +orderQuery.limit || undefined;
     const sortAttributes: string[] = [];
 
-    if (oderQuery.sortAttributes !== undefined) {
-      Object.keys(oderQuery.sortAttributes).map((field, directionIndex) => {
-        sortAttributes.push(`${field} ${Object.values(oderQuery.sortAttributes)[directionIndex]}`);
+    if (orderQuery.sortAttributes !== undefined) {
+      Object.keys(orderQuery.sortAttributes).map((field, directionIndex) => {
+        sortAttributes.push(`${field} ${Object.values(orderQuery.sortAttributes)[directionIndex]}`);
       });
     } else {
       // default sort
       sortAttributes.push(`lastModifiedAt desc`);
     }
 
-    const whereClause = [`customerId="${oderQuery.accountId}"`];
-    if (oderQuery.orderIds !== undefined && oderQuery.orderIds.length !== 0) {
-      whereClause.push(`id in ("${oderQuery.orderIds.join('","')}")`);
+    const whereClause = [`customerId="${orderQuery.accountId}"`];
+    if (orderQuery.orderIds !== undefined && orderQuery.orderIds.length !== 0) {
+      whereClause.push(`id in ("${orderQuery.orderIds.join('","')}")`);
     }
-    if (oderQuery.orderState !== undefined && oderQuery.orderState.length > 0) {
-      whereClause.push(`orderState in ("${oderQuery.orderState.join('","')}")`);
+    if (orderQuery.orderState !== undefined && orderQuery.orderState.length > 0) {
+      whereClause.push(`orderState in ("${orderQuery.orderState.join('","')}")`);
     }
 
-    // const keyInfo = {
-    //   key: oderQuery.businessUnit,
-    //   typeId: 'business-unit',
-    // };
-    //
-    // if (oderQuery.businessUnit !== undefined) {
-    //   whereClause.push(`businessUnit="${JSON.stringify(keyInfo)}"`);
-    // }
-    //
-    // console.log('whereClause', whereClause);
+    if (orderQuery.businessUnitKey !== undefined) {
+      whereClause.push(`businessUnit(key="${orderQuery.businessUnitKey}")`);
+    }
+
+    const searchQuery = orderQuery.query && orderQuery.query;
 
     return this.requestBuilder()
       .orders()
@@ -948,8 +943,9 @@ export class CartApi extends BaseCartApi {
           where: whereClause,
           expand: ['orderState'],
           limit: limit,
-          offset: getOffsetFromCursor(oderQuery.cursor),
+          offset: getOffsetFromCursor(orderQuery.cursor),
           sort: sortAttributes,
+          [`text.${locale.language}`]: searchQuery,
         },
       })
       .execute()
@@ -958,15 +954,14 @@ export class CartApi extends BaseCartApi {
           return CartMapper.commercetoolsOrderToOrder(commercetoolsQuote, locale);
         });
 
-        const result: OrderResult = {
+        return {
           total: response.body.total,
           items: orders,
           count: response.body.count,
           previousCursor: ProductMapper.calculatePreviousCursor(response.body.offset, response.body.count),
           nextCursor: ProductMapper.calculateNextCursor(response.body.offset, response.body.count, response.body.total),
-          query: oderQuery,
+          query: orderQuery,
         };
-        return result;
       })
       .catch((error) => {
         throw new ExternalError({ status: error.code, message: error.message, body: error.body });

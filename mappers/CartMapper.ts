@@ -85,7 +85,7 @@ export class CartMapper extends BaseCartMapper {
 
   static commercetoolsOrderToOrder(commercetoolsOrder: CommercetoolsOrder, locale: Locale): Order {
     return {
-      cartId: commercetoolsOrder.id,
+      cartId: commercetoolsOrder.cart.id,
       accountId: commercetoolsOrder.customerId,
       origin: this.commercetoolsCartOriginToCartOrigin(commercetoolsOrder.origin),
       orderState: this.commercetoolsOrderStateToOrderState(commercetoolsOrder.orderState),

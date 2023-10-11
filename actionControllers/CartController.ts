@@ -14,7 +14,7 @@ import { AccountAuthenticationError } from '@Commerce-commercetools/errors/Accou
 import { SortAttributes } from '@Types/query';
 
 import { SortOrder } from '@Types/query/ProductQuery';
-import { OrderQuery } from '../../../../types/cart/OrderQuery';
+import { OrderQuery } from '@Types/cart';
 
 export * from './BaseCartController';
 
@@ -404,7 +404,8 @@ export const queryOrders: ActionHook = async (request, actionContext) => {
       orderIds: queryParamsToOrderIds(request.query),
       orderState: queryParamsToOrderStates(request.query),
       sortAttributes: queryParamsToSortAttributes(request.query),
-      businessUnit: request.query?.businessUnit ?? undefined,
+      businessUnitKey: request.query?.businessUnit ?? undefined,
+      query: request.query?.query ?? undefined,
     };
 
     const queryResult = await cartApi.queryOrders(orderQuery);
