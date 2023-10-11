@@ -926,8 +926,8 @@ export class CartApi extends BaseCartApi {
     if (orderQuery.orderIds !== undefined && orderQuery.orderIds.length !== 0) {
       whereClause.push(`id in ("${orderQuery.orderIds.join('","')}")`);
     }
-    if (orderQuery.orderState !== undefined && orderQuery.orderState.length > 0) {
-      whereClause.push(`orderState in ("${orderQuery.orderState.join('","')}")`);
+    if (orderQuery.orderStates !== undefined && orderQuery.orderStates.length > 0) {
+      whereClause.push(`orderState in ("${orderQuery.orderStates.join('","')}")`);
     }
 
     if (orderQuery.businessUnitKey !== undefined) {

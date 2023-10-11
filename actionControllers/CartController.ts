@@ -10,9 +10,7 @@ import { EmailApiFactory } from '../utils/EmailApiFactory';
 import handleError from '@Commerce-commercetools/utils/handleError';
 import { fetchAccountFromSession } from '@Commerce-commercetools/utils/fetchAccountFromSession';
 import { AccountAuthenticationError } from '@Commerce-commercetools/errors/AccountAuthenticationError';
-
 import { SortAttributes } from '@Types/query';
-
 import { SortOrder } from '@Types/query/ProductQuery';
 import { OrderQuery } from '@Types/cart';
 
@@ -402,7 +400,7 @@ export const queryOrders: ActionHook = async (request, actionContext) => {
       limit: request.query?.limit ?? undefined,
       cursor: request.query?.cursor ?? undefined,
       orderIds: queryParamsToOrderIds(request.query),
-      orderState: queryParamsToOrderStates(request.query),
+      orderStates: queryParamsToOrderStates(request.query),
       sortAttributes: queryParamsToSortAttributes(request.query),
       businessUnitKey: request.query?.businessUnitKey ?? undefined,
       query: request.query?.query ?? undefined,
