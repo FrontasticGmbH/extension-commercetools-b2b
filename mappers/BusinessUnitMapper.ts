@@ -1,9 +1,6 @@
 import {
   Associate as CommercetoolsAssociate,
-  AssociateRole as CommercetoolsAssociateRole,
-  AssociateRoleAssignment as CommercetoolsAssociateRoleAssignment,
   BusinessUnit as CommercetoolsBusinessUnit,
-  BusinessUnitKeyReference as CommercetoolsBusinessUnitKeyReference,
   StoreKeyReference as CommercetoolsStoreKeyReference,
 } from '@commercetools/platform-sdk';
 import { BusinessUnit } from '@Types/business-unit/BusinessUnit';
@@ -11,7 +8,13 @@ import { Store } from '@Types/store/Store';
 import { Associate, AssociateRole } from '@Types/business-unit/Associate';
 import { AccountMapper } from '@Commerce-commercetools/mappers/AccountMapper';
 import { Locale } from '@Commerce-commercetools/interfaces/Locale';
+import {
+  AssociateRoleAssignment as CommercetoolsAssociateRoleAssignment,
+  BusinessUnitKeyReference as CommercetoolsBusinessUnitKeyReference,
+} from '@commercetools/platform-sdk/dist/declarations/src/generated/models/business-unit';
 import { Account } from '@Types/account/Account';
+import { AssociateRole as CommercetoolsAssociateRole } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/associate-role';
+import { createFakeUser } from '../../_test/data-provider';
 
 export class BusinessUnitMapper {
   static commercetoolsBusinessUnitToBusinessUnit(
@@ -81,18 +84,6 @@ export class BusinessUnitMapper {
           return trimmedAssociate;
         }),
     };
-  }
-
-  /**
-   * @deprecated Use `isAssociateRoleKeyInBusinessUnit` instead
-   */
-  static isAssociateRoleKeyInCommercetoolsBusinessUnit(
-    businessUnit: CommercetoolsBusinessUnit,
-    accountId: string,
-    associateRoleKey: string,
-  ): boolean {
-    const currentUserAssociate = businessUnit.associates?.find((associate) => associate.customer.id === accountId);
-    return currentUserAssociate?.associateRoleAssignments.some((role) => role.associateRole.key === associateRoleKey);
   }
 
   static isAssociateRoleKeyInBusinessUnit(
