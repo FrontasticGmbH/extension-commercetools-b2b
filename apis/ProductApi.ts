@@ -1,12 +1,10 @@
 import { Result } from '@Types/product/Result';
 import { ProductQuery } from '@Types/query/ProductQuery';
-import { FilterField, FilterFieldTypes } from '@Types/product/FilterField';
 import { FilterTypes } from '@Types/query/Filter';
 import { TermFilter } from '@Types/query/TermFilter';
 import { RangeFilter } from '@Types/query/RangeFilter';
 import { FacetDefinition } from '@Types/product/FacetDefinition';
 import { ProductMapper } from '../mappers/ProductMapper';
-import { Category } from '@Types/product/Category';
 import { CategoryQuery } from '@Types/query/CategoryQuery';
 import { BaseProductApi } from '@Commerce-commercetools/apis/BaseProductApi';
 import { Product } from '@Types/product/Product';
@@ -199,12 +197,9 @@ export class ProductApi extends BaseProductApi {
 
     return await this.getCommercetoolsCategoryPagedQueryResponse(methodArgs)
       .then((response) => {
-        const items =
-          categoryQuery.format === 'tree'
-            ? ProductMapper.commercetoolsCategoriesToTreeCategory(response.body.results, this.categoryIdField, locale)
-            : response.body.results.map((category) =>
-                ProductMapper.commercetoolsCategoryToCategory(category, this.categoryIdField, locale),
-              );
+        const items = response.body.results.map((category) =>
+          ProductMapper.commercetoolsCategoryToCategory(category, this.categoryIdField, locale),
+        );
 
         const result: Result = {
           total: response.body.total,

@@ -44,7 +44,7 @@ export const createWishlist: ActionHook = async (request, actionContext) => {
 
   const account = fetchAccountFromSessionEnsureLoggedIn(request);
 
-  const storeKey = request.query?.['storeKey'];
+  const storeKey = request.query?.['storeKey'] ?? request.sessionData?.organization?.store?.key;
 
   if (!storeKey) {
     throw new Error('No storeKey');
@@ -73,7 +73,7 @@ export const deleteWishlist: ActionHook = async (request, actionContext) => {
     const wishlistApi = getWishlistApi(request, actionContext);
     const wishlist = await WishlistFetcher.fetchWishlist(request, actionContext);
 
-    const storeKey = request.query?.['storeKey'];
+    const storeKey = request.query?.['storeKey'] ?? request.sessionData?.organization?.store?.key;
 
     if (!storeKey) {
       throw new Error('No storeKey');

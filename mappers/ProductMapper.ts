@@ -43,12 +43,6 @@ export class ProductMapper extends BaseProductMapper {
       name: commercetoolsCategory.name?.[locale.language] ?? undefined,
       slug: commercetoolsCategory.slug?.[locale.language] ?? undefined,
       depth: commercetoolsCategory.ancestors.length,
-      subCategories:
-        (
-          commercetoolsCategory as CommercetoolsCategory & { subCategories: CommercetoolsCategory[] }
-        ).subCategories?.map((subCategory) =>
-          this.commercetoolsCategoryToCategory(subCategory, categoryIdField, locale),
-        ) ?? [],
       _url:
         commercetoolsCategory.ancestors.length > 0
           ? `/${commercetoolsCategory.ancestors
@@ -59,29 +53,6 @@ export class ProductMapper extends BaseProductMapper {
           : `/${commercetoolsCategory?.slug?.[locale.language]}`,
     };
   };
-
-  static commercetoolsCategoriesToTreeCategory(
-    commercetoolsCategories: CommercetoolsCategory[],
-    categoryIdField: string,
-    locale: Locale,
-  ) {
-    const nodes = {};
-
-    for (const category of commercetoolsCategories) {
-      (category as CommercetoolsCategory & { subCategories: CommercetoolsCategory[] }).subCategories = [];
-      nodes[category.id] = category;
-    }
-
-    for (const category of commercetoolsCategories) {
-      if (!category.parent?.id) continue;
-
-      nodes[category.parent.id].subCategories.push(category);
-    }
-
-    return commercetoolsCategories
-      .filter((category) => category.ancestors.length === 0)
-      .map((category) => this.commercetoolsCategoryToCategory(category, categoryIdField, locale));
-  }
 
   static extractAttributeValue(commercetoolsAttributeValue: unknown, locale: Locale): unknown {
     if (commercetoolsAttributeValue['key'] !== undefined && commercetoolsAttributeValue['label'] !== undefined) {

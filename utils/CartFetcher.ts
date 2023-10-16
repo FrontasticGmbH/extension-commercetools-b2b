@@ -14,13 +14,23 @@ export class CartFetcher extends BaseCartFetcher {
     if (request.sessionData?.cartId !== undefined) {
       const cart = (await cartApi.getById(request.sessionData.cartId)) as Cart;
 
-      if (cartApi.assertCartForBusinessUnitAndStore(cart, businessUnitKey, storeKey)) {
+      if (
+        cartApi.assertCartForBusinessUnitAndStore(cart, request.sessionData.organization, businessUnitKey, storeKey)
+      ) {
         return cart;
       }
     }
 
-    if (businessUnitKey && storeKey && request.sessionData?.account !== undefined) {
-      return await cartApi.getForUser(request.sessionData?.account, businessUnitKey, storeKey);
+    if (
+      ((businessUnitKey && storeKey) || request.sessionData?.organization) &&
+      request.sessionData?.account !== undefined
+    ) {
+      return await cartApi.getForUser(
+        request.sessionData?.account,
+        request.sessionData?.organization,
+        businessUnitKey,
+        storeKey,
+      );
     }
 
     return undefined;

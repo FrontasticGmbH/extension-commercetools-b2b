@@ -80,7 +80,7 @@ export const createQuoteRequest: ActionHook = async (request: Request, actionCon
 
   quoteRequest = await quoteApi.createQuoteRequest(quoteRequest, cart);
 
-  await cartApi.deleteCart(cart, account);
+  await cartApi.deleteCart(cart, account, request.sessionData?.organization);
 
   const response: Response = {
     statusCode: 200,
@@ -89,6 +89,28 @@ export const createQuoteRequest: ActionHook = async (request: Request, actionCon
       ...request.sessionData,
       cartId: undefined,
     },
+  };
+
+  return response;
+};
+
+/**
+ * @deprecated
+ */
+export const getQuotes: ActionHook = async (request: Request, actionContext: ActionContext) => {
+  const quoteApi = new QuoteApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
+
+  const account = fetchAccountFromSession(request);
+  if (account === undefined) {
+    throw new AccountAuthenticationError({ message: 'Not logged in.' });
+  }
+
+  const quotes = await quoteApi.getQuotes(account);
+
+  const response: Response = {
+    statusCode: 200,
+    body: JSON.stringify(quotes),
+    sessionData: request.sessionData,
   };
 
   return response;

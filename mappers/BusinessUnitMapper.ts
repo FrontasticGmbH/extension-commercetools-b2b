@@ -1,6 +1,9 @@
 import {
   Associate as CommercetoolsAssociate,
+  AssociateRole as CommercetoolsAssociateRole,
+  AssociateRoleAssignment as CommercetoolsAssociateRoleAssignment,
   BusinessUnit as CommercetoolsBusinessUnit,
+  BusinessUnitKeyReference as CommercetoolsBusinessUnitKeyReference,
   StoreKeyReference as CommercetoolsStoreKeyReference,
 } from '@commercetools/platform-sdk';
 import { BusinessUnit } from '@Types/business-unit/BusinessUnit';
@@ -8,11 +11,7 @@ import { Store } from '@Types/store/Store';
 import { Associate, AssociateRole } from '@Types/business-unit/Associate';
 import { AccountMapper } from '@Commerce-commercetools/mappers/AccountMapper';
 import { Locale } from '@Commerce-commercetools/interfaces/Locale';
-import {
-  AssociateRoleAssignment as CommercetoolsAssociateRoleAssignment,
-  BusinessUnitKeyReference as CommercetoolsBusinessUnitKeyReference,
-} from '@commercetools/platform-sdk/dist/declarations/src/generated/models/business-unit';
-import { AssociateRole as CommercetoolsAssociateRole } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/associate-role';
+import { Account } from '@Types/account/Account';
 
 export class BusinessUnitMapper {
   static commercetoolsBusinessUnitToBusinessUnit(
@@ -59,6 +58,52 @@ export class BusinessUnitMapper {
     return {
       key: commercetoolsBusinessUnitKeyReference.key,
     };
+  }
+
+  static trimBusinessUnit(businessUnit: BusinessUnit, accountId: string): BusinessUnit {
+    return {
+      ...businessUnit,
+      addresses: [],
+      // @ts-ignore
+      stores: businessUnit.stores.map((store) => ({ key: store.key, name: store.name })),
+      associates: businessUnit.associates
+        ?.filter((associate) => associate.accountId === accountId)
+        ?.map((associate) => {
+          const trimmedAssociate: Associate = {
+            accountId: associate.accountId,
+            email: associate.email,
+            roles: associate.roles?.map((role) => {
+              const trimmedAssociateRole: AssociateRole = { key: role.key };
+              return trimmedAssociateRole;
+            }),
+          };
+
+          return trimmedAssociate;
+        }),
+    };
+  }
+
+  /**
+   * @deprecated Use `isAssociateRoleKeyInBusinessUnit` instead
+   */
+  static isAssociateRoleKeyInCommercetoolsBusinessUnit(
+    businessUnit: CommercetoolsBusinessUnit,
+    accountId: string,
+    associateRoleKey: string,
+  ): boolean {
+    const currentUserAssociate = businessUnit.associates?.find((associate) => associate.customer.id === accountId);
+    return currentUserAssociate?.associateRoleAssignments.some((role) => role.associateRole.key === associateRoleKey);
+  }
+
+  static isAssociateRoleKeyInBusinessUnit(
+    businessUnit: BusinessUnit,
+    account: Account,
+    associateRoleKey: string,
+  ): boolean {
+    const currentUserAssociate = businessUnit.associates?.find(
+      (associate) => associate.accountId === account.accountId,
+    );
+    return currentUserAssociate?.roles.some((role) => role.key === associateRoleKey);
   }
 
   static mapReferencedAssociatesToAssociate(

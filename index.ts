@@ -5,7 +5,8 @@ import {
   ExtensionRegistry,
   Request,
 } from '@frontastic/extension-types';
-import { getPath } from './utils/Request';
+import { getCurrency, getLocale, getPath } from './utils/Request';
+import { BusinessUnitApi } from './apis/BusinessUnitApi';
 import { ProductRouter } from './utils/ProductRouter';
 import { Product } from '@Types/product/Product';
 import { SearchRouter } from './utils/SearchRouter';
@@ -36,6 +37,33 @@ export default {
         dynamicPageType: `frontastic${staticPageMatch[0]}`,
         dataSourcePayload: {},
         pageMatchingPayload: {},
+      } as DynamicPageSuccessResult;
+    }
+
+    /**
+     * Identify businessUnit page
+     *
+     * @deprecated
+     */
+    const b2bPageMatch = getPath(request)?.match(/^\/(business-unit)/);
+    if (b2bPageMatch) {
+      let organization = request.sessionData?.organization;
+      if (!organization.businessUnit && request.sessionData?.account?.accountId) {
+        const businessUnitApi = new BusinessUnitApi(
+          context.frontasticContext,
+          getLocale(request),
+          getCurrency(request),
+        );
+        organization = await businessUnitApi.getOrganization(request.sessionData.account);
+      }
+      return {
+        dynamicPageType: `b2b${b2bPageMatch[0]}`,
+        dataSourcePayload: {
+          organization,
+        },
+        pageMatchingPayload: {
+          organization,
+        },
       } as DynamicPageSuccessResult;
     }
 
@@ -279,6 +307,34 @@ export default {
         // FIXME: Return proper error result
         return null;
       });
+    }
+
+    /**
+     * @deprecated
+     */
+    const homePageMatch = getPath(request)?.match(/^\//);
+    if (homePageMatch) {
+      let organization = request.sessionData?.organization;
+      if (!organization?.businessUnit && request.sessionData?.account?.accountId) {
+        const businessUnitApi = new BusinessUnitApi(
+          context.frontasticContext,
+          getLocale(request),
+          getCurrency(request),
+        );
+        organization = await businessUnitApi.getOrganization(request.sessionData.account);
+      }
+
+      return {
+        dynamicPageType: `b2b/home`,
+        dataSourcePayload: {
+          organization: request.sessionData?.organization,
+        },
+        pageMatchingPayload: {
+          organization: request.sessionData?.organization,
+          businessUnit: request?.sessionData?.organization?.businessUnit?.topLevelUnit?.key,
+          store: request?.sessionData?.organization?.store?.key,
+        },
+      } as DynamicPageSuccessResult;
     }
 
     return null;

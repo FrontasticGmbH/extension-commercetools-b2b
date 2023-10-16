@@ -159,6 +159,9 @@ export const checkout: ActionHook = async (request: Request, actionContext: Acti
   return response;
 };
 
+/**
+ * @deprecated
+ */
 export const getOrders: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 

@@ -2,7 +2,10 @@ import {
   Cart as CommercetoolsCart,
   CartOrigin as CommercetoolsCartOrigin,
   LineItem as CommercetoolsLineItem,
+  LineItemReturnItem,
   Order as CommercetoolsOrder,
+  OrderState as CommercetoolsOrderState,
+  ReturnInfo as CommercetoolsReturnInfo,
   ReturnItemDraft,
 } from '@commercetools/platform-sdk';
 import { BaseCartMapper } from './BaseCartMapper';
@@ -12,11 +15,6 @@ import { ProductRouter } from '../utils/ProductRouter';
 import { LineItem, LineItemShippingAddress } from '@Types/cart/LineItem';
 import { Cart, CartOrigin } from '@Types/cart/Cart';
 import { Order, OrderState, ReturnInfo, ReturnLineItem } from '@Types/cart/Order';
-import {
-  LineItemReturnItem,
-  OrderState as CommercetoolsOrderState,
-  ReturnInfo as CommercetoolsReturnInfo,
-} from '@commercetools/platform-sdk/dist/declarations/src/generated/models/order';
 
 export class CartMapper extends BaseCartMapper {
   static commercetoolsCartToCart(commercetoolsCart: CommercetoolsCart, locale: Locale): Cart {

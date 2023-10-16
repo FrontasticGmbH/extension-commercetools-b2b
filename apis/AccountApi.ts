@@ -1,6 +1,5 @@
 import { Account } from '@Types/account/Account';
-import { CustomerDraft } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/customer';
-import { CartResourceIdentifier } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/cart';
+import { CartResourceIdentifier, Customer, CustomerDraft } from '@commercetools/platform-sdk';
 import { BaseAccountApi } from './BaseAccountApi';
 import { AccountMapper } from '../mappers/AccountMapper';
 import { Cart } from '@Types/cart/Cart';
@@ -79,6 +78,24 @@ export class AccountApi extends BaseAccountApi {
     }
 
     return account;
+  };
+
+  /**
+   * @deprecated
+   */
+  getCustomerByEmail: (email: string) => Promise<Customer | null> = async (email: string) => {
+    const {
+      body: { results },
+    } = await this.requestBuilder()
+      .customers()
+      .get({
+        queryArgs: {
+          where: `email="${email}"`,
+          limit: 1,
+        },
+      })
+      .execute();
+    return results.length ? results[0] : null;
   };
 
   getAccountByEmail: (email: string) => Promise<Account | null> = async (email: string) => {
