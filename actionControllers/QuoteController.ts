@@ -3,13 +3,14 @@ import { getCurrency, getLocale } from '../utils/Request';
 import { CartApi } from '../apis/CartApi';
 import { QuoteApi } from '../apis/QuoteApi';
 import { CartFetcher } from '@Commerce-commercetools/utils/CartFetcher';
-import { QuoteRequest, QuoteRequestState } from '@Types/quote/QuoteRequest';
+import { QuoteRequest } from '@Types/quote/QuoteRequest';
 import { fetchAccountFromSession } from '@Commerce-commercetools/utils/fetchAccountFromSession';
 import { AccountAuthenticationError } from '@Commerce-commercetools/errors/AccountAuthenticationError';
 import { QuoteQuery } from '@Types/query/QuoteQuery';
-import { SortAttributes } from '@Types/query/ProductQuery';
-import { SortOrder } from '@Types/query/ProductQuery';
-import { QuoteState } from '@Types/quote/Quote';
+import { SortAttributes, SortOrder } from '@Types/query/ProductQuery';
+import queryParamsToStates from '@Commerce-commercetools/utils/queryParamsToState';
+import queryParamsToIds from '@Commerce-commercetools/utils/queryParamsToIds';
+import handleError from '@Commerce-commercetools/utils/handleError';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
 
@@ -32,36 +33,6 @@ function queryParamsToSortAttributes(queryParams: any) {
   return sortAttributes;
 }
 
-function queryParamsToQuoteStates(queryParams: any) {
-  const quoteStates: (QuoteState | QuoteRequestState)[] = [];
-
-  queryParams.quoteStates?.map((quoteState: string) => {
-    if (Object.values(QuoteState).includes(quoteState as any)) {
-      quoteStates.push(quoteState as QuoteState);
-      return;
-    }
-
-    if (Object.values(QuoteRequestState).includes(quoteState as any)) {
-      quoteStates.push(quoteState as QuoteRequestState);
-      return;
-    }
-  });
-
-  return quoteStates;
-}
-
-function queryParamsToQuoteIds(queryParams: any) {
-  const quoteIds: string[] = [];
-
-  if (queryParams?.quoteIds && Array.isArray(queryParams?.quoteIds)) {
-    queryParams?.quoteIds.map((quoteId: string | number) => {
-      quoteIds.push(quoteId.toString());
-    });
-  }
-
-  return quoteIds;
-}
-
 export const createQuoteRequest: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const quoteApi = new QuoteApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
   const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
@@ -80,7 +51,7 @@ export const createQuoteRequest: ActionHook = async (request: Request, actionCon
 
   quoteRequest = await quoteApi.createQuoteRequest(quoteRequest, cart);
 
-  await cartApi.deleteCart(cart, account, request.sessionData?.organization);
+  await cartApi.deleteCart(cart, account);
 
   const response: Response = {
     statusCode: 200,
@@ -94,28 +65,6 @@ export const createQuoteRequest: ActionHook = async (request: Request, actionCon
   return response;
 };
 
-/**
- * @deprecated
- */
-export const getQuotes: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const quoteApi = new QuoteApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-
-  const account = fetchAccountFromSession(request);
-  if (account === undefined) {
-    throw new AccountAuthenticationError({ message: 'Not logged in.' });
-  }
-
-  const quotes = await quoteApi.getQuotes(account);
-
-  const response: Response = {
-    statusCode: 200,
-    body: JSON.stringify(quotes),
-    sessionData: request.sessionData,
-  };
-
-  return response;
-};
-
 export const query: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const quoteApi = new QuoteApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
 
@@ -123,25 +72,29 @@ export const query: ActionHook = async (request: Request, actionContext: ActionC
   if (account === undefined) {
     throw new AccountAuthenticationError({ message: 'Not logged in.' });
   }
-
   const quoteQuery: QuoteQuery = {
     accountId: account.accountId,
     limit: request.query?.limit ?? undefined,
     cursor: request.query?.cursor ?? undefined,
-    quoteIds: queryParamsToQuoteIds(request.query),
-    quoteStates: queryParamsToQuoteStates(request.query),
+    quoteIds: queryParamsToIds('quoteIds', request.query),
+    quoteStates: queryParamsToStates('quoteStates', request.query),
     sortAttributes: queryParamsToSortAttributes(request.query),
+    query: request.query?.query ?? undefined,
   };
 
-  const queryResult = await quoteApi.query(quoteQuery);
+  try {
+    const queryResult = await quoteApi.query(quoteQuery);
 
-  const response: Response = {
-    statusCode: 200,
-    body: JSON.stringify(queryResult),
-    sessionData: request.sessionData,
-  };
+    const response: Response = {
+      statusCode: 200,
+      body: JSON.stringify(queryResult),
+      sessionData: request.sessionData,
+    };
 
-  return response;
+    return response;
+  } catch (error) {
+    return handleError(error, request);
+  }
 };
 
 export const queryQuoteRequests: ActionHook = async (request: Request, actionContext: ActionContext) => {
@@ -156,20 +109,25 @@ export const queryQuoteRequests: ActionHook = async (request: Request, actionCon
     accountId: account.accountId,
     limit: request.query?.limit ?? undefined,
     cursor: request.query?.cursor ?? undefined,
-    quoteIds: queryParamsToQuoteIds(request.query),
-    quoteStates: queryParamsToQuoteStates(request.query),
+    quoteIds: queryParamsToIds('quoteIds', request.query),
+    quoteStates: queryParamsToStates('quoteStates', request.query),
     sortAttributes: queryParamsToSortAttributes(request.query),
+    query: request.query?.query ?? undefined,
   };
 
-  const queryResult = await quoteApi.queryQuoteRequests(quoteQuery);
+  try {
+    const queryResult = await quoteApi.queryQuoteRequests(quoteQuery);
 
-  const response: Response = {
-    statusCode: 200,
-    body: JSON.stringify(queryResult),
-    sessionData: request.sessionData,
-  };
+    const response: Response = {
+      statusCode: 200,
+      body: JSON.stringify(queryResult),
+      sessionData: request.sessionData,
+    };
 
-  return response;
+    return response;
+  } catch (error) {
+    return handleError(error, request);
+  }
 };
 
 export const acceptQuote: ActionHook = async (request: Request, actionContext: ActionContext) => {

@@ -3,6 +3,7 @@ import { ClientFactory } from '../ClientFactory';
 import { Context } from '@frontastic/extension-types';
 import { getConfig } from '../utils/GetConfig';
 import { Locale } from '@Commerce-commercetools/interfaces/Locale';
+import { ByProjectKeyRequestBuilder } from '@commercetools/platform-sdk/dist/declarations/src/generated/client/by-project-key-request-builder';
 import { LocaleError } from '../errors/LocaleError';
 import { ExternalError } from '../utils/Errors';
 import { TokenCache, TokenStore } from '@commercetools/sdk-client-v2';
@@ -11,13 +12,13 @@ import { Token } from '@Types/Token';
 import { tokenHasExpired } from '../utils/Token';
 import * as crypto from 'crypto';
 
-const defaultCurrency = 'EUR';
+const defaultCurrency = 'USD';
 
 const localeRegex =
   /^(?<language>[a-z]{2,})(?:_(?<territory>[A-Z0-9]{2,}))?(?:\.(?<codeset>[A-Z0-9_+-]+))?(?:@(?<modifier>[A-Za-z]+))?$/;
 
 const languageToTerritory = {
-  en: 'GB',
+  en: 'US',
 };
 
 const modifierToCurrency = {
@@ -419,7 +420,7 @@ export abstract class BaseApi {
     this.locale = locale !== null ? locale : this.defaultLocale;
     this.currency = currency;
 
-    const engine = 'commercetools';
+    const engine = 'COMMERCETOOLS';
     this.clientSettings = getConfig(frontasticContext, engine, this.locale);
 
     this.environment = frontasticContext.environment;
@@ -499,7 +500,7 @@ export abstract class BaseApi {
     return this.apiRoot;
   }
 
-  protected requestBuilder() {
+  protected requestBuilder(): ByProjectKeyRequestBuilder {
     return this.getApiRoot().withProjectKey({ projectKey: this.projectKey });
   }
 

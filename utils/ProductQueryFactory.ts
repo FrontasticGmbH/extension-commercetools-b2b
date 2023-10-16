@@ -1,5 +1,5 @@
 import { DataSourceConfiguration, Request } from '@frontastic/extension-types';
-import { ProductQuery, SortAttributes, SortOrder } from '@Types/query/ProductQuery';
+import { SortAttributes, SortOrder } from '@Types/query/ProductQuery';
 import { Filter, FilterTypes } from '@Types/query/Filter';
 import { RangeFilter } from '@Types/query/RangeFilter';
 import { TermFilter } from '@Types/query/TermFilter';
@@ -7,6 +7,7 @@ import { FilterFieldTypes } from '@Types/product/FilterField';
 import { Facet } from '@Types/query/Facet';
 import { TermFacet } from '@Types/query/TermFacet';
 import { RangeFacet } from '@Types/query/RangeFacet';
+import { ProductQuery } from '@Types/query/ProductQuery';
 
 export class ProductQueryFactory {
   static queryFromParams: (request: Request, config?: DataSourceConfiguration) => ProductQuery = (

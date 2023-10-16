@@ -2,8 +2,6 @@ import { DataSourceConfiguration, DataSourceContext } from '@frontastic/extensio
 import { getCurrency, getLocale } from './utils/Request';
 import { ProductApi } from './apis/ProductApi';
 import { ProductQueryFactory } from './utils/ProductQueryFactory';
-import { BusinessUnitApi } from './apis/BusinessUnitApi';
-import { fetchAccountFromSession } from '@Commerce-commercetools/utils/fetchAccountFromSession';
 
 function productQueryFromContext(context: DataSourceContext, config: DataSourceConfiguration) {
   const productApi = new ProductApi(
@@ -59,83 +57,5 @@ export default {
         },
       };
     });
-  },
-
-  /**
-   * @deprecated
-   */
-  'b2b/organization': (config: DataSourceConfiguration, context: DataSourceContext) => {
-    return {
-      dataSourcePayload: {
-        organization: context.request.sessionData?.organization,
-      },
-    };
-  },
-
-  /**
-   * @deprecated
-   */
-  'b2b/associations': async (config: DataSourceConfiguration, context: DataSourceContext) => {
-    const account = fetchAccountFromSession(context.request);
-
-    if (account === undefined) {
-      return {
-        dataSourcePayload: {
-          associations: [],
-        },
-      };
-    }
-
-    const businessUnitApi = new BusinessUnitApi(
-      context.frontasticContext,
-      context.request ? getLocale(context.request) : null,
-      context.request ? getCurrency(context.request) : null,
-    );
-    const results = await businessUnitApi.getCommercetoolsBusinessUnitsForUser(context.request.sessionData?.account);
-
-    return {
-      dataSourcePayload: {
-        associations: results,
-      },
-    };
-  },
-
-  /**
-   * @deprecated
-   */
-  'b2b/notifications': async (config: DataSourceConfiguration, context: DataSourceContext) => {
-    const notificationToken = context.request.sessionData?.notificationToken;
-
-    return {
-      dataSourcePayload: {
-        notificationToken,
-      },
-    };
-  },
-
-  /**
-   * @deprecated
-   */
-  'b2b/organization-tree': async (config: DataSourceConfiguration, context: DataSourceContext) => {
-    const account = fetchAccountFromSession(context.request);
-    if (account === undefined) {
-      return {
-        dataSourcePayload: {
-          tree: [],
-        },
-      };
-    }
-
-    const businessUnitApi = new BusinessUnitApi(
-      context.frontasticContext,
-      context.request ? getLocale(context.request) : null,
-      context.request ? getCurrency(context.request) : null,
-    );
-    const tree = await businessUnitApi.getCompaniesForUser(context.request.sessionData?.account);
-    return {
-      dataSourcePayload: {
-        tree: tree,
-      },
-    };
   },
 };

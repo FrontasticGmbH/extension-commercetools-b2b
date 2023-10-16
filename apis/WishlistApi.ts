@@ -3,7 +3,7 @@ import { BaseWishlistApi } from './BaseWishlistApi';
 import { WishlistMapper } from '../mappers/WishlistMapper';
 import { ExternalError } from '@Commerce-commercetools/utils/Errors';
 import { Account } from '@Types/account/Account';
-import { ShoppingListUpdateAction } from '@commercetools/platform-sdk';
+import { ShoppingListUpdateAction } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/shopping-list';
 
 const expandVariants = ['lineItems[*].variant', 'store'];
 

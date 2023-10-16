@@ -3,10 +3,8 @@ import { AccountApi } from '@Commerce-commercetools/apis/AccountApi';
 import { ActionContext, Request, Response } from '@frontastic/extension-types';
 import { Store } from '@Types/store/Store';
 import { getCurrency, getLocale } from '../utils/Request';
-import { StoreApi } from '../apis/StoreApi';
 import { BusinessUnitApi } from '../apis/BusinessUnitApi';
 import { CartApi } from '../apis/CartApi';
-import { BusinessUnitMapper } from '../mappers/BusinessUnitMapper';
 import { fetchAccountFromSession } from '@Commerce-commercetools/utils/fetchAccountFromSession';
 import { AccountAuthenticationError } from '@Commerce-commercetools/errors/AccountAuthenticationError';
 import { Account } from '@Types/account/Account';
@@ -23,12 +21,6 @@ export interface BusinessUnitRequestBody {
   account: Account;
   store?: Store;
   parentBusinessUnit?: string;
-  /**
-   * @deprecated The accountId should be read from the account
-   */
-  customer: {
-    accountId: string;
-  };
   name?: string;
   contactEmail?: string;
 }
@@ -59,86 +51,6 @@ export const getBusinessUnits: ActionHook = async (request: Request, actionConte
   };
 };
 
-/**
- * @deprecated Use `getBusinessUnits` instead
- */
-export const getMe: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const account = fetchAccountFromSession(request);
-
-  if (account === undefined) {
-    throw new AccountAuthenticationError({ message: 'Not logged in.' });
-  }
-
-  const organization = request.sessionData?.organization;
-  let businessUnit = request.sessionData?.businessUnit ?? organization?.businessUnit;
-
-  if (businessUnit) {
-    return {
-      statusCode: 200,
-      body: JSON.stringify(businessUnit),
-    };
-  }
-
-  if (request.sessionData?.account) {
-    const businessUnitApi = new BusinessUnitApi(
-      actionContext.frontasticContext,
-      getLocale(request),
-      getCurrency(request),
-    );
-
-    businessUnit = await businessUnitApi.getFirstRootForAssociate(account);
-  }
-
-  return {
-    statusCode: 200,
-    body: JSON.stringify(businessUnit),
-    sessionData: {
-      ...request.sessionData,
-      businessUnit,
-      organization: {
-        ...organization,
-        businessUnit,
-      },
-    },
-  };
-};
-
-/**
- * @deprecated
- */
-export const setMe: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const businessUnitApi = new BusinessUnitApi(
-    actionContext.frontasticContext,
-    getLocale(request),
-    getCurrency(request),
-  );
-  const storeApi = new StoreApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-  const data = JSON.parse(request.body);
-
-  const businessUnit = await businessUnitApi.get(data.key, request.sessionData?.account);
-  const store = businessUnit.stores?.[0]?.key ? await storeApi.get(businessUnit.stores[0].key) : undefined;
-  const organization = await businessUnitApi.getOrganizationByBusinessUnit(businessUnit);
-  const response: Response = {
-    statusCode: 200,
-    body: JSON.stringify(businessUnit),
-    sessionData: {
-      ...request.sessionData,
-      organization: {
-        ...organization,
-        businessUnit: BusinessUnitMapper.trimBusinessUnit(
-          organization.businessUnit,
-          request.sessionData?.account?.accountId,
-        ),
-      },
-    },
-  };
-
-  return response;
-};
-
-/**
- * @deprecated
- */
 export const getCompanies: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const account = fetchAccountFromSession(request);
 
@@ -161,67 +73,6 @@ export const getCompanies: ActionHook = async (request: Request, actionContext: 
   };
 
   return response;
-};
-
-/**
- * @deprecated
- */
-export const getOrganization: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const businessUnitApi = new BusinessUnitApi(
-    actionContext.frontasticContext,
-    getLocale(request),
-    getCurrency(request),
-  );
-
-  const account = fetchAccountFromSession(request);
-
-  const organization = await businessUnitApi.getOrganization(account);
-
-  const response: Response = {
-    statusCode: 200,
-    body: JSON.stringify({}),
-    sessionData: {
-      ...request.sessionData,
-      organization: {
-        ...organization,
-        businessUnit: BusinessUnitMapper.trimBusinessUnit(organization.businessUnit, account.accountId),
-      },
-    },
-  };
-
-  return response;
-};
-
-/**
- * @deprecated
- */
-export const getSuperUserBusinessUnits: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const accountApi = new AccountApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-  const customerAccount = await accountApi.getCustomerByEmail(request.query.email);
-  if (customerAccount) {
-    const businessUnitApi = new BusinessUnitApi(
-      actionContext.frontasticContext,
-      getLocale(request),
-      getCurrency(request),
-    );
-    const results = await businessUnitApi.getCommercetoolsBusinessUnitsForUser(customerAccount);
-    const highestNodes = businessUnitApi.getRootCommercetoolsBusinessUnitsForAssociate(results, customerAccount);
-
-    const businessUnitsWithSuperUser = highestNodes.filter((bu) =>
-      BusinessUnitMapper.isAssociateRoleKeyInCommercetoolsBusinessUnit(bu, customerAccount.id, 'super-user'),
-    );
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify(businessUnitsWithSuperUser),
-    };
-  } else {
-    return {
-      statusCode: 400,
-      errorCode: 400,
-      error: 'Customer not found',
-    };
-  }
 };
 
 export const getBusinessUnitOrders: ActionHook = async (request: Request, actionContext: ActionContext) => {
@@ -452,35 +303,6 @@ export const removeBusinessUnitAddress: ActionHook = async (request: Request, ac
   } catch (error) {
     return handleError(error, request);
   }
-};
-
-/**
- * @deprecated
- */
-export const update: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const businessUnitApi = new BusinessUnitApi(
-    actionContext.frontasticContext,
-    getLocale(request),
-    getCurrency(request),
-  );
-  const { key, actions } = JSON.parse(request.body);
-
-  const businessUnit = await businessUnitApi.update(key, actions);
-
-  const response: Response = {
-    statusCode: 200,
-    body: JSON.stringify(businessUnit),
-    sessionData: {
-      ...request.sessionData,
-      organization: {
-        // TODO
-        ...request.sessionData?.organization,
-        businessUnit,
-      },
-    },
-  };
-
-  return response;
 };
 
 export const getByKey: ActionHook = async (request: Request, actionContext: ActionContext) => {

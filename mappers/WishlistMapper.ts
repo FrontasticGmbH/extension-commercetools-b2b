@@ -1,5 +1,6 @@
 import { Wishlist } from '@Types/wishlist/Wishlist';
-import { ShoppingList, ShoppingListDraft, StoreKeyReference } from '@commercetools/platform-sdk';
+import { ShoppingList, StoreKeyReference } from '@commercetools/platform-sdk';
+import { ShoppingListDraft } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/shopping-list';
 import { Store } from '@Types/store/Store';
 import { Locale } from '@Commerce-commercetools/interfaces/Locale';
 import { BaseWishlistMapper } from './BaseWishlistMapper';

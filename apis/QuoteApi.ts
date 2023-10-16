@@ -9,7 +9,6 @@ import { QuoteQuery } from '@Types/query/QuoteQuery';
 import { getOffsetFromCursor } from '@Commerce-commercetools/utils/Pagination';
 import { Result } from '@Types/quote/Result';
 import { ProductMapper } from '@Commerce-commercetools/mappers/ProductMapper';
-import { Account } from '@Types/account/Account';
 import { ResourceNotFoundError } from '@Commerce-commercetools/errors/ResourceNotFoundError';
 
 export class QuoteApi extends BaseApi {
@@ -92,78 +91,6 @@ export class QuoteApi extends BaseApi {
       });
   };
 
-  getQuotes: (account: Account) => Promise<Quote[]> = async (account: Account) => {
-    const locale = await this.getCommercetoolsLocal();
-
-    const quotes = await this.requestBuilder()
-      .quoteRequests()
-      .get({
-        queryArgs: {
-          where: `customer(id="${account.accountId}")`,
-          expand: 'customer',
-          sort: 'createdAt desc',
-          limit: 50,
-        },
-      })
-      .execute()
-      .then((response) => {
-        return response.body.results.map((commercetoolsQuoteRequest) => {
-          const quote: Quote = {
-            quoteRequest: QuoteMapper.deprecatedCommercetoolsQuoteRequestToQuoteRequest(
-              commercetoolsQuoteRequest,
-              locale,
-            ),
-          };
-
-          return quote;
-        });
-      })
-      .catch((error) => {
-        throw error;
-      });
-
-    await this.requestBuilder()
-      .stagedQuotes()
-      .get({
-        queryArgs: {
-          where: `customer(id="${account.accountId}")`,
-          expand: ['quotationCart'],
-          sort: 'createdAt desc',
-          limit: 50,
-        },
-      })
-      .execute()
-      .then((response) => {
-        return response.body.results.map((commercetoolsStagedQuote) => {
-          QuoteMapper.deprecatedUpdateQuotesFromCommercetoolsStagedQuotes(quotes, commercetoolsStagedQuote, locale);
-        });
-      })
-      .catch((error) => {
-        throw error;
-      });
-
-    await this.requestBuilder()
-      .quotes()
-      .get({
-        queryArgs: {
-          where: `customer(id="${account.accountId}")`,
-          sort: 'createdAt desc',
-          limit: 50,
-        },
-      })
-      .execute()
-      .then((response) => {
-        return response.body.results.map((commercetoolsQuote) => {
-          QuoteMapper.deprecatedUpdateQuotesFromCommercetoolsQuotes(quotes, commercetoolsQuote, locale);
-        });
-      })
-      .catch((error) => {
-        throw new ExternalError({ status: error.code, message: error.message, body: error.body });
-      });
-
-    return quotes;
-  };
-
   query: (quoteQuery: QuoteQuery) => Promise<Result> = async (quoteQuery: QuoteQuery) => {
     const locale = await this.getCommercetoolsLocal();
     const limit = +quoteQuery.limit || undefined;
@@ -185,6 +112,7 @@ export class QuoteApi extends BaseApi {
     if (quoteQuery.quoteStates !== undefined && quoteQuery.quoteStates.length > 0) {
       whereClause.push(`quoteState in ("${quoteQuery.quoteStates.join('","')}")`);
     }
+    const searchQuery = quoteQuery.query && quoteQuery.query;
 
     return this.requestBuilder()
       .quotes()
@@ -195,6 +123,7 @@ export class QuoteApi extends BaseApi {
           limit: limit,
           offset: getOffsetFromCursor(quoteQuery.cursor),
           sort: sortAttributes,
+          [`text.${locale.language}`]: searchQuery,
         },
       })
       .execute()
@@ -239,6 +168,7 @@ export class QuoteApi extends BaseApi {
     if (quoteQuery.quoteStates !== undefined && quoteQuery.quoteStates.length > 0) {
       whereClause.push(`quoteRequestState in ("${quoteQuery.quoteStates.join('","')}")`);
     }
+    const searchQuery = quoteQuery.query && quoteQuery.query;
 
     const result = await this.requestBuilder()
       .quoteRequests()
@@ -248,6 +178,7 @@ export class QuoteApi extends BaseApi {
           sort: sortAttributes,
           limit: limit,
           offset: getOffsetFromCursor(quoteQuery.cursor),
+          [`text.${locale.language}`]: searchQuery,
         },
       })
       .execute()
