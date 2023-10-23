@@ -179,6 +179,7 @@ export class QuoteApi extends BaseApi {
           limit: limit,
           offset: getOffsetFromCursor(quoteQuery.cursor),
           [`text.${locale.language}`]: searchQuery,
+          expand: ['customer'],
         },
       })
       .execute()

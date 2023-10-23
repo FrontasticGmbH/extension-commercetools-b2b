@@ -51,6 +51,8 @@ export class QuoteMapper {
       lastModifiedAt: new Date(commercetoolsQuoteRequest.lastModifiedAt),
       account: {
         accountId: commercetoolsQuoteRequest.customer.id,
+        firstName: commercetoolsQuoteRequest.customer.obj?.firstName,
+        lastName: commercetoolsQuoteRequest.customer.obj?.lastName,
       },
       buyerComment: commercetoolsQuoteRequest.comment,
       store: { key: commercetoolsQuoteRequest.store.key },
