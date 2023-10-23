@@ -34,18 +34,6 @@ function queryParamsToSortAttributes(queryParams: any) {
   return sortAttributes;
 }
 
-function queryParamsToOrderIds(queryParams: any) {
-  const orderIds: string[] = [];
-
-  if (queryParams?.orderIds && Array.isArray(queryParams?.orderIds)) {
-    queryParams?.orderIds.map((orderId: string | number) => {
-      orderIds.push(orderId.toString());
-    });
-  }
-
-  return orderIds;
-}
-
 async function updateCartFromRequest(request: Request, actionContext: ActionContext): Promise<Cart> {
   const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
   let cart = await CartFetcher.fetchCart(request, actionContext);
