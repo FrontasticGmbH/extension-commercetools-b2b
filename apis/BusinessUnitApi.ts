@@ -2,7 +2,6 @@ import { BusinessUnit, BusinessUnitStatus, BusinessUnitType, StoreMode } from '@
 import { StoreApi } from './StoreApi';
 import {
   BaseAddress,
-  BusinessUnit as CommercetoolsBusinessUnit,
   BusinessUnitDraft,
   BusinessUnitPagedQueryResponse,
   BusinessUnitUpdateAction,
@@ -146,35 +145,6 @@ export class BusinessUnitApi extends BaseApi {
     }
   };
 
-  protected getRootBusinessUnitsForAssociate: (businessUnits: BusinessUnit[], account: Account) => BusinessUnit[] = (
-    businessUnits: BusinessUnit[],
-    account: Account,
-  ) => {
-    if (!businessUnits.length) {
-      return [];
-    }
-
-    // Filter out the businessUnits that their ancestor is also in the list
-    const businessUnitsWithNoAncestors = businessUnits.filter((businessUnit) => {
-      return (
-        businessUnits.findIndex((currentBusinessUnit) => currentBusinessUnit.key === businessUnit.parentUnit?.key) ===
-        -1
-      );
-    });
-
-    return (
-      businessUnitsWithNoAncestors
-        // Sort by Admin first
-        .sort((a, b) =>
-          BusinessUnitMapper.isAssociateRoleKeyInBusinessUnit(a, account, this.associateRoleAdminKey)
-            ? -1
-            : BusinessUnitMapper.isAssociateRoleKeyInBusinessUnit(b, account, this.associateRoleAdminKey)
-            ? 1
-            : 0,
-        )
-    );
-  };
-
   get: (key: string, account: Account) => Promise<BusinessUnit> = async (key: string, account: Account) => {
     const locale = await this.getCommercetoolsLocal();
 
@@ -220,35 +190,6 @@ export class BusinessUnitApi extends BaseApi {
     }
   };
 
-  getBusinessUnitWithExplicitStores: (
-    commercetoolsBusinessUnit: CommercetoolsBusinessUnit,
-  ) => Promise<CommercetoolsBusinessUnit> = async (commercetoolsBusinessUnit: CommercetoolsBusinessUnit) => {
-    if (commercetoolsBusinessUnit.storeMode === StoreMode.Explicit) {
-      return commercetoolsBusinessUnit;
-    }
-    let currentCommercetoolsBusinessUnit: CommercetoolsBusinessUnit = { ...commercetoolsBusinessUnit };
-    while (
-      currentCommercetoolsBusinessUnit.storeMode === StoreMode.FromParent &&
-      !!currentCommercetoolsBusinessUnit.parentUnit
-    ) {
-      currentCommercetoolsBusinessUnit = await this.requestBuilder()
-        .businessUnits()
-        .withKey({ key: currentCommercetoolsBusinessUnit.parentUnit.key })
-        .get()
-        .execute()
-        .then((response) => {
-          return response.body;
-        });
-    }
-    if (currentCommercetoolsBusinessUnit.storeMode === StoreMode.Explicit) {
-      return {
-        ...commercetoolsBusinessUnit,
-        stores: currentCommercetoolsBusinessUnit.stores,
-      };
-    }
-    return commercetoolsBusinessUnit;
-  };
-
   getBusinessUnitsForUser: (account: Account, expandStores?: boolean) => Promise<BusinessUnit[]> = async (
     account: Account,
     expandStores?: boolean,
@@ -283,64 +224,6 @@ export class BusinessUnitApi extends BaseApi {
     }
 
     return businessUnits;
-  };
-
-  getCompaniesForUser: (account: Account) => Promise<BusinessUnit[]> = async (account: Account) => {
-    const locale = await this.getCommercetoolsLocal();
-
-    const storeApi = new StoreApi(this.frontasticContext, this.locale, this.currency);
-
-    const treeBusinessUnits = await this.getBusinessUnitsForUser(account).then((businessUnits) => {
-      return this.getRootBusinessUnitsForAssociate(businessUnits, account);
-    });
-
-    if (treeBusinessUnits.length) {
-      const treeBusinessUnitsKeys = treeBusinessUnits
-        ?.map((businessUnit) => `"${businessUnit.topLevelUnit.key}"`)
-        .join(' ,');
-
-      // Get the whole company and division nodes
-      const commercetoolsBusinessUnits = await this.query(
-        `topLevelUnit(key in (${treeBusinessUnitsKeys}))`,
-        'associates[*].customer',
-      ).then((response) => {
-        return response.results;
-      });
-
-      const tempParents = [...treeBusinessUnits];
-
-      // Filter commercetoolsBusinessUnits and add nodes to tree if they are descendents of tree nodes
-      while (tempParents.length) {
-        const [item] = tempParents.splice(0, 1);
-
-        const children = commercetoolsBusinessUnits.filter(
-          (commercetoolsBusinessUnit) => commercetoolsBusinessUnit.parentUnit?.key === item.key,
-        );
-
-        if (children.length) {
-          children.forEach((child) => {
-            const businessUnitChild = BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(child, locale);
-            tempParents.push(businessUnitChild);
-            treeBusinessUnits.push(businessUnitChild);
-          });
-        }
-      }
-    }
-
-    const storeKeys = treeBusinessUnits
-      .reduce((prev: Store[], curr) => {
-        prev = prev.concat(curr.stores || []);
-        return prev;
-      }, [])
-      ?.map((store) => `"${store.key}"`)
-      .join(' ,');
-
-    const allStores = storeKeys ? await storeApi.query(`key in (${storeKeys})`) : [];
-
-    return treeBusinessUnits.map((businessUnit) => {
-      businessUnit.stores = BusinessUnitMapper.expandStores(businessUnit.stores, allStores);
-      return businessUnit;
-    });
   };
 
   getAssociateRoles: () => Promise<AssociateRole[]> = async () => {

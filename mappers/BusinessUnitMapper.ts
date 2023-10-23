@@ -12,9 +12,7 @@ import {
   AssociateRoleAssignment as CommercetoolsAssociateRoleAssignment,
   BusinessUnitKeyReference as CommercetoolsBusinessUnitKeyReference,
 } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/business-unit';
-import { Account } from '@Types/account/Account';
 import { AssociateRole as CommercetoolsAssociateRole } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/associate-role';
-import { createFakeUser } from '../../_test/data-provider';
 
 export class BusinessUnitMapper {
   static commercetoolsBusinessUnitToBusinessUnit(
@@ -84,17 +82,6 @@ export class BusinessUnitMapper {
           return trimmedAssociate;
         }),
     };
-  }
-
-  static isAssociateRoleKeyInBusinessUnit(
-    businessUnit: BusinessUnit,
-    account: Account,
-    associateRoleKey: string,
-  ): boolean {
-    const currentUserAssociate = businessUnit.associates?.find(
-      (associate) => associate.accountId === account.accountId,
-    );
-    return currentUserAssociate?.roles.some((role) => role.key === associateRoleKey);
   }
 
   static mapReferencedAssociatesToAssociate(

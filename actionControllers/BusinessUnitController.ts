@@ -51,30 +51,6 @@ export const getBusinessUnits: ActionHook = async (request: Request, actionConte
   };
 };
 
-export const getCompanies: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const account = fetchAccountFromSession(request);
-
-  if (account === undefined) {
-    throw new AccountAuthenticationError({ message: 'Not logged in.' });
-  }
-
-  const businessUnitApi = new BusinessUnitApi(
-    actionContext.frontasticContext,
-    getLocale(request),
-    getCurrency(request),
-  );
-
-  const companies = await businessUnitApi.getCompaniesForUser(account);
-
-  const response: Response = {
-    statusCode: 200,
-    body: JSON.stringify(companies),
-    sessionData: request.sessionData,
-  };
-
-  return response;
-};
-
 export const getBusinessUnitOrders: ActionHook = async (request: Request, actionContext: ActionContext) => {
   const account = fetchAccountFromSession(request);
 
