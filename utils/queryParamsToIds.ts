@@ -1,22 +1,22 @@
 function queryParamsToIds(param: string, queryParams: any) {
-  const Ids: string[] = [];
+  const ids: string[] = [];
 
   const requestParamIds = queryParams?.[param];
 
   if (requestParamIds) {
     if (Array.isArray(requestParamIds)) {
-      Ids.push(...requestParamIds);
+      ids.push(...requestParamIds);
     } else {
       const params = requestParamIds.split(',');
       if (params.length > 1) {
-        Ids.push(...params);
+        ids.push(...params);
       } else {
-        Ids.push(requestParamIds);
+        ids.push(requestParamIds);
       }
     }
   }
 
-  return Ids;
+  return ids;
 }
 
 export default queryParamsToIds;
