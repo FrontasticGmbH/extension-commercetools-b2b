@@ -1,5 +1,5 @@
 {
-    "dynamicPageType": "frontastic/quote-thank-you",
+    "dynamicPageType": "frontastic/quote-thank-you-page",
     "name": "Quote thank you",
     "category": "Quotes",
     "icon": "group",

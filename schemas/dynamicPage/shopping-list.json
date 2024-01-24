@@ -1,6 +1,6 @@
 {
-  "dynamicPageType": "frontastic/shopping-list-detail-page",
-  "name": "Shopping list details page",
+  "dynamicPageType": "frontastic/shopping-list-page",
+  "name": "Shopping list",
   "category": "Shopping lists",
   "icon": "picture_in_picture",
   "dataSourceType": "frontastic/product-list",

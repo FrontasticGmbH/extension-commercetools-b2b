@@ -1,6 +1,6 @@
 {
-  "dynamicPageType": "frontastic/preview/product-detail-page",
-  "name": "Product details page",
+  "dynamicPageType": "frontastic/preview/product-page",
+  "name": "Product preview",
   "category": "Previews",
   "icon": "picture_in_picture",
   "dataSourceType": "frontastic/preview/product",
