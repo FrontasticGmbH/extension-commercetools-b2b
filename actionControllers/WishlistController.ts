@@ -1,20 +1,16 @@
 import { ActionContext, Request, Response } from '@frontastic/extension-types';
-import { WishlistApi } from '../apis/WishlistApi';
+import { Wishlist, WishlistQuery } from '@Types/wishlist';
+import { Account } from '@Types/account';
 import { getCurrency, getLocale } from '../utils/Request';
+import { WishlistApi } from '../apis/WishlistApi';
 import handleError from '@Commerce-commercetools/utils/handleError';
 import { WishlistFetcher } from '@Commerce-commercetools/utils/WishlistFetcher';
 import parseRequestBody from '@Commerce-commercetools/utils/parseRequestBody';
 import { AccountAuthenticationError } from '@Commerce-commercetools/errors/AccountAuthenticationError';
 import queryParamsToIds from '@Commerce-commercetools/utils/queryParamsToIds';
-import { Wishlist, WishlistQuery } from '@Types/wishlist';
-import { Account } from '@Types/account';
+import { ValidationError } from '@Commerce-commercetools/errors/ValidationError';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
-type WishlistBody = {
-  wishlistIds: string[];
-  variant?: { sku?: string };
-  count?: number;
-};
 
 function getWishlistApi(request: Request, actionContext: ActionContext) {
   return new WishlistApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
@@ -27,7 +23,7 @@ function fetchAccountFromSession(request: Request): Account | undefined {
 function fetchAccountFromSessionEnsureLoggedIn(request: Request): Account {
   const account = fetchAccountFromSession(request);
   if (!account) {
-    throw new Error('Not logged in.');
+    throw new AccountAuthenticationError({ message: 'Not logged in.' });
   }
   return account;
 }
@@ -50,8 +46,9 @@ async function fetchWishlist(request: Request, wishlistApi: WishlistApi): Promis
 }
 
 export const getWishlist: ActionHook = async (request, actionContext) => {
-  const wishlistApi = getWishlistApi(request, actionContext);
   try {
+    const wishlistApi = getWishlistApi(request, actionContext);
+
     const wishlist = await fetchWishlist(request, wishlistApi);
     return {
       statusCode: 200,
@@ -66,39 +63,15 @@ export const getWishlist: ActionHook = async (request, actionContext) => {
   }
 };
 
-/**
- * @deprecated  Use `queryWishlists` instead.
- */
-export const getWishlists: ActionHook = async (request, actionContext) => {
-  try {
-    const account = fetchAccountFromSessionEnsureLoggedIn(request);
-
-    const storeKey = request.query?.['storeKey'] ?? undefined;
-
-    const wishlistApi = getWishlistApi(request, actionContext);
-    const wishlists = storeKey
-      ? await wishlistApi.getByStoreKeyForAccount(storeKey, account)
-      : await wishlistApi.getForAccount(account);
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify(wishlists),
-      sessionData: request.sessionData,
-    };
-  } catch (error) {
-    return handleError(error, request);
-  }
-};
-
 export const queryWishlists: ActionHook = async (request, actionContext) => {
-  const wishlistApi = getWishlistApi(request, actionContext);
-
-  const account = fetchAccountFromSession(request);
-  if (account === undefined) {
-    throw new AccountAuthenticationError({ message: 'Not logged in.' });
-  }
-
   try {
+    const wishlistApi = getWishlistApi(request, actionContext);
+
+    const account = fetchAccountFromSession(request);
+    if (account === undefined) {
+      throw new AccountAuthenticationError({ message: 'Not logged in.' });
+    }
+
     const wishlistQuery: WishlistQuery = {
       name: request.query?.name ?? undefined,
       accountId: account.accountId,
@@ -123,22 +96,22 @@ export const queryWishlists: ActionHook = async (request, actionContext) => {
 };
 
 export const createWishlist: ActionHook = async (request, actionContext) => {
-  const wishlistApi = getWishlistApi(request, actionContext);
-
-  const body: {
-    name?: string;
-    description?: string;
-  } = JSON.parse(request.body);
-
-  const account = fetchAccountFromSessionEnsureLoggedIn(request);
-
-  const storeKey = request.query?.['storeKey'];
-
-  if (!storeKey) {
-    throw new Error('No storeKey');
-  }
-
   try {
+    const wishlistApi = getWishlistApi(request, actionContext);
+
+    const body: {
+      name?: string;
+      description?: string;
+    } = JSON.parse(request.body);
+
+    const account = fetchAccountFromSessionEnsureLoggedIn(request);
+
+    const storeKey = request.query?.['storeKey'];
+
+    if (!storeKey) {
+      throw new ValidationError({ message: 'No storeKey' });
+    }
+
     const wishlist = await wishlistApi.create({
       accountId: account.accountId,
       name: body.name ?? 'Wishlist',
@@ -233,13 +206,17 @@ export const addToWishlist: ActionHook = async (request, actionContext) => {
 };
 
 export const addToWishlists: ActionHook = async (request, actionContext) => {
-  const account = fetchAccountFromSessionEnsureLoggedIn(request);
-
-  const wishlistApi = getWishlistApi(request, actionContext);
-
-  const wishlistBody = parseRequestBody<WishlistBody>(request.body);
-
   try {
+    const account = fetchAccountFromSessionEnsureLoggedIn(request);
+
+    const wishlistApi = getWishlistApi(request, actionContext);
+
+    const wishlistBody = parseRequestBody<{
+      wishlistIds: string[];
+      variant?: { sku: string };
+      count?: number;
+    }>(request.body);
+
     const wishlistQuery: WishlistQuery = {
       accountId: account.accountId,
       wishlistIds: wishlistBody.wishlistIds,
@@ -321,24 +298,6 @@ export const updateLineItemCount: ActionHook = async (request, actionContext) =>
       body: JSON.stringify(updatedWishlist),
       sessionData: {
         ...request.sessionData,
-      },
-    };
-  } catch (error) {
-    return handleError(error, request);
-  }
-};
-
-export const clearWishlist: ActionHook = async (request, actionContext) => {
-  try {
-    const wishlistApi = getWishlistApi(request, actionContext);
-    const wishlist = await fetchWishlist(request, wishlistApi);
-    await wishlistApi.clearWishlist(wishlist);
-    return {
-      statusCode: 200,
-      body: JSON.stringify({}),
-      sessionData: {
-        ...request.sessionData,
-        wishlistId: undefined,
       },
     };
   } catch (error) {

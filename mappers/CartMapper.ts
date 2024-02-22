@@ -2,16 +2,15 @@ import {
   Cart as CommercetoolsCart,
   CartDiscountReference,
   CartOrigin as CommercetoolsCartOrigin,
+  CartState as CommercetoolsCartState,
   LineItem as CommercetoolsLineItem,
   Order as CommercetoolsOrder,
   Reference,
   ReturnItemDraft,
+  TaxRate as CommercetoolsTaxRate,
 } from '@commercetools/platform-sdk';
-import { Locale } from '@Commerce-commercetools/interfaces/Locale';
-import { ProductMapper } from './ProductMapper';
-import { ProductRouter } from '../utils/ProductRouter';
 import { LineItem, LineItemShippingAddress } from '@Types/cart/LineItem';
-import { Cart, CartOrigin } from '@Types/cart/Cart';
+import { Cart, CartOrigin, CartState } from '@Types/cart/Cart';
 import { Order, OrderState, ReturnInfo, ReturnLineItem, ShipmentState } from '@Types/cart/Order';
 import {
   LineItemReturnItem,
@@ -27,9 +26,11 @@ import {
   DiscountedLineItemPriceForQuantity as CommercetoolsDiscountedLineItemPriceForQuantity,
   ShippingInfo as CommercetoolsShippingInfo,
   TaxedPrice as CommercetoolsTaxedPrice,
+  TaxedItemPrice as CommercetoolsTaxedItemPrice,
 } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/cart';
 import {
   Discount,
+  DiscountedPricePerCount,
   Payment,
   ShippingInfo,
   ShippingLocation,
@@ -37,12 +38,16 @@ import {
   ShippingRate,
   Tax,
   TaxPortion,
+  TaxRate,
 } from '@Types/cart';
 import {
   ShippingMethod as CommercetoolsShippingMethod,
   ZoneRate as CommercetoolsZoneRate,
 } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/shipping-method';
 import { Payment as CommercetoolsPayment } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/payment';
+import { ProductRouter } from '../utils/ProductRouter';
+import { ProductMapper } from './ProductMapper';
+import { Locale } from '@Commerce-commercetools/interfaces/Locale';
 
 export class CartMapper {
   static commercetoolsCartToCart(commercetoolsCart: CommercetoolsCart, locale: Locale): Cart {
@@ -56,11 +61,15 @@ export class CartMapper {
       shippingAddress: this.commercetoolsAddressToAddress(commercetoolsCart.shippingAddress),
       billingAddress: this.commercetoolsAddressToAddress(commercetoolsCart.billingAddress),
       shippingInfo: this.commercetoolsShippingInfoToShippingInfo(commercetoolsCart.shippingInfo, locale),
-      payments: this.commercetoolsPaymentInfoToPayments(commercetoolsCart.paymentInfo, locale),
-      discountCodes: this.commercetoolsDiscountCodesInfoToDiscountCodes(commercetoolsCart.discountCodes, locale),
-      taxed: this.commercetoolsTaxedPriceToTaxed(commercetoolsCart.taxedPrice, locale),
+      payments: this.commercetoolsPaymentInfoToPayments(commercetoolsCart.paymentInfo),
+      discountCodes: this.commercetoolsDiscountCodesInfoToDiscount(commercetoolsCart.discountCodes, locale),
+      taxed: this.commercetoolsTaxedPriceToTaxed(commercetoolsCart.taxedPrice),
+      discountedAmount: ProductMapper.commercetoolsMoneyToMoney(
+        commercetoolsCart.discountOnTotalPrice?.discountedAmount,
+      ),
       itemShippingAddresses: commercetoolsCart.itemShippingAddresses,
       origin: this.commercetoolsCartOriginToCartOrigin(commercetoolsCart.origin),
+      cartState: this.commercetoolsCartStateToCartState(commercetoolsCart.cartState),
       businessUnitKey: commercetoolsCart.businessUnit?.key,
       storeKey: commercetoolsCart.store?.key,
     };
@@ -89,7 +98,14 @@ export class CartMapper {
           commercetoolsLineItem.discountedPricePerQuantity,
           locale,
         ),
+        discountedPricePerCount: this.commercetoolsDiscountedPricesPerQuantityToDiscountedPricePerCount(
+          commercetoolsLineItem.discountedPricePerQuantity,
+          locale,
+        ),
         totalPrice: ProductMapper.commercetoolsMoneyToMoney(commercetoolsLineItem.totalPrice),
+        taxed: this.commercetoolsTaxedItemPriceToTaxed(commercetoolsLineItem.taxedPrice),
+        taxIncludedInPrice: commercetoolsLineItem.taxRate?.includedInPrice,
+        taxRate: this.commercetoolsTaxRateToTaxRate(commercetoolsLineItem.taxRate),
         variant: ProductMapper.commercetoolsProductVariantToVariant(commercetoolsLineItem.variant, locale),
         isGift:
           commercetoolsLineItem?.lineItemMode !== undefined && commercetoolsLineItem.lineItemMode === 'GiftLineItem',
@@ -192,6 +208,10 @@ export class CartMapper {
       shippingAddress: this.commercetoolsAddressToAddress(commercetoolsOrder.shippingAddress),
       billingAddress: this.commercetoolsAddressToAddress(commercetoolsOrder.billingAddress),
       sum: ProductMapper.commercetoolsMoneyToMoney(commercetoolsOrder.totalPrice),
+      taxed: this.commercetoolsTaxedPriceToTaxed(commercetoolsOrder.taxedPrice),
+      discountedAmount: ProductMapper.commercetoolsMoneyToMoney(
+        commercetoolsOrder.discountOnTotalPrice?.discountedAmount,
+      ),
       businessUnitKey: commercetoolsOrder.businessUnit?.key,
       storeKey: commercetoolsOrder.store?.key,
       createdAt: new Date(commercetoolsOrder.createdAt),
@@ -223,6 +243,8 @@ export class CartMapper {
     return {
       ...shippingMethod,
       price: ProductMapper.commercetoolsMoneyToMoney(commercetoolsShippingInfo.price),
+      taxed: this.commercetoolsTaxedItemPriceToTaxed(commercetoolsShippingInfo.taxedPrice),
+      taxIncludedInPrice: commercetoolsShippingInfo.taxRate?.includedInPrice,
     };
   }
 
@@ -238,13 +260,12 @@ export class CartMapper {
         commercetoolsShippingMethod?.localizedDescription?.[locale.language] ||
         commercetoolsShippingMethod?.description ||
         undefined,
-      rates: this.commercetoolsZoneRatesToRates(commercetoolsShippingMethod?.zoneRates, locale),
+      rates: this.commercetoolsZoneRatesToRates(commercetoolsShippingMethod?.zoneRates),
     } as ShippingMethod;
   }
 
   static commercetoolsZoneRatesToRates(
     commercetoolsZoneRates: CommercetoolsZoneRate[] | undefined,
-    locale: Locale,
   ): ShippingRate[] | undefined {
     if (commercetoolsZoneRates === undefined) {
       return undefined;
@@ -284,22 +305,19 @@ export class CartMapper {
     return shippingRates;
   }
 
-  static commercetoolsPaymentInfoToPayments(
-    commercetoolsPaymentInfo: CommercetoolsPaymentInfo | undefined,
-    locale: Locale,
-  ): Payment[] {
+  static commercetoolsPaymentInfoToPayments(commercetoolsPaymentInfo: CommercetoolsPaymentInfo | undefined): Payment[] {
     const payments: Payment[] = [];
 
     commercetoolsPaymentInfo?.payments?.forEach((commercetoolsPayment) => {
       if (commercetoolsPayment.obj) {
-        payments.push(this.commercetoolsPaymentToPayment(commercetoolsPayment.obj, locale));
+        payments.push(this.commercetoolsPaymentToPayment(commercetoolsPayment.obj));
       }
     });
 
     return payments;
   }
 
-  static commercetoolsPaymentToPayment(commercetoolsPayment: CommercetoolsPayment, locale: Locale): Payment {
+  static commercetoolsPaymentToPayment(commercetoolsPayment: CommercetoolsPayment): Payment {
     return {
       id: commercetoolsPayment.id ?? null,
       paymentId: commercetoolsPayment.interfaceId ?? null,
@@ -312,20 +330,20 @@ export class CartMapper {
     };
   }
 
-  static commercetoolsDiscountCodesInfoToDiscountCodes(
+  static commercetoolsDiscountCodesInfoToDiscount(
     commercetoolsDiscountCodesInfo: CommercetoolsDiscountCodeInfo[] | undefined,
     locale: Locale,
   ): Discount[] {
     const discounts: Discount[] = [];
 
     commercetoolsDiscountCodesInfo?.forEach((commercetoolsDiscountCodeInfo) => {
-      discounts.push(this.commercetoolsDiscountCodeInfoToDiscountCode(commercetoolsDiscountCodeInfo, locale));
+      discounts.push(this.commercetoolsDiscountCodeInfoToDiscount(commercetoolsDiscountCodeInfo, locale));
     });
 
     return discounts;
   }
 
-  static commercetoolsDiscountCodeInfoToDiscountCode(
+  static commercetoolsDiscountCodeInfoToDiscount(
     commercetoolsDiscountCodeInfo: CommercetoolsDiscountCodeInfo,
     locale: Locale,
   ): Discount {
@@ -387,6 +405,21 @@ export class CartMapper {
     return discounts;
   }
 
+  static commercetoolsDiscountedPricesPerQuantityToDiscountedPricePerCount(
+    commercetoolsDiscountedLineItemPricesForQuantity: CommercetoolsDiscountedLineItemPriceForQuantity[] | undefined,
+    locale: Locale,
+  ): DiscountedPricePerCount[] {
+    return commercetoolsDiscountedLineItemPricesForQuantity?.map((commercetoolsDiscountedLineItemPriceForQuantity) => {
+      return {
+        count: commercetoolsDiscountedLineItemPriceForQuantity.quantity,
+        discounts: commercetoolsDiscountedLineItemPriceForQuantity.discountedPrice.includedDiscounts.map(
+          (commercetoolsDiscountedLineItemPortion) =>
+            this.commercetoolsDiscountedLineItemPortionToDiscount(commercetoolsDiscountedLineItemPortion, locale),
+        ),
+      };
+    });
+  }
+
   static commercetoolsDiscountedLineItemPortionToDiscount(
     commercetoolsDiscountedLineItemPortion: CommercetoolsDiscountedLineItemPortion,
     locale: Locale,
@@ -411,16 +444,15 @@ export class CartMapper {
     return discount;
   }
 
-  static commercetoolsTaxedPriceToTaxed(
-    commercetoolsTaxedPrice: CommercetoolsTaxedPrice | undefined,
-    locale: Locale,
-  ): Tax | undefined {
+  static commercetoolsTaxedPriceToTaxed(commercetoolsTaxedPrice: CommercetoolsTaxedPrice | undefined): Tax | undefined {
     if (commercetoolsTaxedPrice === undefined) {
       return undefined;
     }
 
     return {
-      amount: ProductMapper.commercetoolsMoneyToMoney(commercetoolsTaxedPrice.totalNet),
+      netAmount: ProductMapper.commercetoolsMoneyToMoney(commercetoolsTaxedPrice.totalNet),
+      grossAmount: ProductMapper.commercetoolsMoneyToMoney(commercetoolsTaxedPrice.totalGross),
+      taxAmount: ProductMapper.commercetoolsMoneyToMoney(commercetoolsTaxedPrice.totalTax),
       taxPortions: commercetoolsTaxedPrice.taxPortions.map((commercetoolsTaxPortion) => {
         const taxPortion: TaxPortion = {
           amount: ProductMapper.commercetoolsMoneyToMoney(commercetoolsTaxPortion.amount),
@@ -430,6 +462,36 @@ export class CartMapper {
 
         return taxPortion;
       }),
+    };
+  }
+
+  static commercetoolsTaxedItemPriceToTaxed(
+    commercetoolsTaxedPrice: CommercetoolsTaxedItemPrice | undefined,
+  ): Tax | undefined {
+    if (commercetoolsTaxedPrice === undefined) {
+      return undefined;
+    }
+
+    return {
+      netAmount: ProductMapper.commercetoolsMoneyToMoney(commercetoolsTaxedPrice.totalNet),
+      grossAmount: ProductMapper.commercetoolsMoneyToMoney(commercetoolsTaxedPrice.totalGross),
+      taxAmount: ProductMapper.commercetoolsMoneyToMoney(commercetoolsTaxedPrice.totalTax),
+    };
+  }
+
+  static commercetoolsTaxRateToTaxRate(commercetoolsTaxRate: CommercetoolsTaxRate | undefined): TaxRate | undefined {
+    if (commercetoolsTaxRate === undefined) {
+      return undefined;
+    }
+
+    return {
+      taxRateId: commercetoolsTaxRate?.id,
+      taxRateKey: commercetoolsTaxRate?.key,
+      name: commercetoolsTaxRate?.name,
+      amount: commercetoolsTaxRate?.amount,
+      includedInPrice: commercetoolsTaxRate?.includedInPrice,
+      country: commercetoolsTaxRate?.country,
+      state: commercetoolsTaxRate?.state,
     };
   }
 
@@ -450,6 +512,28 @@ export class CartMapper {
     }
 
     return cartOrigin;
+  }
+
+  static commercetoolsCartStateToCartState(commercetoolsCartState: CommercetoolsCartState): CartState {
+    let cartState: CartState;
+
+    switch (true) {
+      case commercetoolsCartState === 'Frozen':
+        cartState = CartState.Frozen;
+        break;
+      case commercetoolsCartState === 'Merged':
+        cartState = CartState.Merged;
+        break;
+      case commercetoolsCartState === 'Ordered':
+        cartState = CartState.Ordered;
+        break;
+      case commercetoolsCartState === 'Active':
+      default:
+        cartState = CartState.Active;
+        break;
+    }
+
+    return cartState;
   }
 
   static commercetoolsOrderStateToOrderState(commercetoolsOrderState: CommercetoolsOrderState): OrderState {

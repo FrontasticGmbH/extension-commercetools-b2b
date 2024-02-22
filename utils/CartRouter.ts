@@ -1,12 +1,11 @@
 import { Context, Request } from '@frontastic/extension-types';
-import { getCurrency, getLocale, getPath } from './Request';
-import { CartApi } from '../apis/CartApi';
-import { fetchAccountFromSessionEnsureLoggedIn } from './fetchAccountFromSession';
 import { Order } from '@Types/cart/Order';
-import { OrderQuery } from '@Types/query/OrderQuery';
 import { PaginatedResult } from '@Types/result';
-import { Account } from '@Types/account';
+import { fetchAccountFromSessionEnsureLoggedIn } from './fetchAccountFromSession';
+import { getPath } from './Request';
 import { OrderQueryFactory } from '@Commerce-commercetools/utils/OrderQueryFactory';
+import { ResourceNotFoundError } from '@Commerce-commercetools/errors/ResourceNotFoundError';
+import getCartApi from '@Commerce-commercetools/utils/getCartApi';
 
 const orderRegex = /\/order\/([^\/]+)/;
 const ordersRegex = /\/orders/;
@@ -84,27 +83,45 @@ export default class CartRouter {
       return 'frontastic/thank-you-page';
     }
 
-    throw new Error('Page type not found');
+    throw new ResourceNotFoundError({ message: 'Page type not found' });
   }
 
   private static async getOrder(request: Request, frontasticContext: Context, orderId: string) {
     const account = fetchAccountFromSessionEnsureLoggedIn(request);
-
-    const cartApi = new CartApi(frontasticContext, getLocale(request), getCurrency(request));
-
+    const cartApi = getCartApi(request, frontasticContext);
     const orderQuery = OrderQueryFactory.queryFromParams(request, account);
+    let result;
 
-    orderQuery.orderIds = [orderId];
+    try {
+      orderQuery.orderIds = [orderId];
+      result = await cartApi.queryOrders(orderQuery);
 
-    const result = await cartApi.queryOrders(orderQuery);
+      if (result?.items.length > 0) {
+        return result?.items[0];
+      }
+    } catch (error) {
+      // We ignore the error deliberately, so we can try the next query
+    }
 
-    return result.items[0];
+    try {
+      delete orderQuery.orderIds;
+      orderQuery.orderNumbers = [orderId];
+      result = await cartApi.queryOrders(orderQuery);
+
+      if (result?.items.length > 0) {
+        return result?.items[0];
+      }
+    } catch (error) {
+      // We are not throwing the error, because we want to return null if the order is not found
+    }
+
+    return null;
   }
 
   private static async getOrders(request: Request, frontasticContext: Context) {
     const account = fetchAccountFromSessionEnsureLoggedIn(request);
 
-    const cartApi = new CartApi(frontasticContext, getLocale(request), getCurrency(request));
+    const cartApi = getCartApi(request, frontasticContext);
 
     const orderQuery = OrderQueryFactory.queryFromParams(request, account);
 

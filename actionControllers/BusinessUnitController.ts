@@ -1,19 +1,19 @@
-import { AccountApi } from '@Commerce-commercetools/apis/AccountApi';
-
 import { ActionContext, Request, Response } from '@frontastic/extension-types';
 import { Store } from '@Types/store/Store';
-import { getCurrency, getLocale } from '../utils/Request';
-import { BusinessUnitApi } from '../apis/BusinessUnitApi';
-import { CartApi } from '../apis/CartApi';
-import { fetchAccountFromSession } from '@Commerce-commercetools/utils/fetchAccountFromSession';
-import { AccountAuthenticationError } from '@Commerce-commercetools/errors/AccountAuthenticationError';
 import { Account } from '@Types/account/Account';
+import { Address } from '@Types/account/Address';
+import { BusinessUnit } from '@Types/business-unit/BusinessUnit';
+import { BusinessUnitApi } from '../apis/BusinessUnitApi';
+import { getBusinessUnitKey, getCurrency, getLocale, getStoreKey } from '../utils/Request';
+import { AccountApi } from '@Commerce-commercetools/apis/AccountApi';
+import { fetchAccountFromSession } from '@Commerce-commercetools/utils/fetchAccountFromSession';
 import handleError from '@Commerce-commercetools/utils/handleError';
 import { EmailApiFactory } from '@Commerce-commercetools/utils/EmailApiFactory';
 import { AccountMapper } from '@Commerce-commercetools/mappers/AccountMapper';
 import parseRequestBody from '@Commerce-commercetools/utils/parseRequestBody';
-import { Address } from '@Types/account/Address';
-import { BusinessUnit } from '@Types/business-unit/BusinessUnit';
+import getCartApi from '@Commerce-commercetools/utils/getCartApi';
+import { ValidationError } from '@Commerce-commercetools/errors/ValidationError';
+import { assertIsAuthenticated } from '@Commerce-commercetools/utils/assertIsAuthenticated';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
 
@@ -26,22 +26,20 @@ export interface BusinessUnitRequestBody {
 }
 
 export const getBusinessUnits: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const account = fetchAccountFromSession(request);
-
-  if (account === undefined) {
-    throw new AccountAuthenticationError({ message: 'Not logged in.' });
-  }
-
-  const businessUnitApi = new BusinessUnitApi(
-    actionContext.frontasticContext,
-    getLocale(request),
-    getCurrency(request),
-  );
-
-  const expandStores = request.query?.['expandStores'] === 'true';
-
   try {
-    const businessUnits = await businessUnitApi.getBusinessUnitsForUser(account, expandStores);
+    assertIsAuthenticated(request);
+
+    const account = fetchAccountFromSession(request);
+
+    const businessUnitApi = new BusinessUnitApi(
+      actionContext.frontasticContext,
+      getLocale(request),
+      getCurrency(request),
+    );
+
+    const expandStores = request.query?.['expandStores'] === 'true';
+
+    const businessUnits = await businessUnitApi.getBusinessUnitsForUser(account.accountId, expandStores);
 
     return {
       statusCode: 200,
@@ -56,21 +54,14 @@ export const getBusinessUnits: ActionHook = async (request: Request, actionConte
 };
 
 export const getBusinessUnitOrders: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const account = fetchAccountFromSession(request);
-
-  if (account === undefined) {
-    throw new AccountAuthenticationError({ message: 'Not logged in.' });
-  }
-
-  const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-
-  const key = request?.query?.['key'];
-  if (!key) {
-    const error = new Error('No key');
-    return handleError(error, request);
-  }
   try {
-    const orders = await cartApi.getBusinessUnitOrders(key, account);
+    const cartApi = getCartApi(request, actionContext.frontasticContext);
+    const businessUnitKey = request?.query?.['businessUnitKey'];
+
+    if (!businessUnitKey) {
+      throw new ValidationError({ message: 'No business unit key' });
+    }
+    const orders = await cartApi.getBusinessUnitOrders();
 
     const response: Response = {
       statusCode: 200,
@@ -85,19 +76,17 @@ export const getBusinessUnitOrders: ActionHook = async (request: Request, action
 };
 
 export const create: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const businessUnitApi = new BusinessUnitApi(
-    actionContext.frontasticContext,
-    getLocale(request),
-    getCurrency(request),
-  );
-  const businessUnitRequestBody: BusinessUnitRequestBody = JSON.parse(request.body);
-
-  const account = fetchAccountFromSession(request);
-  if (account === undefined) {
-    throw new AccountAuthenticationError({ message: 'Not logged in.' });
-  }
-
   try {
+    assertIsAuthenticated(request);
+
+    const businessUnitApi = new BusinessUnitApi(
+      actionContext.frontasticContext,
+      getLocale(request),
+      getCurrency(request),
+    );
+
+    const businessUnitRequestBody: BusinessUnitRequestBody = JSON.parse(request.body);
+
     const businessUnit = await businessUnitApi.createForAccountAndStore(
       businessUnitRequestBody.account,
       businessUnitRequestBody.store,
@@ -116,37 +105,46 @@ export const create: ActionHook = async (request: Request, actionContext: Action
 };
 
 export const addAssociate: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const locale = getLocale(request);
-  const emailApi = EmailApiFactory.getDefaultApi(actionContext.frontasticContext, locale);
-
-  const businessUnitApi = new BusinessUnitApi(
-    actionContext.frontasticContext,
-    getLocale(request),
-    getCurrency(request),
-  );
-  const accountApi = new AccountApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-  const addUserBody: { email: string; roleKeys: string[] } = JSON.parse(request.body);
-
   try {
-    let account = await accountApi.getAccountByEmail(addUserBody.email);
-    if (!account) {
+    assertIsAuthenticated(request);
+
+    const account = fetchAccountFromSession(request);
+
+    const locale = getLocale(request);
+    const emailApi = EmailApiFactory.getDefaultApi(actionContext.frontasticContext, locale);
+
+    const businessUnitApi = new BusinessUnitApi(
+      actionContext.frontasticContext,
+      getLocale(request),
+      getCurrency(request),
+    );
+
+    const accountApi = new AccountApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
+    const addUserBody: { email: string; roleKeys: string[] } = JSON.parse(request.body);
+
+    let accountAssociate = await accountApi.getAccountByEmail(addUserBody.email);
+
+    if (!accountAssociate) {
       const accountData = {
         email: addUserBody.email,
         password: Math.random().toString(36).slice(-8),
       };
-      account = await accountApi.create(accountData);
+      accountAssociate = await accountApi.create(accountData);
 
-      const passwordResetToken = await accountApi.generatePasswordResetToken(account.email);
-      emailApi.sendAssociateVerificationAndPasswordResetEmail(account, passwordResetToken);
+      const passwordResetToken = await accountApi.generatePasswordResetToken(accountAssociate.email);
+      emailApi.sendAssociateVerificationAndPasswordResetEmail(accountAssociate, passwordResetToken);
     }
 
+    const businessUnitKey = request.query['businessUnitKey'];
+
     const businessUnit = await businessUnitApi.addAssociate(
-      request.query['key'],
+      businessUnitKey,
       account.accountId,
+      accountAssociate.accountId,
       addUserBody.roleKeys,
     );
 
-    emailApi.sendWelcomeAssociateEmail(account, businessUnit);
+    emailApi.sendWelcomeAssociateEmail(accountAssociate, businessUnit);
 
     const response: Response = {
       statusCode: 200,
@@ -161,15 +159,20 @@ export const addAssociate: ActionHook = async (request: Request, actionContext: 
 };
 
 export const removeAssociate: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const businessUnitApi = new BusinessUnitApi(
-    actionContext.frontasticContext,
-    getLocale(request),
-    getCurrency(request),
-  );
-
-  const { accountId } = JSON.parse(request.body);
   try {
-    const businessUnit = await businessUnitApi.removeAssociate(request.query['key'], accountId);
+    assertIsAuthenticated(request);
+
+    const account = fetchAccountFromSession(request);
+
+    const businessUnitApi = new BusinessUnitApi(
+      actionContext.frontasticContext,
+      getLocale(request),
+      getCurrency(request),
+    );
+
+    const { accountId: associateAccountId } = JSON.parse(request.body);
+    const businessUnitKey = request.query['businessUnitKey'];
+    const businessUnit = await businessUnitApi.removeAssociate(businessUnitKey, account.accountId, associateAccountId);
 
     return {
       statusCode: 200,
@@ -182,15 +185,26 @@ export const removeAssociate: ActionHook = async (request: Request, actionContex
 };
 
 export const updateAssociate: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const businessUnitApi = new BusinessUnitApi(
-    actionContext.frontasticContext,
-    getLocale(request),
-    getCurrency(request),
-  );
-
-  const { accountId, roleKeys }: { accountId: string; roleKeys: string[] } = JSON.parse(request.body);
   try {
-    const businessUnit = await businessUnitApi.updateAssociate(request.query['key'], accountId, roleKeys);
+    assertIsAuthenticated(request);
+
+    const account = fetchAccountFromSession(request);
+
+    const businessUnitApi = new BusinessUnitApi(
+      actionContext.frontasticContext,
+      getLocale(request),
+      getCurrency(request),
+    );
+
+    const { accountId: associateId, roleKeys }: { accountId: string; roleKeys: string[] } = JSON.parse(request.body);
+    const businessUnitKey = request.query['businessUnitKey'];
+
+    const businessUnit = await businessUnitApi.updateAssociate(
+      businessUnitKey,
+      account.accountId,
+      associateId,
+      roleKeys,
+    );
 
     return {
       statusCode: 200,
@@ -203,22 +217,27 @@ export const updateAssociate: ActionHook = async (request: Request, actionContex
 };
 
 export const updateBusinessUnit: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const businessUnitApi = new BusinessUnitApi(
-    actionContext.frontasticContext,
-    getLocale(request),
-    getCurrency(request),
-  );
-
-  const requestData = parseRequestBody<BusinessUnitRequestBody>(request.body);
-  const businessUnitRequestData: BusinessUnit = {
-    ...requestData,
-    contactEmail: requestData.contactEmail,
-    name: requestData.name,
-    key: request.query['key'],
-  };
-
   try {
-    const businessUnit = await businessUnitApi.updateBusinessUnit(businessUnitRequestData);
+    assertIsAuthenticated(request);
+
+    const account = fetchAccountFromSession(request);
+
+    const businessUnitApi = new BusinessUnitApi(
+      actionContext.frontasticContext,
+      getLocale(request),
+      getCurrency(request),
+    );
+
+    const requestData = parseRequestBody<BusinessUnitRequestBody>(request.body);
+
+    const businessUnitRequestData: BusinessUnit = {
+      ...requestData,
+      contactEmail: requestData.contactEmail,
+      name: requestData.name,
+      key: request.query['businessUnitKey'],
+    };
+
+    const businessUnit = await businessUnitApi.updateBusinessUnit(businessUnitRequestData, account.accountId);
 
     return {
       statusCode: 200,
@@ -231,18 +250,23 @@ export const updateBusinessUnit: ActionHook = async (request: Request, actionCon
 };
 
 export const addBusinessUnitAddress: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const businessUnitApi = new BusinessUnitApi(
-    actionContext.frontasticContext,
-    getLocale(request),
-    getCurrency(request),
-  );
-
-  const requestData = parseRequestBody<{ address: Address }>(request.body);
-
-  const addressData = AccountMapper.addressToCommercetoolsAddress(requestData.address);
-
   try {
-    const businessUnit = await businessUnitApi.addBusinessUnitAddress(request.query['key'], addressData);
+    assertIsAuthenticated(request);
+
+    const account = fetchAccountFromSession(request);
+
+    const businessUnitApi = new BusinessUnitApi(
+      actionContext.frontasticContext,
+      getLocale(request),
+      getCurrency(request),
+    );
+
+    const requestData = parseRequestBody<{ address: Address }>(request.body);
+
+    const addressData = AccountMapper.addressToCommercetoolsAddress(requestData.address);
+    const businessUnitKey = request.query['businessUnitKey'];
+
+    const businessUnit = await businessUnitApi.addBusinessUnitAddress(businessUnitKey, account.accountId, addressData);
 
     return {
       statusCode: 200,
@@ -255,20 +279,27 @@ export const addBusinessUnitAddress: ActionHook = async (request: Request, actio
 };
 
 export const updateBusinessUnitAddress: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const businessUnitApi = new BusinessUnitApi(
-    actionContext.frontasticContext,
-    getLocale(request),
-    getCurrency(request),
-  );
-
-  const requestData = parseRequestBody<{ address: Address }>(request.body);
-
-  const addressData = AccountMapper.addressToCommercetoolsAddress(requestData.address);
-
-  const businessUnitKey = request.query['key'];
-
   try {
-    const businessUnit = await businessUnitApi.updateBusinessUnitAddress(businessUnitKey, addressData);
+    assertIsAuthenticated(request);
+
+    const account = fetchAccountFromSession(request);
+    const businessUnitApi = new BusinessUnitApi(
+      actionContext.frontasticContext,
+      getLocale(request),
+      getCurrency(request),
+    );
+
+    const requestData = parseRequestBody<{ address: Address }>(request.body);
+
+    const addressData = AccountMapper.addressToCommercetoolsAddress(requestData.address);
+
+    const businessUnitKey = request.query['businessUnitKey'];
+
+    const businessUnit = await businessUnitApi.updateBusinessUnitAddress(
+      businessUnitKey,
+      account.accountId,
+      addressData,
+    );
 
     return {
       statusCode: 200,
@@ -281,16 +312,22 @@ export const updateBusinessUnitAddress: ActionHook = async (request: Request, ac
 };
 
 export const removeBusinessUnitAddress: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const businessUnitApi = new BusinessUnitApi(
-    actionContext.frontasticContext,
-    getLocale(request),
-    getCurrency(request),
-  );
-  const requestData = parseRequestBody<{ addressId: string }>(request.body);
-  const addressId = requestData.addressId;
-
   try {
-    const businessUnit = await businessUnitApi.removeBusinessUnitAddress(request.query['key'], addressId);
+    assertIsAuthenticated(request);
+
+    const account = fetchAccountFromSession(request);
+    const businessUnitApi = new BusinessUnitApi(
+      actionContext.frontasticContext,
+      getLocale(request),
+      getCurrency(request),
+    );
+
+    const requestData = parseRequestBody<{ addressId: string }>(request.body);
+    const addressId = requestData.addressId;
+
+    const businessUnitKey = request.query['businessUnitKey'];
+
+    const businessUnit = await businessUnitApi.removeBusinessUnitAddress(businessUnitKey, account.accountId, addressId);
 
     return {
       statusCode: 200,
@@ -302,43 +339,21 @@ export const removeBusinessUnitAddress: ActionHook = async (request: Request, ac
   }
 };
 
-export const getByKey: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const businessUnitApi = new BusinessUnitApi(
-    actionContext.frontasticContext,
-    getLocale(request),
-    getCurrency(request),
-  );
-  const key = request.query?.['key'];
-
-  const account = fetchAccountFromSession(request);
-
-  if (account === undefined) {
-    throw new AccountAuthenticationError({ message: 'Not logged in.' });
-  }
-
+export const getBusinessUnit: ActionHook = async (request: Request, actionContext: ActionContext) => {
   try {
-    const businessUnit = await businessUnitApi.get(key, account);
+    assertIsAuthenticated(request);
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify(businessUnit),
-      sessionData: request.sessionData,
-    };
-  } catch (error) {
-    return handleError(error, request);
-  }
-};
+    const account = fetchAccountFromSession(request);
 
-export const remove: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const businessUnitApi = new BusinessUnitApi(
-    actionContext.frontasticContext,
-    getLocale(request),
-    getCurrency(request),
-  );
-  const key = request.query?.['key'];
+    const businessUnitApi = new BusinessUnitApi(
+      actionContext.frontasticContext,
+      getLocale(request),
+      getCurrency(request),
+    );
 
-  try {
-    const businessUnit = await businessUnitApi.delete(key);
+    const businessUnitKey = request.query?.['businessUnitKey'];
+
+    const businessUnit = await businessUnitApi.getByKeyForAccount(businessUnitKey, account.accountId, true);
 
     return {
       statusCode: 200,
@@ -351,19 +366,84 @@ export const remove: ActionHook = async (request: Request, actionContext: Action
 };
 
 export const getAssociateRoles: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const businessUnitApi = new BusinessUnitApi(
-    actionContext.frontasticContext,
-    getLocale(request),
-    getCurrency(request),
-  );
-
   try {
+    assertIsAuthenticated(request);
+
+    const businessUnitApi = new BusinessUnitApi(
+      actionContext.frontasticContext,
+      getLocale(request),
+      getCurrency(request),
+    );
+
     const associateRoles = await businessUnitApi.getAssociateRoles();
 
     const response: Response = {
       statusCode: 200,
       body: JSON.stringify(associateRoles),
       sessionData: request.sessionData,
+    };
+
+    return response;
+  } catch (error) {
+    return handleError(error, request);
+  }
+};
+
+export const setBusinessUnitAndStoreKeys: ActionHook = async (request: Request, actionContext: ActionContext) => {
+  try {
+    assertIsAuthenticated(request);
+
+    const account = fetchAccountFromSession(request);
+    const businessUnitKey = getBusinessUnitKey(request);
+    const storeKey = getStoreKey(request);
+
+    if (!businessUnitKey || !storeKey) {
+      throw new ValidationError({ message: 'Business unit or store key is missing.' });
+    }
+
+    const businessUnitApi = new BusinessUnitApi(
+      actionContext.frontasticContext,
+      getLocale(request),
+      getCurrency(request),
+    );
+
+    await businessUnitApi.assertUserIsAssociate(account.accountId, businessUnitKey, storeKey);
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify({}),
+      sessionData: {
+        ...request.sessionData,
+        businessUnitKey,
+        storeKey,
+      },
+    };
+  } catch (error) {
+    return handleError(error, request);
+  }
+};
+
+export const getAssociate: ActionHook = async (request: Request, actionContext: ActionContext) => {
+  try {
+    assertIsAuthenticated(request);
+
+    const account = fetchAccountFromSession(request);
+    const businessUnitKey = getBusinessUnitKey(request);
+
+    const businessUnitApi = new BusinessUnitApi(
+      actionContext.frontasticContext,
+      getLocale(request),
+      getCurrency(request),
+    );
+
+    const associate = await businessUnitApi.getAssociate(businessUnitKey, account.accountId);
+
+    const response: Response = {
+      statusCode: 200,
+      body: JSON.stringify(associate),
+      sessionData: {
+        ...request.sessionData,
+      },
     };
 
     return response;

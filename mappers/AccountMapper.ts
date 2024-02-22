@@ -1,17 +1,16 @@
 import { Account } from '@Types/account/Account';
 import { Customer as commercetoolsCustomer } from '@commercetools/platform-sdk';
-import { Locale } from '@Commerce-commercetools/interfaces/Locale';
-import { AccountRegisterBody } from '@Commerce-commercetools/actionControllers/AccountController';
-import { parseBirthday } from '@Commerce-commercetools/utils/parseBirthday';
 import { Request } from '@frontastic/extension-types';
 import { Address } from '@Types/account';
 import {
   Address as CommercetoolsAddress,
   BaseAddress,
 } from '@commercetools/platform-sdk/dist/declarations/src/generated/models/common';
+import { AccountRegisterBody } from '@Commerce-commercetools/actionControllers/AccountController';
+import { parseBirthday } from '@Commerce-commercetools/utils/parseBirthday';
 
 export class AccountMapper {
-  static commercetoolsCustomerToAccount(commercetoolsCustomer: commercetoolsCustomer, locale: Locale): Account {
+  static commercetoolsCustomerToAccount(commercetoolsCustomer: commercetoolsCustomer): Account {
     return {
       accountId: commercetoolsCustomer.id,
       email: commercetoolsCustomer.email,
@@ -23,11 +22,11 @@ export class AccountMapper {
       confirmed: commercetoolsCustomer.isEmailVerified,
       vatNumber: commercetoolsCustomer?.vatId,
       version: commercetoolsCustomer.version,
-      addresses: this.commercetoolsCustomerToAddresses(commercetoolsCustomer, locale),
+      addresses: this.commercetoolsCustomerToAddresses(commercetoolsCustomer),
     } as Account;
   }
 
-  static commercetoolsCustomerToAddresses(commercetoolsCustomer: commercetoolsCustomer, locale: Locale): Address[] {
+  static commercetoolsCustomerToAddresses(commercetoolsCustomer: commercetoolsCustomer): Address[] {
     const addresses: Address[] = [];
 
     commercetoolsCustomer.addresses.forEach((commercetoolsAddress) => {

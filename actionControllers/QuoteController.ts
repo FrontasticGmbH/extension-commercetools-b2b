@@ -1,16 +1,19 @@
 import { ActionContext, Request, Response } from '@frontastic/extension-types';
-import { getCurrency, getLocale } from '../utils/Request';
-import { CartApi } from '../apis/CartApi';
-import { QuoteApi } from '../apis/QuoteApi';
-import { CartFetcher } from '@Commerce-commercetools/utils/CartFetcher';
 import { QuoteRequest } from '@Types/quote/QuoteRequest';
-import { fetchAccountFromSession } from '@Commerce-commercetools/utils/fetchAccountFromSession';
-import { AccountAuthenticationError } from '@Commerce-commercetools/errors/AccountAuthenticationError';
 import { QuoteQuery } from '@Types/query/QuoteQuery';
 import { SortAttributes, SortOrder } from '@Types/query/ProductQuery';
+import { CartState } from '@Types/cart/Cart';
+import { CartFetcher } from '@Commerce-commercetools/utils/CartFetcher';
 import queryParamsToIds from '@Commerce-commercetools/utils/queryParamsToIds';
 import queryParamsToStates from '@Commerce-commercetools/utils/queryParamsToState';
 import handleError from '@Commerce-commercetools/utils/handleError';
+import getCartApi from '@Commerce-commercetools/utils/getCartApi';
+import getQuoteApi from '@Commerce-commercetools/utils/getQuoteApi';
+import parseRequestBody from '@Commerce-commercetools/utils/parseRequestBody';
+import { ValidationError } from '@Commerce-commercetools/errors/ValidationError';
+import parseQueryParams from '@Commerce-commercetools/utils/parseRequestParams';
+import { fetchAccountFromSession } from '@Commerce-commercetools/utils/fetchAccountFromSession';
+import { getBusinessUnitKey, getStoreKey } from '@Commerce-commercetools/utils/Request';
 
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
 
@@ -34,25 +37,20 @@ function queryParamsToSortAttributes(queryParams: any) {
 }
 
 export const createQuoteRequest: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const quoteApi = new QuoteApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-  const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-
-  const quoteBody: QuoteRequestBody = JSON.parse(request.body);
-  let quoteRequest: QuoteRequest = {
-    buyerComment: quoteBody.comment,
-  };
-
-  const account = fetchAccountFromSession(request);
-  if (account === undefined) {
-    throw new AccountAuthenticationError({ message: 'Not logged in.' });
-  }
-
   try {
+    const quoteApi = getQuoteApi(request, actionContext.frontasticContext);
+    const cartApi = getCartApi(request, actionContext.frontasticContext);
+
+    const quoteBody = parseRequestBody<QuoteRequestBody>(request.body);
+    let quoteRequest: QuoteRequest = {
+      buyerComment: quoteBody.comment,
+    };
+
     const cart = await CartFetcher.fetchCart(request, actionContext);
 
     quoteRequest = await quoteApi.createQuoteRequest(quoteRequest, cart);
 
-    await cartApi.deleteCart(cart, account);
+    await cartApi.deleteCart(cart);
 
     const response: Response = {
       statusCode: 200,
@@ -70,23 +68,18 @@ export const createQuoteRequest: ActionHook = async (request: Request, actionCon
 };
 
 export const query: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const quoteApi = new QuoteApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-
-  const account = fetchAccountFromSession(request);
-  if (account === undefined) {
-    throw new AccountAuthenticationError({ message: 'Not logged in.' });
-  }
-  const quoteQuery: QuoteQuery = {
-    accountId: account.accountId,
-    limit: request.query?.limit ?? undefined,
-    cursor: request.query?.cursor ?? undefined,
-    quoteIds: queryParamsToIds('quoteIds', request.query),
-    quoteStates: queryParamsToStates('quoteStates', request.query),
-    sortAttributes: queryParamsToSortAttributes(request.query),
-    query: request.query?.query ?? undefined,
-  };
-
   try {
+    const quoteApi = getQuoteApi(request, actionContext.frontasticContext);
+
+    const quoteQuery: QuoteQuery = {
+      limit: request.query?.limit ?? undefined,
+      cursor: request.query?.cursor ?? undefined,
+      quoteIds: queryParamsToIds('quoteIds', request.query),
+      quoteStates: queryParamsToStates('quoteStates', request.query),
+      sortAttributes: queryParamsToSortAttributes(request.query),
+      query: request.query?.query ?? undefined,
+    };
+
     const queryResult = await quoteApi.query(quoteQuery);
 
     const response: Response = {
@@ -102,24 +95,18 @@ export const query: ActionHook = async (request: Request, actionContext: ActionC
 };
 
 export const queryQuoteRequests: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const quoteApi = new QuoteApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-
-  const account = fetchAccountFromSession(request);
-  if (account === undefined) {
-    throw new AccountAuthenticationError({ message: 'Not logged in.' });
-  }
-
-  const quoteQuery: QuoteQuery = {
-    accountId: account.accountId,
-    limit: request.query?.limit ?? undefined,
-    cursor: request.query?.cursor ?? undefined,
-    quoteIds: queryParamsToIds('quoteIds', request.query),
-    quoteStates: queryParamsToStates('quoteStates', request.query),
-    sortAttributes: queryParamsToSortAttributes(request.query),
-    query: request.query?.query ?? undefined,
-  };
-
   try {
+    const quoteApi = getQuoteApi(request, actionContext.frontasticContext);
+
+    const quoteQuery: QuoteQuery = {
+      limit: request.query?.limit ?? undefined,
+      cursor: request.query?.cursor ?? undefined,
+      quoteIds: queryParamsToIds('quoteIds', request.query),
+      quoteStates: queryParamsToStates('quoteStates', request.query),
+      sortAttributes: queryParamsToSortAttributes(request.query),
+      query: request.query?.query ?? undefined,
+    };
+
     const queryResult = await quoteApi.queryQuoteRequests(quoteQuery);
 
     const response: Response = {
@@ -135,31 +122,68 @@ export const queryQuoteRequests: ActionHook = async (request: Request, actionCon
 };
 
 export const acceptQuote: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const account = fetchAccountFromSession(request);
-  if (account === undefined) {
-    throw new AccountAuthenticationError({ message: 'Not logged in.' });
-  }
-
-  const quoteApi = new QuoteApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-  const cartApi = new CartApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-
-  const quoteId = request.query?.['id'];
-
   try {
+    const quoteApi = getQuoteApi(request, actionContext.frontasticContext);
+
+    const { id: quoteId } = parseQueryParams<{ id: string }>(request.query);
+
+    if (!quoteId) {
+      throw new ValidationError({ message: 'Quote id is missing.' });
+    }
+
     const quote = await quoteApi.acceptQuote(quoteId);
-
-    const cartId =
-      quote.quoteRequest.quotationCart.cartId ??
-      (await quoteApi.getQuote(quote.quoteId)).quoteRequest.quotationCart.cartId;
-
-    let cart = await cartApi.getById(cartId);
-
-    cart = await cartApi.setEmail(cart, quote.quoteRequest.account.email);
-    cart = await cartApi.setCustomerId(cart, quote.quoteRequest.account.accountId, account);
 
     const response: Response = {
       statusCode: 200,
       body: JSON.stringify(quote),
+      sessionData: {
+        ...request.sessionData,
+      },
+    };
+
+    return response;
+  } catch (error) {
+    return handleError(error, request);
+  }
+};
+
+export const getQuotationCart: ActionHook = async (request: Request, actionContext: ActionContext) => {
+  try {
+    const quoteApi = getQuoteApi(request, actionContext.frontasticContext);
+    const cartApi = getCartApi(request, actionContext.frontasticContext);
+    const account = fetchAccountFromSession(request);
+    const businessUnitKey = getBusinessUnitKey(request);
+    const storeKey = getStoreKey(request);
+
+    const { id: quoteId } = parseQueryParams<{ id: string }>(request.query);
+
+    if (!quoteId) {
+      throw new ValidationError({ message: 'Quote id is missing.' });
+    }
+
+    const quote = await quoteApi.getQuote(quoteId);
+
+    let cart = quote.quotationCart;
+
+    if (!cartApi.assertCartForBusinessUnitAndStore(cart, businessUnitKey, storeKey)) {
+      throw new ValidationError({ message: 'Cart does not belong to the current business unit or store.' });
+    }
+
+    if (cart.cartState === CartState.Ordered) {
+      throw new ValidationError({ message: 'Cart has already been ordered.' });
+    }
+
+    if (cart.email !== account.email) {
+      cart = await cartApi.setEmail(cart, account.email);
+    }
+
+    if (cart.accountId !== account.accountId) {
+      cart = await cartApi.setCustomerId(cart, account.accountId);
+    }
+
+    const response: Response = {
+      statusCode: 200,
+      body: JSON.stringify(cart),
       sessionData: {
         ...request.sessionData,
         cartId: cart.cartId,
@@ -173,11 +197,15 @@ export const acceptQuote: ActionHook = async (request: Request, actionContext: A
 };
 
 export const declineQuote: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const quoteApi = new QuoteApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-
-  const quoteId = request.query?.['id'];
-
   try {
+    const quoteApi = getQuoteApi(request, actionContext.frontasticContext);
+
+    const { id: quoteId } = parseQueryParams<{ id: string }>(request.query);
+
+    if (!quoteId) {
+      throw new ValidationError({ message: 'Quote id is missing.' });
+    }
+
     const quote = await quoteApi.declineQuote(quoteId);
 
     const response: Response = {
@@ -195,12 +223,12 @@ export const declineQuote: ActionHook = async (request: Request, actionContext: 
 };
 
 export const renegotiateQuote: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const quoteApi = new QuoteApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-
-  const quoteId = request.query?.['id'];
-  const buyerComment = JSON.parse(request.body).comment;
-
   try {
+    const quoteApi = getQuoteApi(request, actionContext.frontasticContext);
+
+    const { id: quoteId } = parseQueryParams<{ id: string }>(request.query);
+    const { comment: buyerComment } = parseRequestBody<{ comment: string }>(request.body);
+
     const quote = await quoteApi.renegotiateQuote(quoteId, buyerComment);
 
     const response: Response = {
@@ -218,11 +246,15 @@ export const renegotiateQuote: ActionHook = async (request: Request, actionConte
 };
 
 export const cancelQuoteRequest: ActionHook = async (request: Request, actionContext: ActionContext) => {
-  const quoteApi = new QuoteApi(actionContext.frontasticContext, getLocale(request), getCurrency(request));
-
-  const quoteRequestId = request.query?.['id'];
-
   try {
+    const quoteApi = getQuoteApi(request, actionContext.frontasticContext);
+
+    const { id: quoteRequestId } = parseQueryParams<{ id: string }>(request.query);
+
+    if (!quoteRequestId) {
+      throw new ValidationError({ message: 'QuoteRequest  id is missing.' });
+    }
+
     const quoteRequest = await quoteApi.cancelQuoteRequest(quoteRequestId);
 
     const response: Response = {

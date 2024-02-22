@@ -1,28 +1,19 @@
 import { BusinessUnit, BusinessUnitStatus, BusinessUnitType, StoreMode } from '@Types/business-unit/BusinessUnit';
-import { StoreApi } from './StoreApi';
-import {
-  BaseAddress,
-  BusinessUnitDraft,
-  BusinessUnitPagedQueryResponse,
-  BusinessUnitUpdateAction,
-} from '@commercetools/platform-sdk';
-import { BusinessUnitMapper } from '../mappers/BusinessUnitMapper';
-import { BaseApi } from '@Commerce-commercetools/apis/BaseApi';
+import { BaseAddress, BusinessUnitDraft, BusinessUnitUpdateAction } from '@commercetools/platform-sdk';
 import { Store } from '@Types/store/Store';
 import { Account } from '@Types/account/Account';
-import { ExternalError } from '@Commerce-commercetools/utils/Errors';
-import { businessUnitKeyFormatter } from '@Commerce-commercetools/utils/BussinessUnitFormatter';
 import { AssociateRole } from '@Types/business-unit/Associate';
+import { BusinessUnitMapper } from '../mappers/BusinessUnitMapper';
+import { StoreApi } from './StoreApi';
+import { ExternalError } from '@Commerce-commercetools/errors/ExternalError';
+import { businessUnitKeyFormatter } from '@Commerce-commercetools/utils/BussinessUnitFormatter';
+import { BaseApi } from '@Commerce-commercetools/apis/BaseApi';
+import { ResourceNotFoundError } from '@Commerce-commercetools/errors/ResourceNotFoundError';
 
 const MAX_LIMIT = 50;
 
 export class BusinessUnitApi extends BaseApi {
-  createForAccountAndStore: (account: Account, store: Store) => Promise<BusinessUnit> = async (
-    account: Account,
-    store: Store,
-  ) => {
-    const locale = await this.getCommercetoolsLocal();
-
+  async createForAccountAndStore(account: Account, store: Store): Promise<BusinessUnit> {
     const businessUnitKey = businessUnitKeyFormatter(account.companyName);
 
     const stores = store?.storeId ? { id: store.storeId } : { key: store.key };
@@ -40,13 +31,7 @@ export class BusinessUnitApi extends BaseApi {
           associateRoleAssignments: [
             {
               associateRole: {
-                key: this.associateRoleAdminKey,
-                typeId: 'associate-role',
-              },
-            },
-            {
-              associateRole: {
-                key: this.associateRoleBuyerKey,
+                key: this.defaultAssociateRoleKey,
                 typeId: 'associate-role',
               },
             },
@@ -59,50 +44,23 @@ export class BusinessUnitApi extends BaseApi {
       ],
     };
 
-    return this.requestBuilder()
+    return this.associateRequestBuilder(account.accountId)
       .businessUnits()
       .post({
         body: businessUnitDraft,
       })
       .execute()
       .then((response) => {
-        return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(response.body, locale, [store]);
+        return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(response.body);
       })
       .catch((error) => {
-        throw new ExternalError({ status: error.code, message: error.message, body: error.body });
+        throw new ExternalError({ statusCode: error.code, message: error.message, body: error.body });
       });
-  };
+  }
 
-  delete: (businessUnitKey: string) => Promise<BusinessUnit> = async (businessUnitKey: string) => {
-    const locale = await this.getCommercetoolsLocal();
-
-    return this.getByKey(businessUnitKey).then((businessUnit) => {
-      return this.requestBuilder()
-        .businessUnits()
-        .withKey({ key: businessUnitKey })
-        .delete({
-          queryArgs: {
-            version: businessUnit.version,
-          },
-        })
-        .execute()
-        .then((response) => {
-          return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(response.body, locale);
-        })
-        .catch((error) => {
-          throw new ExternalError({ status: error.code, message: error.message, body: error.body });
-        });
-    });
-  };
-
-  update: (businessUnitKey: string, actions: BusinessUnitUpdateAction[]) => Promise<BusinessUnit> = async (
-    businessUnitKey: string,
-    actions: BusinessUnitUpdateAction[],
-  ) => {
-    const locale = await this.getCommercetoolsLocal();
-
+  async update(businessUnitKey: string, accountId: string, actions: BusinessUnitUpdateAction[]): Promise<BusinessUnit> {
     return this.getByKey(businessUnitKey).then((businessUnit) =>
-      this.requestBuilder()
+      this.associateRequestBuilder(accountId)
         .businessUnits()
         .withKey({ key: businessUnitKey })
         .post({
@@ -113,98 +71,87 @@ export class BusinessUnitApi extends BaseApi {
         })
         .execute()
         .then((response) => {
-          return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(response.body, locale);
+          return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(response.body);
         })
         .catch((error) => {
-          throw new ExternalError({ status: error.code, message: error.message, body: error.body });
+          throw new ExternalError({ statusCode: error.code, message: error.message, body: error.body });
         }),
     );
-  };
+  }
 
-  query: (where: string | string[], expand?: string | string[]) => Promise<BusinessUnitPagedQueryResponse> = async (
-    where: string | string[],
-    expand?: string | string[],
-  ) => {
-    try {
-      return this.requestBuilder()
-        .businessUnits()
-        .get({
-          queryArgs: {
-            where,
-            expand,
-            limit: MAX_LIMIT,
-          },
-        })
-        .execute()
-        .then((res) => res.body as BusinessUnitPagedQueryResponse);
-    } catch (e) {
-      throw e;
-    }
-  };
+  async getByKey(businessUnitKey: string): Promise<BusinessUnit> {
+    return this.requestBuilder()
+      .businessUnits()
+      .withKey({ key: businessUnitKey })
+      .get()
+      .execute()
+      .then((response) => {
+        return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(response.body);
+      })
+      .catch((error) => {
+        throw new ExternalError({ statusCode: error.code, message: error.message, body: error.body });
+      });
+  }
 
-  get: (key: string, account: Account) => Promise<BusinessUnit> = async (key: string, account: Account) => {
-    const locale = await this.getCommercetoolsLocal();
+  async getByKeyForAccount(businessUnitKey: string, accountId: string, expandStores?: boolean): Promise<BusinessUnit> {
+    const expand = ['associates[*].customer', 'inheritedAssociates[*].customer'];
 
-    const storeApi = new StoreApi(this.frontasticContext, this.locale, this.currency);
-
-    try {
-      const businessUnit = await this.query(
-        [`associates(customer(id="${account.accountId}"))`, `key in ("${key}")`],
-        'associates[*].customer',
-      ).then((response) => {
-        if (response.count >= 1) {
-          return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(response.results[0], locale);
+    const businessUnit = await this.associateRequestBuilder(accountId)
+      .businessUnits()
+      .withKey({ key: businessUnitKey })
+      .get({
+        queryArgs: {
+          expand,
+          limit: MAX_LIMIT,
+        },
+      })
+      .execute()
+      .then((response) => {
+        return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(response.body);
+      })
+      .catch((error) => {
+        if (error.code === 404) {
+          throw new ResourceNotFoundError({ message: `Business unit "${businessUnitKey}" not found for this account` });
         }
 
-        throw new Error(`Business unit "${key}" not found for this account`);
+        throw new ExternalError({ statusCode: error.code, message: error.message, body: error.body });
       });
 
+    if (expandStores) {
+      const storeApi = new StoreApi(this.frontasticContext, this.locale, this.currency);
       const storeKeys = businessUnit?.stores?.map((store) => `"${store.key}"`).join(' ,');
       const allStores = await storeApi.query(`key in (${storeKeys})`);
 
       businessUnit.stores = BusinessUnitMapper.expandStores(businessUnit.stores, allStores);
-
-      return businessUnit;
-    } catch (e) {
-      throw e;
     }
-  };
 
-  getByKey: (key: string) => Promise<BusinessUnit> = async (key: string) => {
-    const locale = await this.getCommercetoolsLocal();
+    return businessUnit;
+  }
 
-    try {
-      return this.requestBuilder()
-        .businessUnits()
-        .withKey({ key })
-        .get()
-        .execute()
-        .then((response) => {
-          return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(response.body, locale);
+  async getBusinessUnitsForUser(accountId: string, expandStores?: boolean): Promise<BusinessUnit[]> {
+    const expand = ['associates[*].customer', 'inheritedAssociates[*].customer'];
+
+    const businessUnits = await this.associateRequestBuilder(accountId)
+      .businessUnits()
+      .get({
+        queryArgs: {
+          expand,
+          limit: MAX_LIMIT,
+        },
+      })
+      .execute()
+      .then((response) => {
+        return response.body.results.map((commercetoolsBusinessUnit) => {
+          return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(commercetoolsBusinessUnit);
         });
-    } catch (e) {
-      throw e;
-    }
-  };
-
-  getBusinessUnitsForUser: (account: Account, expandStores?: boolean) => Promise<BusinessUnit[]> = async (
-    account: Account,
-    expandStores?: boolean,
-  ) => {
-    const locale = await this.getCommercetoolsLocal();
-
-    const storeApi = new StoreApi(this.frontasticContext, this.locale, this.currency);
-
-    const businessUnits = await this.query(
-      `associates(customer(id="${account.accountId}"))`,
-      'associates[*].customer',
-    ).then((response) => {
-      return response.results.map((commercetoolsBusinessUnit) => {
-        return BusinessUnitMapper.commercetoolsBusinessUnitToBusinessUnit(commercetoolsBusinessUnit, locale);
+      })
+      .catch((error) => {
+        throw new ExternalError({ statusCode: error.code, message: error.message, body: error.body });
       });
-    });
 
     if (expandStores) {
+      const storeApi = new StoreApi(this.frontasticContext, this.locale, this.currency);
+
       const storeKeys = businessUnits
         .reduce((prev: Store[], curr) => {
           prev = prev.concat(curr.stores || []);
@@ -221,54 +168,45 @@ export class BusinessUnitApi extends BaseApi {
     }
 
     return businessUnits;
-  };
+  }
 
-  getAssociateRoles: () => Promise<AssociateRole[]> = async () => {
-    try {
-      return this.requestBuilder()
-        .associateRoles()
-        .get()
-        .execute()
-        .then((response) => {
-          return (
-            response.body.results
-              // Filter out roles that can't be assigned by another associates.
-              .filter((associateRole) => associateRole.buyerAssignable)
-              .map((associateRole) => BusinessUnitMapper.mapCommercetoolsAssociateRoleToAssociateRole(associateRole))
-          );
-        })
-        .catch((error) => {
-          throw error;
-        });
-    } catch {
-      throw '';
-    }
-  };
+  async getAssociateRoles(): Promise<AssociateRole[]> {
+    return this.getCommercetoolsAssociatesRoles()
+      .then((associateRoles) => {
+        return associateRoles.map((associateRole) =>
+          BusinessUnitMapper.commercetoolsAssociateRoleToAssociateRole(associateRole),
+        );
+      })
+      .catch((error) => {
+        throw new ExternalError({ statusCode: error.code, message: error.message, body: error.body });
+      });
+  }
 
-  async updateBusinessUnit(requestData: BusinessUnit) {
-    let businessUnit;
+  async updateBusinessUnit(requestData: BusinessUnit, accountId: string): Promise<BusinessUnit> {
+    let businessUnit = requestData;
+    const updateActions: Array<BusinessUnitUpdateAction> = [];
 
     if (requestData.name) {
-      businessUnit = await this.update(requestData.key, [
-        {
-          action: 'changeName',
-          name: requestData.name,
-        },
-      ]);
-    } else if (requestData.contactEmail) {
-      businessUnit = await this.update(requestData.key, [
-        {
-          action: 'setContactEmail',
-          contactEmail: requestData.contactEmail,
-        },
-      ]);
+      updateActions.push({
+        action: 'changeName',
+        name: requestData.name,
+      });
+    }
+    if (requestData.contactEmail) {
+      updateActions.push({
+        action: 'setContactEmail',
+        contactEmail: requestData.contactEmail,
+      });
+    }
+    if (updateActions.length > 0) {
+      businessUnit = await this.update(requestData.key, accountId, updateActions);
     }
 
     return businessUnit;
   }
 
-  async updateBusinessUnitAddress(businessUnitKey: string, address: BaseAddress) {
-    return await this.update(businessUnitKey, [
+  async updateBusinessUnitAddress(businessUnitKey: string, accountId: string, address: BaseAddress) {
+    return await this.update(businessUnitKey, accountId, [
       {
         action: 'changeAddress',
         addressId: address.id,
@@ -277,8 +215,8 @@ export class BusinessUnitApi extends BaseApi {
     ]);
   }
 
-  async addBusinessUnitAddress(businessUnitKey: string, address: BaseAddress) {
-    return await this.update(businessUnitKey, [
+  async addBusinessUnitAddress(businessUnitKey: string, accountId: string, address: BaseAddress) {
+    return await this.update(businessUnitKey, accountId, [
       {
         action: 'addAddress',
         address: address,
@@ -286,8 +224,8 @@ export class BusinessUnitApi extends BaseApi {
     ]);
   }
 
-  async removeBusinessUnitAddress(businessUnitKey: string, addressId: string) {
-    return await this.update(businessUnitKey, [
+  async removeBusinessUnitAddress(businessUnitKey: string, accountId: string, addressId: string) {
+    return await this.update(businessUnitKey, accountId, [
       {
         action: 'removeAddress',
         addressId,
@@ -295,14 +233,34 @@ export class BusinessUnitApi extends BaseApi {
     ]);
   }
 
-  async updateAssociate(businessUnitKey: string, accountId: string, associateRoleKeys: string[]) {
-    return await this.update(businessUnitKey, [
+  async getAssociate(businessUnitKey: string, accountId: string) {
+    const businessUnit = await this.getByKeyForAccount(businessUnitKey, accountId);
+
+    // Get associate from business unit
+    const associate = businessUnit.associates?.find((associate) => associate.accountId === accountId);
+
+    const associateRoles = await this.getAssociateRoles();
+
+    // Include permissions in the associate roles
+    associate.roles = associate.roles?.map((role) => {
+      const associateRole = associateRoles.find((associateRole) => associateRole.key === role.key);
+      return {
+        ...role,
+        permissions: associateRole?.permissions,
+      };
+    });
+
+    return associate;
+  }
+
+  async updateAssociate(businessUnitKey: string, accountId: string, associateId: string, associateRoleKeys: string[]) {
+    return await this.update(businessUnitKey, accountId, [
       {
         action: 'changeAssociate',
         associate: {
           customer: {
             typeId: 'customer',
-            id: accountId,
+            id: associateId,
           },
           associateRoleAssignments: associateRoleKeys.map((roleKey) => ({
             associateRole: {
@@ -315,26 +273,26 @@ export class BusinessUnitApi extends BaseApi {
     ]);
   }
 
-  async removeAssociate(businessUnitKey: string, accountId: string) {
-    return await this.update(businessUnitKey, [
+  async removeAssociate(businessUnitKey: string, accountId: string, associateAccountId: string) {
+    return await this.update(businessUnitKey, accountId, [
       {
         action: 'removeAssociate',
         customer: {
           typeId: 'customer',
-          id: accountId,
+          id: associateAccountId,
         },
       },
     ]);
   }
 
-  async addAssociate(businessUnitKey: string, accountId: string, associateRoleKeys: string[]) {
-    return await this.update(businessUnitKey, [
+  async addAssociate(businessUnitKey: string, accountId: string, associateId: string, associateRoleKeys: string[]) {
+    return await this.update(businessUnitKey, accountId, [
       {
         action: 'addAssociate',
         associate: {
           customer: {
             typeId: 'customer',
-            id: accountId,
+            id: associateId,
           },
           associateRoleAssignments: associateRoleKeys.map((roleKey) => ({
             associateRole: {
@@ -345,5 +303,13 @@ export class BusinessUnitApi extends BaseApi {
         },
       },
     ]);
+  }
+
+  async assertUserIsAssociate(accountId: string, businessUnitKey: string, storeKey: string) {
+    const businessUnit = await this.getByKeyForAccount(businessUnitKey, accountId);
+
+    if (!businessUnit.stores?.find((store) => store.key === storeKey)) {
+      throw new ResourceNotFoundError({ message: `User is not an associate of the store "${storeKey}"` });
+    }
   }
 }

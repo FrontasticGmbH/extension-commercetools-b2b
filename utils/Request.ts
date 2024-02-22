@@ -1,4 +1,6 @@
 import { Request } from '@frontastic/extension-types';
+import { ValidationError } from '@Commerce-commercetools/errors/ValidationError';
+import parseQueryParams from '@Commerce-commercetools/utils/parseRequestParams';
 
 export const getPath = (request: Request): string | null => {
   return getHeader(request, 'frontastic-path') ?? request.query.path;
@@ -11,7 +13,7 @@ export const getLocale = (request: Request): string => {
     return getHeader(request, 'frontastic-locale') ?? request.query.locale;
   }
 
-  throw new Error(`Locale is missing from request ${request}`);
+  throw new ValidationError({ message: `Locale is missing from request ${request}` });
 };
 
 export const getCurrency = (request: Request): string | null => {
@@ -33,6 +35,30 @@ const getHeader = (request: Request, header: string): string | null => {
       return foundHeader[0];
     }
     return foundHeader;
+  }
+
+  return null;
+};
+
+export const getBusinessUnitKey = (request: Request): string | null => {
+  if (request !== undefined) {
+    const { businessUnitKey } = parseQueryParams<{
+      businessUnitKey: string;
+    }>(request.query);
+
+    return businessUnitKey ?? request.sessionData?.businessUnitKey;
+  }
+
+  return null;
+};
+
+export const getStoreKey = (request: Request): string | null => {
+  if (request !== undefined) {
+    const { storeKey } = parseQueryParams<{
+      storeKey: string;
+    }>(request.query);
+
+    return storeKey ?? request.sessionData?.storeKey;
   }
 
   return null;
