@@ -1,25 +1,21 @@
 import { Context, Request } from '@frontastic/extension-types';
-import { CartApi } from '../apis/CartApi';
 import { fetchAccountFromSession } from './fetchAccountFromSession';
 import { getBusinessUnitKey, getCurrency, getDistributionChannelId, getLocale, getSupplyChannelId } from './Request';
 import { assertIsAuthenticated } from '@Commerce-commercetools/utils/assertIsAuthenticated';
+import { WishlistApi } from '@Commerce-commercetools/apis/WishlistApi';
 
-const getCartApi = (request: Request, actionContext: Context) => {
+const getWishlistApi = (request: Request, actionContext: Context) => {
   assertIsAuthenticated(request);
-  const account = fetchAccountFromSession(request);
-  const businessUnitKey = getBusinessUnitKey(request);
   const distributionChannelId = getDistributionChannelId(request);
   const supplyChannelId = getSupplyChannelId(request);
 
-  return new CartApi(
+  return new WishlistApi(
     actionContext,
     getLocale(request),
     getCurrency(request),
-    account.accountId,
-    businessUnitKey,
     distributionChannelId,
     supplyChannelId,
   );
 };
 
-export default getCartApi;
+export default getWishlistApi;
