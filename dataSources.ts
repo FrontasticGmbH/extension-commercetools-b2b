@@ -4,21 +4,17 @@ import { ProductPaginatedResult } from '@Types/result';
 import { Product } from '@Types/product';
 import { DataSourcePreviewPayloadElement } from '@frontastic/extension-types/src/ts';
 import { ProductQueryFactory } from './utils/ProductQueryFactory';
-import { ProductApi } from './apis/ProductApi';
-import { getCurrency, getLocale } from './utils/Request';
 import { fetchAccountFromSessionEnsureLoggedIn } from '@Commerce-commercetools/utils/fetchAccountFromSession';
-import queryParamsToIds from '@Commerce-commercetools/utils/queryParamsToIds';
-import queryParamsToStates from '@Commerce-commercetools/utils/queryParamsToState';
+import queryParamsToIds from '@Commerce-commercetools/utils/requestHandlers/queryParamsToIds';
+import queryParamsToStates from '@Commerce-commercetools/utils/requestHandlers/queryParamsToState';
 import { OrderQueryFactory } from '@Commerce-commercetools/utils/OrderQueryFactory';
-import getCartApi from '@Commerce-commercetools/utils/getCartApi';
-import getQuoteApi from '@Commerce-commercetools/utils/getQuoteApi';
+import getProductApi from '@Commerce-commercetools/utils/apiConstructors/getProductApi';
+import handleError from '@Commerce-commercetools/utils/handleError';
+import getCartApi from '@Commerce-commercetools/utils/apiConstructors/getCartApi';
+import getQuoteApi from '@Commerce-commercetools/utils/apiConstructors/getQuoteApi';
 
 function productQueryFromContext(context: DataSourceContext, config: DataSourceConfiguration) {
-  const productApi = new ProductApi(
-    context.frontasticContext,
-    context.request ? getLocale(context.request) : null,
-    context.request ? getCurrency(context.request) : null,
-  );
+  const productApi = getProductApi(context.request, context.frontasticContext);
 
   const productQuery = ProductQueryFactory.queryFromParams(context?.request, config);
   return { productApi, productQuery };
@@ -63,114 +59,178 @@ function getPreviewPayload(queryResult: ProductPaginatedResult) {
 
 export default {
   'frontastic/categories': async (config: DataSourceConfiguration, context: DataSourceContext) => {
-    const productApi = new ProductApi(
-      context.frontasticContext,
-      context.request ? getLocale(context.request) : null,
-      context.request ? getCurrency(context.request) : null,
-    );
+    const productApi = getProductApi(context.request, context.frontasticContext);
+
     const queryResult = await productApi.queryCategories({});
     return {
       dataSourcePayload: queryResult,
     };
+    try {
+      const { productApi } = productQueryFromContext(context, config);
+
+      const queryResult = await productApi.queryCategories({});
+
+      return {
+        dataSourcePayload: queryResult,
+      };
+    } catch (error) {
+      return {
+        dataSourcePayload: handleError(error, context.request),
+      };
+    }
   },
 
   'frontastic/product-list': async (config: DataSourceConfiguration, context: DataSourceContext) => {
-    const { productApi, productQuery } = productQueryFromContext(context, config);
+    try {
+      const { productApi, productQuery } = productQueryFromContext(context, config);
 
-    return await productApi.query(productQuery).then((queryResult) => {
+      const queryResult = await productApi.query(productQuery);
+
       return {
         dataSourcePayload: queryResult,
         previewPayload: getPreviewPayload(queryResult),
       };
-    });
+    } catch (error) {
+      return {
+        dataSourcePayload: handleError(error, context.request),
+      };
+    }
   },
 
   'frontastic/similar-products': async (config: DataSourceConfiguration, context: DataSourceContext) => {
-    const { productApi, productQuery } = productQueryFromContext(context, config);
+    try {
+      const { productApi, productQuery } = productQueryFromContext(context, config);
 
-    return await productApi.query(productQuery).then((queryResult) => {
+      const queryResult = await productApi.query(productQuery);
+
       return {
         dataSourcePayload: queryResult,
         previewPayload: getPreviewPayload(queryResult),
       };
-    });
+    } catch (error) {
+      return {
+        dataSourcePayload: handleError(error, context.request),
+      };
+    }
   },
 
   'frontastic/product': async (config: DataSourceConfiguration, context: DataSourceContext) => {
-    const { productApi, productQuery } = productQueryFromContext(context, config);
+    try {
+      const { productApi, productQuery } = productQueryFromContext(context, config);
 
-    return await productApi.getProduct(productQuery).then((queryResult) => {
+      const queryResult = await productApi.getProduct(productQuery);
+
       return {
         dataSourcePayload: {
           product: queryResult,
         },
       };
-    });
+    } catch (error) {
+      return {
+        dataSourcePayload: handleError(error, context.request),
+      };
+    }
   },
 
   'frontastic/order': async (config: DataSourceConfiguration, context: DataSourceContext) => {
-    const { cartApi, orderQuery } = orderQueryFromContext(context, config);
+    try {
+      const { cartApi, orderQuery } = orderQueryFromContext(context, config);
 
-    return await cartApi.queryOrders(orderQuery).then((queryResult) => {
+      const queryResult = await cartApi.queryOrders(orderQuery);
+
       return {
         dataSourcePayload: {
           order: queryResult.items[0],
         },
       };
-    });
+    } catch (error) {
+      return {
+        dataSourcePayload: handleError(error, context.request),
+      };
+    }
   },
 
   'frontastic/orders': async (config: DataSourceConfiguration, context: DataSourceContext) => {
-    const { cartApi, orderQuery } = orderQueryFromContext(context, config);
+    try {
+      const { cartApi, orderQuery } = orderQueryFromContext(context, config);
 
-    return await cartApi.queryOrders(orderQuery).then((queryResult) => {
+      const queryResult = await cartApi.queryOrders(orderQuery);
+
       return {
         dataSourcePayload: queryResult,
       };
-    });
+    } catch (error) {
+      return {
+        dataSourcePayload: handleError(error, context.request),
+      };
+    }
   },
 
   'frontastic/quote': async (config: DataSourceConfiguration, context: DataSourceContext) => {
-    const { quoteApi, quoteQuery } = quoteQueryFromContext(context, config);
+    try {
+      const { quoteApi, quoteQuery } = quoteQueryFromContext(context, config);
 
-    return await quoteApi.query(quoteQuery).then((queryResult) => {
+      const queryResult = await quoteApi.query(quoteQuery);
+
       return {
         dataSourcePayload: {
           quote: queryResult.items?.[0],
         },
       };
-    });
+    } catch (error) {
+      return {
+        dataSourcePayload: handleError(error, context.request),
+      };
+    }
   },
 
   'frontastic/quotes': async (config: DataSourceConfiguration, context: DataSourceContext) => {
-    const { quoteApi, quoteQuery } = quoteQueryFromContext(context, config);
+    try {
+      const { quoteApi, quoteQuery } = quoteQueryFromContext(context, config);
 
-    return await quoteApi.query(quoteQuery).then((queryResult) => {
+      const queryResult = await quoteApi.query(quoteQuery);
+
       return {
         dataSourcePayload: queryResult,
       };
-    });
+    } catch (error) {
+      return {
+        dataSourcePayload: handleError(error, context.request),
+      };
+    }
   },
 
   'frontastic/quote-request': async (config: DataSourceConfiguration, context: DataSourceContext) => {
-    const { quoteApi, quoteQuery } = quoteQueryFromContext(context, config);
+    try {
+      const { quoteApi, quoteQuery } = quoteQueryFromContext(context, config);
 
-    return await quoteApi.queryQuoteRequests(quoteQuery).then((queryResult) => {
+      const queryResult = await quoteApi.queryQuoteRequests(quoteQuery);
+
       return {
         dataSourcePayload: {
           quoteRequest: queryResult.items?.[0],
         },
       };
-    });
+    } catch (error) {
+      return {
+        dataSourcePayload: handleError(error, context.request),
+      };
+    }
   },
 
   'frontastic/quote-requests': async (config: DataSourceConfiguration, context: DataSourceContext) => {
-    const { quoteApi, quoteQuery } = quoteQueryFromContext(context, config);
+    try {
+      const { quoteApi, quoteQuery } = quoteQueryFromContext(context, config);
 
-    return await quoteApi.queryQuoteRequests(quoteQuery).then((queryResult) => {
+      const queryResult = await quoteApi.queryQuoteRequests(quoteQuery);
+
       return {
         dataSourcePayload: queryResult,
       };
-    });
+    } catch (error) {
+      return {
+        dataSourcePayload: handleError(error, context.request),
+      };
+    }
   },
 };

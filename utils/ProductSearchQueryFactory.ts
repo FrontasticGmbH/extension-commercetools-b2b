@@ -45,6 +45,7 @@ export class ProductSearchFactory {
     productQuery: ProductQuery,
     facetDefinitions: FacetDefinition[],
     locale: Locale,
+    productIdField: string,
   ): ProductSearchRequest {
     let commercetoolsProductSearchRequest = ProductSearchFactory.initializeProductSearchRequestObject(
       productQuery,
@@ -59,7 +60,7 @@ export class ProductSearchFactory {
     commercetoolsProductSearchRequest = this.applyQueryProductIds(
       commercetoolsProductSearchRequest,
       productQuery,
-      locale,
+      productIdField,
     );
     commercetoolsProductSearchRequest = this.applyStore(commercetoolsProductSearchRequest, productQuery, locale);
     commercetoolsProductSearchRequest = this.applyQuerySKUs(commercetoolsProductSearchRequest, productQuery, locale);
@@ -371,17 +372,18 @@ export class ProductSearchFactory {
     return commercetoolsProductSearchRequest;
   };
 
-  private static applyQueryProductIds: ProductSearchFactoryUtilMethod = (
+  private static applyQueryProductIds(
     commercetoolsProductSearchRequest: ProductSearchRequest,
     productQuery: ProductQuery,
-  ) => {
+    productIdField: string,
+  ): ProductSearchRequest {
     if (productQuery.productIds?.length) {
       const productSearchExactExpressions: SearchExactExpression[] = [];
 
       productQuery.productIds.forEach((productId) => {
         productSearchExactExpressions.push({
           exact: {
-            field: 'id',
+            field: productIdField,
             value: productId,
           },
         });
@@ -392,7 +394,7 @@ export class ProductSearchFactory {
       );
     }
     return commercetoolsProductSearchRequest;
-  };
+  }
 
   private static applyStore: ProductSearchFactoryUtilMethod = (
     commercetoolsProductSearchRequest: ProductSearchRequest,
@@ -551,6 +553,7 @@ export class ProductSearchFactory {
       facetDefinitions,
       locale,
     );
+
     if (productSearchFacetExpressions.length) {
       commercetoolsProductSearchRequest.facets = productSearchFacetExpressions;
 
@@ -598,6 +601,7 @@ export class ProductSearchFactory {
         });
       }
     }
+
     return commercetoolsProductSearchRequest;
   };
 
@@ -700,6 +704,7 @@ export class ProductSearchFactory {
             },
           };
           break;
+
         case 'money':
         case 'range':
           facet = {
@@ -714,6 +719,7 @@ export class ProductSearchFactory {
             },
           };
           break;
+
         case 'reference':
         default:
           facet = {
@@ -775,12 +781,14 @@ export class ProductSearchFactory {
           field: `${facetDefinition.attributeId}`,
           fieldType: 'text',
         };
+
       case 'boolean':
         return {
           name: `${facetDefinition.attributeId}`,
           field: `${facetDefinition.attributeId}`,
           fieldType: 'boolean',
         };
+
       case 'range':
       case 'reference':
       default:
@@ -795,14 +803,17 @@ export class ProductSearchFactory {
     facet: Writeable<_ProductSearchFacetExpression>,
     productSearchQueryFilters: SearchQuery[],
   ): ProductSearchFacetExpression => {
-    let filterExpression: SearchQuery = {};
     if (!productSearchQueryFilters.length) {
       return facet;
-    } else if (productSearchQueryFilters.length === 1) {
+    }
+
+    let filterExpression: SearchQuery = {};
+
+    if (productSearchQueryFilters.length === 1) {
       filterExpression = productSearchQueryFilters[0];
     } else {
       filterExpression = {
-        and: productSearchQueryFilters.map((f) => f),
+        and: productSearchQueryFilters.map((searchQuery) => searchQuery),
       };
     }
 
@@ -815,6 +826,7 @@ export class ProductSearchFactory {
     if ('ranges' in facet) {
       facet.ranges.filter = filterExpression;
     }
+
     return facet;
   };
 

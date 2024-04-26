@@ -1,4 +1,10 @@
 
+## Version 1.6.0 (2024-04-26)
+
+** New Features and Improvements **
+
+- Restructured, reorganized folders
+
 ## Version 1.5.0 (2024-04-04)
 
 ** New Features and Improvements **
