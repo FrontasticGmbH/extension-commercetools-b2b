@@ -191,15 +191,6 @@ export default class CartApi extends BaseApi {
         sku: lineItem.variant.sku,
         quantity: +lineItem.count,
       });
-
-      const oldLineItem = cart.lineItems?.find((li) => li.variant?.sku === lineItem.variant.sku);
-      if (oldLineItem) {
-        cartUpdate.actions.push({
-          action: 'setLineItemShippingDetails',
-          lineItemId: oldLineItem.lineItemId,
-          shippingDetails: null,
-        });
-      }
     });
 
     const commercetoolsCart = await this.updateCart(cart.cartId, cartUpdate);
@@ -220,15 +211,6 @@ export default class CartApi extends BaseApi {
         },
       ],
     };
-
-    const oldLineItem = cart.lineItems?.find((li) => li.lineItemId === lineItem.lineItemId);
-    if (oldLineItem) {
-      cartUpdate.actions.push({
-        action: 'setLineItemShippingDetails',
-        lineItemId: oldLineItem.lineItemId,
-        shippingDetails: null,
-      });
-    }
 
     const commercetoolsCart = await this.updateCart(cart.cartId, cartUpdate);
 
@@ -1035,6 +1017,12 @@ export default class CartApi extends BaseApi {
           actions: [
             {
               action: 'addLineItem',
+              ...(this.distributionChannelId && {
+                distributionChannel: { typeId: 'channel', id: this.distributionChannelId },
+              }),
+              ...(this.supplyChannelId && {
+                supplyChannel: { typeId: 'channel', id: this.supplyChannelId },
+              }),
               sku: lineItem.variant.sku,
               quantity: +lineItem.quantity,
             },
@@ -1055,7 +1043,7 @@ export default class CartApi extends BaseApi {
     // Delete previous cart
     await this.deleteCart(primaryCart);
 
-    return CartMapper.commercetoolsCartToCart(replicatedCommercetoolsCart, locale);
+    return CartMapper.commercetoolsCartToCart(replicatedCommercetoolsCart, locale, this.supplyChannelId);
   }
 
   protected async updateCart(cartId: string, cartUpdate: CartUpdate): Promise<CommercetoolsCart> {
