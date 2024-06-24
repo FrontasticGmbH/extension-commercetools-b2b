@@ -1,4 +1,19 @@
 
+## Version 1.8.0 (2024-06-24)
+
+** New Features and Improvements **
+- Handle default sorting attributes on B2B
+- Handle when not matching variants exist on product mapper
+- Included method to handle search sorting products
+- Support localized attribute
+- Update productId field
+- Update interface naming
+- Fix matchingVariants undefined error
+- Use markMatchingVariant for price filter
+
+** Bug fixes **
+- Handle boolean facets and verify when they are selected
+
 ## Version 1.7.1 (2024-06-06)
 
 ** New Features and Improvements **
