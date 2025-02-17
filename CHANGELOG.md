@@ -1,4 +1,32 @@
 
+## Version 2.1.0 (2025-02-17)
+
+
+** New Features & Improvements **
+
+* Added account group filter to B2B PDP
+* Added account group filter to PDP in B2B and B2C
+* Removed the cartId from the session as the cart will never change in this method
+* Limited the cart fetching for session to not create any cart
+* Pass in accountGroupId on login
+* Add priceCustomerGroup to product search query
+* Added support for direct discounts
+* Added support for free shipping method above amount
+* Imported discont changes from B2C to B2B
+* Add discount types to B2C
+* Add more types for B2B Direct Discounts
+* Get precise currency for discount value based on locale
+* Introduce product discounts inside b2b
+* Add direct discount and rename discount to DiscountCodes
+
+
+** Bug Fixes **
+
+* Not set customer group when cart is recreated
+* Set correct name for discount code id
+* Added missing locales
+* Handled empty discount
+
 ## Version 2.0.0 (2025-02-03)
 
 ** New Features & Improvements **
