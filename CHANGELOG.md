@@ -1,31 +1,26 @@
 
-## Version 2.1.0 (2025-02-17)
-
+## Version 2.2.0 (2025-03-17)
 
 ** New Features & Improvements **
 
-* Added account group filter to B2B PDP
-* Added account group filter to PDP in B2B and B2C
-* Removed the cartId from the session as the cart will never change in this method
-* Limited the cart fetching for session to not create any cart
-* Pass in accountGroupId on login
-* Add priceCustomerGroup to product search query
-* Added support for direct discounts
-* Added support for free shipping method above amount
-* Imported discont changes from B2C to B2B
-* Add discount types to B2C
-* Add more types for B2B Direct Discounts
-* Get precise currency for discount value based on locale
-* Introduce product discounts inside b2b
-* Add direct discount and rename discount to DiscountCodes
+* removed missing log
+* added product selection ids on PDP queries for B2B
+* used full name to loop over variants
+* generated product url using, if exist, the first matching variant
+* set meta fields undefined if empty in B2C and B2B
+* switch to using LocalizedValue.getLocalizedValue
+* map meta data fields for products and categories
+* add method to retrieve session data in BaseApi
+* mapped cart returned by accoun login method in B2B
+* set order number during checkout session
 
 
 ** Bug Fixes **
 
-* Not set customer group when cart is recreated
-* Set correct name for discount code id
-* Added missing locales
-* Handled empty discount
+* restored product limit filter
+* handled product queries with multiple or/and and a single or/and
+* store the first product selection on the session
+* ensured that if no local or default local exist, first locale available is returned
 
 ## Version 2.0.0 (2025-02-03)
 
