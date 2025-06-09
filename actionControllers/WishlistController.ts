@@ -7,7 +7,7 @@ import queryParamsToIds from '@Commerce-commercetools/utils/requestHandlers/quer
 import { ValidationError } from '@Commerce-commercetools/errors/ValidationError';
 import getWishlistApi from '@Commerce-commercetools/utils/apiConstructors/getWishlistApi';
 import WishlistApi from '@Commerce-commercetools/apis/WishlistApi';
-import { getStoreKey } from '@Commerce-commercetools/utils/requestHandlers/Request';
+import { getBusinessUnitKey, getStoreKey } from '@Commerce-commercetools/utils/requestHandlers/Request';
 import { AccountFetcher } from '@Commerce-commercetools/utils/AccountFetcher';
 type ActionHook = (request: Request, actionContext: ActionContext) => Promise<Response>;
 
@@ -53,13 +53,16 @@ export const queryWishlists: ActionHook = async (request, actionContext) => {
     const wishlistApi = getWishlistApi(request, actionContext.frontasticContext);
 
     const accountId = AccountFetcher.fetchAccountIdFromSessionEnsureLoggedIn(request);
+    const storeKey = getStoreKey(request);
+    const businessUnitKey = getBusinessUnitKey(request);
 
     const wishlistQuery: WishlistQuery = {
       name: request.query?.name ?? undefined,
       accountId,
       limit: request.query?.limit ?? undefined,
       cursor: request.query?.cursor ?? undefined,
-      storeKey: request.query?.storeKey ?? undefined,
+      storeKey,
+      businessUnitKey,
       wishlistIds: queryParamsToIds('wishlistIds', request.query),
       query: request.query?.query ?? undefined,
     };
